@@ -18,18 +18,39 @@ if ! [ -x "$(command -v npm)" ]; then
   exit 1
 fi
 
-# 2. Install dependencies
-echo "Installing server dependencies..."
+# 2. Install Linux System Prerequisites (Tesseract OCR & Python pip)
+echo "Checking and installing Linux system packages..."
+if [ -x "$(command -v apt-get)" ]; then
+  echo "Debian/Ubuntu detected. Installing Tesseract-OCR, system headers, and python3-pip..."
+  sudo apt-get update
+  sudo apt-get install -y tesseract-ocr libtesseract-dev python3-pip python3-venv
+else
+  echo "Warning: apt-get not found. Skipping system package installs. Please ensure Tesseract-OCR and python3-pip are installed manually."
+fi
+
+# 3. Install Python Dependencies for OCR Fallback
+echo "Installing Python OCR extension packages..."
+if [ -x "$(command -v pip3)" ]; then
+  # Install standard extensions. Use --break-system-packages if python 3.11+ environment forces it
+  pip3 install opencv-python-headless numpy pytesseract PyMuPDF || \
+  pip3 install opencv-python-headless numpy pytesseract PyMuPDF --break-system-packages || \
+  echo "Warning: Failed to install python packages via pip3. Please install opencv-python-headless, numpy, pytesseract, and PyMuPDF manually."
+else
+  echo "Error: pip3 is not installed. Python OCR packages could not be installed."
+fi
+
+# 4. Install Node.js Dependencies
+echo "Installing backend Node.js extensions..."
 cd server
 npm install
 cd ..
 
-echo "Installing client dependencies..."
+echo "Installing frontend Node.js extensions..."
 cd client
 npm install
 cd ..
 
-echo "Dependencies successfully installed!"
+echo "All extensions and dependencies successfully installed!"
 echo "---------------------------------------------"
 
 # Disable exit on error for startup phase
