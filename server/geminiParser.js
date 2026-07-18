@@ -1207,9 +1207,21 @@ export async function parseResume(resumeText, pdfBase64 = null) {
           },
           required: ['name', 'description', 'matchingSkills']
         }
+      },
+      currentLocation: {
+        type: 'STRING',
+        description: 'Candidate\'s current location (e.g. City, State, Country). Return empty string or Unknown if not found.'
+      },
+      totalYearsExperience: {
+        type: 'NUMBER',
+        description: 'Calculated total years of experience as a decimal or number based on their history (e.g. 5 or 8.5). Return 0 if none found.'
+      },
+      noticePeriod: {
+        type: 'STRING',
+        description: 'Mentioned notice period (e.g. Immediate, 30 days). Return empty string if not found.'
       }
     },
-    required: ['name', 'email', 'skills', 'experience', 'education', 'seniorityLevel', 'interviewQuestions', 'career_gaps', 'technical_depth_audit', 'domain_question_bank', 'project_deep_dive', 'hr_questions', 'red_flags', 'must_prepare_topics', 'fit_summary', 'projects']
+    required: ['name', 'email', 'skills', 'experience', 'education', 'seniorityLevel', 'interviewQuestions', 'career_gaps', 'technical_depth_audit', 'domain_question_bank', 'project_deep_dive', 'hr_questions', 'red_flags', 'must_prepare_topics', 'fit_summary', 'projects', 'currentLocation', 'totalYearsExperience', 'noticePeriod']
   };
 
   const apiKey = settings?.geminiApiKey || process.env.GEMINI_API_KEY;

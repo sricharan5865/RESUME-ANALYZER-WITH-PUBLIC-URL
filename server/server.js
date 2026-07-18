@@ -704,6 +704,7 @@ async function processEmailAttachment(messageId, filename, buffer, emailConfig, 
       hrQuestions: parsedData.hrQuestions || [],
       technicalQuestions: parsedData.technicalQuestions || [],
       projects: parsedData.projects || [],
+      extractedData: parsedData,
       history: [{ date: new Date().toISOString(), type: 'Imported', text: `Imported from email attachment: ${filename}` }]
     });
 
@@ -1470,6 +1471,7 @@ app.post('/api/candidates/upload', authenticateToken, requireRole(['admin', 'rec
       matchedRequirements: checklistResult.matchedRequirements || [],
       unmatchedRequirements: checklistResult.unmatchedRequirements || [],
       passedCoreSkills: checklistResult.passedCoreSkills !== false,
+      extractedData: parsedData,
       history: [{ date: new Date().toISOString(), type: 'Imported', text: `Manual upload: ${req.file.originalname}` }]
     });
 
@@ -2899,6 +2901,11 @@ app.post('/api/public/apply', async (req, res) => {
               technicalQuestions: jdQuestions?.technicalQuestions || parsedData.technicalQuestions || [],
               projects: parsedData.projects || [],
               redFlags: jdQuestions?.red_flags || parsedData.red_flags || [],
+              extractedData: {
+                currentLocation: ansMap['Current Location'] || parsedData.currentLocation || '',
+                totalYearsExperience: ansMap['Total Years of Experience'] || ansMap['Experience'] || parsedData.totalYearsExperience || '',
+                noticePeriod: ansMap['Notice Period'] || parsedData.noticePeriod || ''
+              },
               checklist: checklistResult.checklist || [],
               checklistScore: checklistResult.score || 0,
               matchedRequirements: checklistResult.matchedRequirements || [],

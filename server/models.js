@@ -85,6 +85,7 @@ const candidateSchema = new mongoose.Schema({
   passedCoreSkills: { type: Boolean, default: true },
   rank: { type: Number, default: 0 },
   totalApplicants: { type: Number, default: 0 },
+  extractedData: mongoose.Schema.Types.Mixed,
   createdAt: { type: Date, default: Date.now },
   assignedTo: { type: String, default: null },
   placementData: {
