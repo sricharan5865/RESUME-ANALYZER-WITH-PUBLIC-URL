@@ -310,7 +310,18 @@ async function sendSMTPMessage({ to, subject, body }) {
   }
 
   const transporter = nodemailer.createTransport(smtpConfig);
-  return await transporter.sendMail({ from: config.user, to, subject, text: body });
+  const isHtml = /<[a-z][\s\S]*>/i.test(body);
+  const mailOptions = {
+    from: config.user,
+    to,
+    subject,
+  };
+  if (isHtml) {
+    mailOptions.html = body;
+  } else {
+    mailOptions.text = body;
+  }
+  return await transporter.sendMail(mailOptions);
 }
 
 /* ==========================================================================
@@ -2973,16 +2984,24 @@ app.post('/api/public/apply', async (req, res) => {
         if (settings && settings.emailTemplates && settings.emailTemplates.applicationReceived) {
           const emailConfig = await getEmailConfig();
           
+          let template = settings.emailTemplates.applicationReceived;
           let jobTitle = 'General Role';
           if (jobId) {
             const job = await Job.findOne({ id: jobId });
             if (job) jobTitle = job.title;
           }
-          
-          let template = settings.emailTemplates.applicationReceived;
+
+          // Template variable replacements (handles both double curly and bracket styles)
+          template = template.replace(/{{CandidateName}}/g, newCandidate.name || 'Candidate');
           template = template.replace(/{candidate_name}/g, newCandidate.name || 'Candidate');
+          
+          template = template.replace(/{{JobTitle}}/g, jobTitle);
           template = template.replace(/{job_title}/g, jobTitle);
-          template = template.replace(/{company_name}/g, 'Our Company');
+          
+          template = template.replace(/{{CandidateID}}/g, newCandidate.id || 'N/A');
+          template = template.replace(/{candidate_id}/g, newCandidate.id || 'N/A');
+          
+          template = template.replace(/{company_name}/g, 'iSpatial Techno Solutions (IST)');
           
           let subject = `Application Received: ${jobTitle}`;
           let body = template;

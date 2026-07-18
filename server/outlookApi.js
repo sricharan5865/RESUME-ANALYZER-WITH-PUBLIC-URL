@@ -304,6 +304,7 @@ export async function sendOutlookEmail(accessToken, emailUser, { to, subject, bo
 
   const url = `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(emailUser)}/sendMail`;
 
+  const isHtml = /<[a-z][\s\S]*>/i.test(body);
   try {
     const response = await graphApiRequest(url, {
       method: 'POST',
@@ -315,7 +316,7 @@ export async function sendOutlookEmail(accessToken, emailUser, { to, subject, bo
         message: {
           subject: subject,
           body: {
-            contentType: 'Text',
+            contentType: isHtml ? 'Html' : 'Text',
             content: body
           },
           toRecipients: [
