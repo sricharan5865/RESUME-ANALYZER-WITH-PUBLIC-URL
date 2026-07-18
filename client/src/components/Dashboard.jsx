@@ -17,7 +17,7 @@ export default function Dashboard({ candidates, jobs, unreadCount, setActiveTab,
 
   // Helper to get active score based on ranking mode
   const getCandidateScore = (c) => {
-    return rankAccordingToJob ? c.matchScore : (c.ownCategoryScore ?? c.matchScore);
+    return c.matchScore || 0;
   };
 
   // Average compatibility score of candidates

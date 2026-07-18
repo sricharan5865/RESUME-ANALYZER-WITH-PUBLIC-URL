@@ -211,10 +211,29 @@ function normalizeJsonKeys(parsed, schema) {
     keyMap[snake] = originalKey;
   });
 
+  const synonymMap = {
+    'workexperience': 'experience',
+    'workhistory': 'experience',
+    'employmenthistory': 'experience',
+    'educationalbackground': 'education',
+    'academicbackground': 'education',
+    'academics': 'education',
+    'projectdetails': 'projects',
+    'contactnumber': 'phone',
+    'phonenumber': 'phone',
+    'emailaddress': 'email',
+    'linkedin': 'linkedinUrl',
+    'linkedinprofile': 'linkedinUrl'
+  };
+
   // Map the parsed keys to the correct schema keys
   for (const parsedKey in parsed) {
     const cleanParsedKey = parsedKey.toLowerCase().replace(/[^a-z0-9]/g, '');
-    const mappedKey = keyMap[parsedKey] || keyMap[cleanParsedKey];
+    let mappedKey = keyMap[parsedKey] || keyMap[cleanParsedKey];
+    
+    if (!mappedKey && synonymMap[cleanParsedKey] && keyMap[synonymMap[cleanParsedKey]]) {
+      mappedKey = keyMap[synonymMap[cleanParsedKey]];
+    }
     
     if (mappedKey) {
       normalized[mappedKey] = parsed[parsedKey];
@@ -442,8 +461,7 @@ async function fetchOpenRouterWithRetry(url, requestBody, apiKey) {
         affordableTokens = 4000;
       }
     }
-
-    if (shouldRetryWithLowerTokens && requestBody.max_tokens > 1000) {
+    if (shouldRetryWithLowerTokens && requestBody.max_tokens > 4500 && affordableTokens >= 4500) {
       console.warn(`OpenRouter token limit hit. Retrying with affordable tokens: ${affordableTokens}`);
       requestBody.max_tokens = affordableTokens;
       response = await fetchWithTimeout(url, {
@@ -457,7 +475,10 @@ async function fetchOpenRouterWithRetry(url, requestBody, apiKey) {
     }
 
     if (!response.ok) {
-      const finalErrorText = shouldRetryWithLowerTokens ? errorText : await response.text();
+      let finalErrorText = errorText;
+      if (shouldRetryWithLowerTokens) {
+        finalErrorText = await response.text().catch(e => e.message);
+      }
       throw new Error(`OpenRouter API error: ${response.status} - ${finalErrorText}`);
     }
   }
@@ -489,7 +510,7 @@ async function callAIProvider(prompt, systemInstruction = '', schema = null, pdf
     if (isOpenRouter) {
       const url = 'https://openrouter.ai/api/v1/chat/completions';
       const requestBody = {
-        model: process.env.AI_MODEL || 'google/gemini-3.1-pro-preview',
+        model: process.env.AI_MODEL || 'google/gemini-2.5-flash',
         max_tokens: 8192,
         messages: [
           ...(systemInstruction ? [{ role: 'system', content: systemInstruction }] : []),
@@ -740,8 +761,28 @@ async function callAIProvider(prompt, systemInstruction = '', schema = null, pdf
       { role: 'user', content: userContent }
     ];
 
-    const estimatedTokens = ((finalSystem ? finalSystem.length : 0) + userContent.length) / 3.5;
-    const dynamicNumCtx = estimatedTokens > 3500 ? 8192 : 4096;
+    const estimatedTokens = Math.ceil(((finalSystem ? finalSystem.length : 0) + userContent.length) / 3.7);
+    
+    // Determine the required prediction limit (completion size) based on task complexity
+    let numPredict = 2048; // default for complex generation (e.g., resume parsing)
+    if (schema) {
+      const isSimpleSchema = schema.properties && Object.keys(schema.properties).length <= 5;
+      if (isSimpleSchema) {
+        numPredict = 512; // Simple classification / score estimation
+      }
+    } else {
+      numPredict = 512;
+    }
+
+    const requiredContext = estimatedTokens + numPredict;
+    let dynamicNumCtx = 2048;
+    if (requiredContext > 8192) {
+      dynamicNumCtx = 16384;
+    } else if (requiredContext > 4096) {
+      dynamicNumCtx = 8192;
+    } else if (requiredContext > 2048) {
+      dynamicNumCtx = 4096;
+    }
 
     const requestBody = {
       model: ollamaModel,
@@ -750,7 +791,7 @@ async function callAIProvider(prompt, systemInstruction = '', schema = null, pdf
       options: {
         temperature: 0.1,
         num_ctx: dynamicNumCtx,
-        num_predict: 2048
+        num_predict: numPredict
       }
     };
 
@@ -1202,6 +1243,7 @@ export async function parseResume(resumeText, pdfBase64 = null) {
   return parsedData;
 }
 
+
 function parseDateString(str) {
   if (!str) return null;
   const clean = str.trim().toLowerCase();
@@ -1544,8 +1586,8 @@ export async function generateQuestionsForCandidate(candidateProfile, jobDescrip
           properties: {
             period: { type: 'STRING' },
             length: { type: 'STRING' },
-            interview_question: { type: 'STRING' },
-            sample_answer: { type: 'STRING' }
+            interview_question: { type: 'STRING', description: 'Extremely short, direct question (maximum 15 words) about this gap.' },
+            sample_answer: { type: 'STRING', description: 'Very brief suggested answer (maximum 30 words).' }
           },
           required: ['period', 'length', 'interview_question', 'sample_answer']
         }
@@ -1557,8 +1599,8 @@ export async function generateQuestionsForCandidate(candidateProfile, jobDescrip
           properties: {
             skill: { type: 'STRING' },
             has_depth: { type: 'BOOLEAN' },
-            probing_question: { type: 'STRING' },
-            answer_template: { type: 'STRING' }
+            probing_question: { type: 'STRING', description: 'Extremely short probing question (maximum 15 words) to test this skill.' },
+            answer_template: { type: 'STRING', description: 'Very brief answer template (maximum 30 words).' }
           },
           required: ['skill', 'has_depth']
         }
@@ -1568,8 +1610,8 @@ export async function generateQuestionsForCandidate(candidateProfile, jobDescrip
         items: {
           type: 'OBJECT',
           properties: {
-            question: { type: 'STRING' },
-            model_answer: { type: 'STRING' },
+            question: { type: 'STRING', description: 'Extremely short and direct question (maximum 15 words) based on the JD.' },
+            model_answer: { type: 'STRING', description: 'Very brief, concise answer (maximum 30 words).' },
             level: { type: 'STRING' }
           },
           required: ['question', 'model_answer', 'level']
@@ -1586,8 +1628,8 @@ export async function generateQuestionsForCandidate(candidateProfile, jobDescrip
               items: {
                 type: 'OBJECT',
                 properties: {
-                  question: { type: 'STRING' },
-                  model_answer: { type: 'STRING' }
+                  question: { type: 'STRING', description: 'Extremely short project question (maximum 15 words).' },
+                  model_answer: { type: 'STRING', description: 'Very brief model answer (maximum 30 words).' }
                 },
                 required: ['question', 'model_answer']
               }
@@ -1601,9 +1643,9 @@ export async function generateQuestionsForCandidate(candidateProfile, jobDescrip
         items: {
           type: 'OBJECT',
           properties: {
-            question: { type: 'STRING' },
-            sample_answer: { type: 'STRING' },
-            personalization_note: { type: 'STRING' }
+            question: { type: 'STRING', description: 'Extremely short and direct HR question (maximum 15 words) tailored to the JD.' },
+            sample_answer: { type: 'STRING', description: 'Very brief suggested answer (maximum 30 words).' },
+            personalization_note: { type: 'STRING', description: 'A 1-sentence note on why this question was asked.' }
           },
           required: ['question', 'sample_answer', 'personalization_note']
         }
@@ -1637,18 +1679,177 @@ ${jobDescription ? `Job Description:\nTitle: ${jobDescription.title}\nRequiremen
 
 Perform the technical recruiter seven-part analysis on this candidate. 
 
-CRITICAL PROJECT INTERVIEW QUESTION LOGIC:
-For any key project concepts, methodologies, or specialized tools required in the Job Description (e.g., "ArcGIS analysis", "spatial modeling"):
-1. If the candidate HAS a project in their profile that matches the concept:
-   - Under 'project_deep_dive', write a 'claim' referencing their matching project, and generate specific follow-up questions probing the technical details, challenges, and tools they used.
-2. If the candidate does NOT have any project matching the concept in their profile:
-   - Under 'project_deep_dive', write a 'claim' like "Missing project/experience in [Concept Name]" (e.g., "Missing ArcGIS analyst project"). 
-   - Generate a two-part follow-up question that asks: "Have you done any projects in this concept [insert concept]? If yes, please describe the architecture and your role. If no, how would you approach designing or building such a system from scratch?"
-   - Provide a model answer template showing the technical guidelines for a strong response.`;
+CRITICAL DISCREPANCY / RED FLAG CHECK:
+If the Candidate Profile has a 'formAnswers' field (array of manually submitted answers):
+1. Locate any form answers claiming key skills or technical software competencies (such as "ArcGIS Pro", "ArcGIS", or "ArcJS").
+2. Cross-check these claims against the parsed resume profile details (skills, experience, projects).
+3. If they claim a competency in the form answers but have ZERO actual experience, projects, or verified skill references in their resume, you MUST add a high-severity entry in the 'red_flags' array detailing this discrepancy (e.g. "Candidate claimed ArcGIS Pro in form but lacks ArcGIS experience in resume").
+
+CRITICAL INTERVIEW QUESTION LOGIC:
+1. Keep all questions and sample answers HIGHLY CONCISE (1-2 sentences maximum). Do not generate long paragraphs.
+2. Every question MUST be strictly tailored to the specific Job Description provided above. Do not ask generic questions.
+3. For key project concepts/tools required in the Job Description:
+   - If candidate HAS matching experience: Write a claim referencing it and generate a short follow-up probing their technical depth.
+   - If candidate LACKS matching experience: Write a claim like "Missing experience in [Concept]" and generate a short two-part question: "Have you done any projects with [Concept]? If yes, briefly describe it. If no, how would you approach learning it?" Provide a concise model answer.`;
 
   const parsedData = await callAIProvider(prompt, systemInstruction, schema);
   mapAnalysisToQuestions(parsedData, true);
   return parsedData;
+}
+
+/**
+ * Extracts 4–6 key scorable requirements from a job description.
+ * Used to build the checklist for proportional JD matching.
+ */
+export async function extractChecklistFromJob(job) {
+  if (!job) return [];
+
+  // Always try text-split first as a fast reliable fallback
+  const textChecklist = (job.requirements || job.description || '')
+    .split('\n')
+    .map(line => line.replace(/^[-•*]\s*/, '').trim())
+    .filter(line => line.length > 10)
+    .slice(0, 6);
+
+  try {
+    const schema = {
+      type: 'OBJECT',
+      properties: {
+        checklist: {
+          type: 'ARRAY',
+          items: { type: 'STRING' },
+          description: 'Array of 4 to 6 concise, verifiable requirement strings'
+        }
+      },
+      required: ['checklist']
+    };
+
+    const prompt = `Extract the 4 to 6 most important, verifiable, concrete requirements from this job description.
+Each requirement must be a single concise statement that can be evaluated as met or not met for a candidate.
+Focus on skills, tools, experience years, certifications, and domain knowledge.
+Do NOT include vague soft skills like "good communication".
+
+Job Title: ${job.title}
+Requirements: ${job.requirements || ''}
+Description: ${job.description || ''}
+
+Return ONLY a JSON object with a "checklist" array of 4–6 strings.`;
+
+    const result = await callAIProvider(prompt, '', schema);
+    const list = result?.checklist || result;
+    if (Array.isArray(list) && list.length >= 2) {
+      return list.slice(0, 6);
+    }
+  } catch (e) {
+    console.warn('extractChecklistFromJob AI call failed, using text-split fallback:', e.message);
+  }
+
+  return textChecklist.length >= 2 ? textChecklist : [];
+}
+
+/**
+ * Scores a candidate against a job's requirementsChecklist.
+ * Score = (number of matched requirements / total requirements) × 100
+ * Returns { score, matchedRequirements, unmatchedRequirements, reasoning }
+ */
+export async function scoreCandidateAgainstChecklist(candidateProfile, job) {
+  const checklist = job.requirementsChecklist || [];
+
+  // Fallback to holistic scoring if checklist is empty
+  if (!checklist || checklist.length === 0) {
+    const result = await scoreCandidate(candidateProfile, job);
+    return {
+      score: result.score || 0,
+      matchedRequirements: result.matchingSkills || [],
+      unmatchedRequirements: result.missingSkills || [],
+      reasoning: result.reasoning || '',
+      checklist: []
+    };
+  }
+
+  const totalExperience = calculateTotalExperience(candidateProfile.experience || []);
+
+  const schema = {
+    type: 'OBJECT',
+    properties: {
+      results: {
+        type: 'ARRAY',
+        items: {
+          type: 'OBJECT',
+          properties: {
+            requirement: { type: 'STRING', description: 'The exact requirement string' },
+            met: { type: 'BOOLEAN', description: 'true if candidate meets this requirement, false otherwise' },
+            evidence: { type: 'STRING', description: 'One short sentence of evidence from the candidate profile, or explanation of why it is not met' }
+          },
+          required: ['requirement', 'met', 'evidence']
+        }
+      },
+      passedCoreSkills: {
+        type: 'BOOLEAN',
+        description: 'Set to true ONLY if the candidate meets the core foundational technical skills required for this job. Set to false if they lack the core required skills.'
+      }
+    },
+    required: ['results', 'passedCoreSkills']
+  };
+
+  const { resumeText, interviewQuestions, _id, __v, createdAt, updatedAt, resumePath, tags, ...cleanProfile } = candidateProfile;
+
+  const prompt = `You are a strict technical recruiter. Evaluate this candidate against each requirement below using a strict HIERARCHICAL approach.
+
+CRITICAL INSTRUCTIONS:
+1. Identify which requirements are "Core Technical Skills" vs "Experience/Projects/Other".
+2. You MUST evaluate the Core Technical Skills first.
+3. If the candidate fails to meet the Core Technical Skills required for the role, they automatically FAIL the other requirements. Do not give them credit for experience or projects if they lack the foundational skills requested. Mark those non-skill requirements as "Not Met (Due to missing core prerequisite skills)".
+4. Decide strictly based ONLY on what is explicitly stated in their profile. Do NOT assume or hallucinate skills.
+5. Use the totalExperience field for any years-of-experience checks.
+
+Candidate Profile:
+${JSON.stringify({ ...cleanProfile, totalExperience }, null, 2)}
+
+Evaluate each requirement:
+${checklist.map((req, i) => `${i + 1}. ${req}`).join('\n')}
+
+Return a JSON object with a "results" array, one entry per requirement.`;
+
+  try {
+    const result = await callAIProvider(prompt, '', schema);
+    const results = result?.results || [];
+
+    if (!Array.isArray(results) || results.length === 0) {
+      // Fallback to holistic
+      const fallback = await scoreCandidate(candidateProfile, job);
+      return {
+        score: fallback.score || 0,
+        passedCoreSkills: true, // fallback assumes true
+        matchedRequirements: fallback.matchingSkills || [],
+        unmatchedRequirements: fallback.missingSkills || [],
+        reasoning: fallback.reasoning || '',
+        checklist: []
+      };
+    }
+
+    const matched = results.filter(r => r.met === true);
+    const unmatched = results.filter(r => r.met !== true);
+    const score = Math.round((matched.length / results.length) * 100);
+
+    const matchedReqs = matched.map(r => r.requirement);
+    const unmatchedReqs = unmatched.map(r => `${r.requirement} — ${r.evidence || 'Not found in profile'}`);
+
+    const reasoning = `Candidate meets ${matched.length} of ${results.length} key requirements (${score}%). ` +
+      (unmatchedReqs.length > 0 ? `Missing: ${unmatched.map(r => r.requirement).join(', ')}.` : 'All requirements are met.');
+
+    return { score, passedCoreSkills: result.passedCoreSkills !== false, matchedRequirements: matchedReqs, unmatchedRequirements: unmatchedReqs, reasoning, checklist: results };
+  } catch (e) {
+    console.error('scoreCandidateAgainstChecklist failed:', e.message);
+    const fallback = await scoreCandidate(candidateProfile, job);
+    return {
+      score: fallback.score || 0,
+      matchedRequirements: fallback.matchingSkills || [],
+      unmatchedRequirements: fallback.missingSkills || [],
+      reasoning: fallback.reasoning || '',
+      checklist: []
+    };
+  }
 }
 
 export { callAIProvider };

@@ -1,34 +1,32 @@
-# BRIEFING — 2026-07-09T08:47:01+05:30
+# BRIEFING — 2026-07-16T10:50:00Z
 
 ## Mission
-Orchestrate and monitor the implementation of automated E2E tests and audit of the duplicate candidate upload and resolution pipeline.
+Verify and correct the question generation implementation (separating screening/personalized candidate questions from JD-tailored questions) and update E2E test infrastructure.
 
 ## 🔒 My Identity
 - Archetype: sentinel
 - Working directory: c:\Users\sri charan\Documents\projects\hr recruter\.agents\sentinel
-- Orchestrator: d0ab9017-6b43-47a8-9e22-51c091700baf
-- Victory Auditor: d088d6d2-d358-4f05-b509-4e58c4b145d3
-- Progress Cron Task: d1110922-e4c0-4e46-a99a-86459fce7467/task-37
-- Liveness Cron Task: d1110922-e4c0-4e46-a99a-86459fce7467/task-39
+- Orchestrator: de87e3b0-5952-4126-8eb5-e9c7485b49e2
+- Victory Auditor: TBD
 
 ## 🔒 Key Constraints
 - No technical decisions — relay only
 - Victory Audit is MANDATORY before reporting completion
+- Set monitoring crons (Progress Reporting and Liveness Check)
 
 ## User Context
-- **Last user request**: E2E tests for duplicate resolution options (Update, Delete & Re-import, Delete Only, Cancel) and verification of IngestionLog statuses.
+- **Last user request**: Separating candidate HR screening/personalized questions from JD-tailored questions, and running in-memory mongodb-memory-server on port 27018.
 - **Pending clarifications**: none
 - **Delivered results**: none
 
 ## Project Status
-- **Phase**: complete
+- **Phase**: in progress
 
 ## Victory Audit Status
-- **Triggered**: yes
-- **Verdict**: VICTORY CONFIRMED
+- **Triggered**: no
+- **Verdict**: pending
 - **Retry count**: 0
 
 ## Artifact Index
-- c:\Users\sri charan\Documents\projects\hr recruter\ORIGINAL_REQUEST.md — Original request verbatim
-- c:\Users\sri charan\Documents\projects\hr recruter\.agents\sentinel\BRIEFING.md — Sentinel briefing file
-
+- c:\Users\sri charan\Documents\projects\hr recruter\.agents\sentinel\BRIEFING.md — Persistent working memory
+- c:\Users\sri charan\Documents\projects\hr recruter\ORIGINAL_REQUEST.md — Verbatim user requests

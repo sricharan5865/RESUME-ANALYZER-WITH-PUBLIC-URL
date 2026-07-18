@@ -4,7 +4,7 @@ import { exportToCSV } from '../utils/export';
 import { getCandidateDate, matchDateRangeHelper } from '../utils/dateFilters';
 
 
-export default function TagSearch({ candidates, jobs, backendUrl, onSelectCandidate, rankAccordingToJob }) {
+export default function TagSearch({ candidates, jobs, backendUrl, onSelectCandidate }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [activeFilters, setActiveFilters] = useState([]);
@@ -167,7 +167,7 @@ export default function TagSearch({ candidates, jobs, backendUrl, onSelectCandid
   const filteredResults = searchResults.filter(c => {
     if (filterJobId && c.jobId !== filterJobId) return false;
     if (filterStage && c.stage.toLowerCase() !== filterStage.toLowerCase()) return false;
-    const score = rankAccordingToJob ? c.matchScore : (c.ownCategoryScore ?? c.matchScore);
+    const score = c.matchScore || 0;
     if (score < minScore) return false;
     if (filterDateRange && !matchDateRangeHelper(getCandidateDate(c), filterDateRange)) return false;
     return true;
@@ -490,7 +490,7 @@ export default function TagSearch({ candidates, jobs, backendUrl, onSelectCandid
             ) : (
               filteredResults.map(candidate => {
                 const job = jobs.find(j => j.id === candidate.jobId);
-                const score = rankAccordingToJob ? candidate.matchScore : (candidate.ownCategoryScore ?? candidate.matchScore);
+                const score = candidate.matchScore || 0;
                 const scoreColorClass = score >= 80 ? 'score-high' : score >= 50 ? 'score-medium' : 'score-low';
                 
                 return (

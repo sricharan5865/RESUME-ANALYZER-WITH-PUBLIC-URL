@@ -2,6 +2,11 @@ import mongoose from 'mongoose';
 
 const candidateSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
+  trackingId: { type: String, unique: true, sparse: true },
+  source: { type: String, enum: ['manual', 'email', 'direct_apply', 'referral'], default: 'manual' },
+  referrerName: { type: String },
+  referrerEmployeeId: { type: String },
+  bonusEligible: { type: Boolean, default: false },
   jobId: { type: String }, // null/empty means 'General Role'
   name: { type: String, required: true },
   email: { type: String },
@@ -34,6 +39,7 @@ const candidateSchema = new mongoose.Schema({
   resumeUrl: { type: String },
   resumeText: { type: String, default: '' },
   matchScore: { type: Number, default: 0 },
+  isProcessing: { type: Boolean, default: false },
   matchingSkills: [String],
   missingSkills: [String],
   matchExplanation: { type: String },
@@ -44,6 +50,13 @@ const candidateSchema = new mongoose.Schema({
   comments: { type: String },
   seniorityLevel: { type: String, default: 'Mid' },
   interviewQuestions: [String],
+  redFlags: [
+    {
+      issue: { type: String },
+      severity: { type: String },
+      fix_suggestion: { type: String }
+    }
+  ],
   hrQuestions: [
     {
       question: String,
@@ -65,8 +78,21 @@ const candidateSchema = new mongoose.Schema({
       matchingSkills: [String]
     }
   ],
+  checklist: [mongoose.Schema.Types.Mixed],
+  checklistScore: { type: Number, default: 0 },
+  matchedRequirements: [String],
+  unmatchedRequirements: [String],
+  passedCoreSkills: { type: Boolean, default: true },
+  rank: { type: Number, default: 0 },
+  totalApplicants: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now },
   assignedTo: { type: String, default: null },
+  placementData: {
+    rolePlaced: String,
+    previousSalary: Number,
+    newSalary: Number,
+    placementDate: Date
+  },
   history: [
     {
       date: String,
@@ -79,20 +105,109 @@ const candidateSchema = new mongoose.Schema({
 candidateSchema.index({ jobId: 1 });
 candidateSchema.index({ assignedTo: 1 });
 
+const candidateProfileSchema = new mongoose.Schema({
+  candidateId: { type: String, required: true, unique: true }, // 1:1 mapping with Candidate.id
+  skills: [String],
+  experience: [
+    {
+      role: String,
+      company: String,
+      duration: String,
+      description: String
+    }
+  ],
+  education: [
+    {
+      degree: String,
+      institution: String,
+      year: String
+    }
+  ],
+  tags: [
+    {
+      value: String,
+      category: String,
+      confidence: Number
+    }
+  ],
+  projects: [
+    {
+      name: String,
+      description: String,
+      matchingSkills: [String]
+    }
+  ],
+  seniorityLevel: { type: String, default: 'Mid' },
+  ownCategoryScore: { type: Number, default: 0 },
+  ownCategoryMatchingSkills: [String],
+  ownCategoryMissingSkills: [String],
+  ownCategoryExplanation: { type: String },
+  interviewQuestions: [String]
+}, { timestamps: true });
+
+candidateProfileSchema.index({ candidateId: 1 });
+
+const jobMatchSchema = new mongoose.Schema({
+  candidateId: { type: String, required: true },
+  jobId: { type: String, required: true },
+  matchScore: { type: Number, default: 0 },
+  matchingSkills: [String],
+  missingSkills: [String],
+  matchExplanation: { type: String },
+  checklist: [mongoose.Schema.Types.Mixed], // Each item: { requirement: String, met: Boolean, evidence: String }
+  hrQuestions: [
+    {
+      question: String,
+      answer: String,
+      importance: { type: String, default: 'Standard' }
+    }
+  ],
+  technicalQuestions: [
+    {
+      question: String,
+      answer: String,
+      importance: { type: String, default: 'Standard' }
+    }
+  ],
+  jdQuestions: mongoose.Schema.Types.Mixed, // For dynamically generated JD questions
+  jdTitle: { type: String },
+  jdRequirements: { type: String },
+  jdDescription: { type: String }
+}, { timestamps: true });
+
+jobMatchSchema.index({ candidateId: 1, jobId: 1 }, { unique: true });
+
 const jobSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
   title: { type: String, required: true },
   department: { type: String, default: 'Engineering' },
   location: { type: String, default: 'Remote' },
+  publicSlug: { type: String, unique: true, sparse: true },
+  publishToCareers: { type: Boolean, default: false },
   status: { type: String, default: 'Active' },
   description: { type: String },
   requirements: { type: String },
+  publicDescription: { type: String },
+  requirementsChecklist: [String],
   postings: {
     linkedIn: { type: Boolean, default: false },
     indeed: { type: Boolean, default: false },
     zipRecruiter: { type: Boolean, default: false },
     internalCareer: { type: Boolean, default: false }
-  }
+  },
+  workMode: { type: String, default: 'On-site' },
+  requiredExperience: { type: String },
+  closingDate: { type: Date },
+  customFields: [
+    {
+      id: String,
+      fieldType: String,
+      label: String,
+      isRequired: Boolean,
+      options: String,
+      placeholder: String
+    }
+  ]
 });
 
 const settingsSchema = new mongoose.Schema({
@@ -118,7 +233,8 @@ const settingsSchema = new mongoose.Schema({
   ollamaUrl: { type: String, default: 'https://istgenai.smartgeoapps.com/' },
   ollamaModel: { type: String, default: 'llama3' },
   ollamaEmbeddingModel: { type: String, default: 'gpt-oss:20b' },
-  rankAccordingToJob: { type: Boolean, default: true }
+  rankAccordingToJob: { type: Boolean, default: true },
+  emailTemplates: { type: mongoose.Schema.Types.Mixed, default: {} }
 });
 
 // Deduplication collection
@@ -171,6 +287,8 @@ export const ProcessedEmail = mongoose.model('ProcessedEmail', processedEmailSch
 export const EmailLog = mongoose.model('EmailLog', emailLogSchema);
 export const IngestionLog = mongoose.model('IngestionLog', ingestionLogSchema);
 export const ResumeChunk = mongoose.model('ResumeChunk', resumeChunkSchema);
+export const CandidateProfile = mongoose.model('CandidateProfile', candidateProfileSchema);
+export const JobMatch = mongoose.model('JobMatch', jobMatchSchema);
 
 const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },

@@ -1,8 +1,36 @@
+import { MongoMemoryServer } from 'mongodb-memory-server';
+
 // Set test environments
 process.env.PORT = '5001';
-process.env.MONGO_URI = 'mongodb://admin:password@localhost:27017/talentflow_test?authSource=admin';
 process.env.AI_PROVIDER = 'gemini'; // Force to Gemini or whatever to hit the mock
+process.env.GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'dummy_gemini_api_key';
 process.env.NODE_ENV = 'test';
+
+console.log('Starting local mongodb-memory-server on port 27018...');
+let mongoServer;
+try {
+  mongoServer = await MongoMemoryServer.create({
+    instance: {
+      port: 27018,
+      dbName: 'talentflow_test'
+    }
+  });
+  process.env.MONGO_URI = 'mongodb://127.0.0.1:27018/talentflow_test';
+  console.log(`mongodb-memory-server started at: ${process.env.MONGO_URI}`);
+} catch (err) {
+  console.warn("=== Could not start mongodb-memory-server in testServerEntry:", err.message);
+  process.env.MONGO_URI = 'mongodb://127.0.0.1:27018/talentflow_test';
+}
+
+const handleExit = async () => {
+  if (mongoServer) {
+    await mongoServer.stop();
+  }
+  process.exit(0);
+};
+
+process.on('SIGINT', handleExit);
+process.on('SIGTERM', handleExit);
 
 // Mock global fetch to intercept outgoing LLM calls
 const originalFetch = globalThis.fetch;
@@ -126,29 +154,44 @@ globalThis.fetch = async (url, options) => {
         { question: "Why do you want this job?", answer: "Sample HR answer 2." },
         { question: "What are your strengths?", answer: "Sample HR answer 3." },
         { question: "What are your weaknesses?", answer: "Sample HR answer 4." },
-        { question: "Where do you see yourself in 5 years?", answer: "Sample HR answer 5." }
+        { question: "Where do you see yourself in 5 years?", answer: "Sample HR answer 5." },
+        { question: "Mock HR question 6.", answer: "Sample HR answer 6." },
+        { question: "Mock HR question 7.", answer: "Sample HR answer 7." }
       ],
       technicalQuestions: [
         { question: "Explain closures in JS.", answer: "Sample Tech answer 1." },
         { question: "What is promise?", answer: "Sample Tech answer 2." },
         { question: "What is event loop?", answer: "Sample Tech answer 3." },
         { question: "What is prototypal inheritance?", answer: "Sample Tech answer 4." },
-        { question: "What is virtual DOM?", answer: "Sample Tech answer 5." }
+        { question: "What is virtual DOM?", answer: "Sample Tech answer 5." },
+        { question: "Mock Tech question 6.", answer: "Sample Tech answer 6." },
+        { question: "Mock Tech question 7.", answer: "Sample Tech answer 7." }
       ]
     };
 
     // If generating tags
     if (urlString.includes('completions') || urlString.includes('generate')) {
-      if (body.messages && body.messages.some(m => m.content && m.content.toLowerCase().includes('tag'))) {
+      const hasText = (term) => {
+        if (body.messages && body.messages.some(m => m.content && m.content.toLowerCase().includes(term))) return true;
+        if (body.contents && body.contents.some(c => c.parts && c.parts.some(p => p.text && p.text.toLowerCase().includes(term)))) return true;
+        if (body.systemInstruction && body.systemInstruction.parts && body.systemInstruction.parts.some(p => p.text && p.text.toLowerCase().includes(term))) return true;
+        return false;
+      };
+
+      if (hasText('tag')) {
         parsedResponse = [
           { value: "JavaScript", category: "Technical", confidence: 0.9 },
           { value: "Mid Level", category: "Experience", confidence: 0.8 }
         ];
-      } else if (body.messages && body.messages.some(m => m.content && m.content.toLowerCase().includes('job description'))) {
-        parsedResponse = {
-          description: "Mock Job Description",
-          requirements: "Mock Requirements"
-        };
+      } else if (hasText('job description')) {
+        if (hasText('candidate') || hasText('resume') || hasText('questions') || hasText('existing')) {
+          // Keep default parsedResponse which has the 7 questions
+        } else {
+          parsedResponse = {
+            description: "Mock Job Description",
+            requirements: "Mock Requirements"
+          };
+        }
       }
     }
 

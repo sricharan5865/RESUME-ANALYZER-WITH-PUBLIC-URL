@@ -1,11 +1,14 @@
 import fs from 'fs';
 import mongoose from 'mongoose';
 import { Candidate, Job, Settings, ProcessedEmail } from './models.js';
+import dotenv from 'dotenv';
+dotenv.config();
 
 async function migrate() {
   try {
-    await mongoose.connect('mongodb://admin:password@localhost:27017/talentflow?authSource=admin');
-    console.log('Connected to MongoDB for migration');
+    const mongoUri = process.env.MONGO_URI || 'mongodb://admin:password@127.0.0.1:27017/talentflow?authSource=admin';
+    await mongoose.connect(mongoUri);
+    console.log('Connected to MongoDB for migration:', mongoUri);
 
     if (fs.existsSync('db.json')) {
       const data = JSON.parse(fs.readFileSync('db.json', 'utf8'));

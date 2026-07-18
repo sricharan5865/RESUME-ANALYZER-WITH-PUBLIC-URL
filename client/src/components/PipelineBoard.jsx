@@ -16,8 +16,10 @@ export default function PipelineBoard({
   onCandidateDeleted,
   backendUrl,
   rankAccordingToJob,
-  token
+  token,
+  onCompare
 }) {
+  const [selectedForCompare, setSelectedForCompare] = useState([]);
   const [selectedFilterJobId, setSelectedFilterJobId] = useState('');
   const [uploadingFile, setUploadingFile] = useState(false);
   const [uploadProgress, setUploadProgress] = useState('');
@@ -103,7 +105,7 @@ export default function PipelineBoard({
 
   // Helper to get active score based on ranking mode
   const getCandidateScore = (c) => {
-    return rankAccordingToJob ? c.matchScore : (c.ownCategoryScore ?? c.matchScore);
+    return c.matchScore || 0;
   };
 
   // Filter candidates by Job ID & Date
@@ -501,6 +503,24 @@ export default function PipelineBoard({
         </div>
       </div>
 
+      {/* Compare Candidates Action Bar */}
+      {selectedForCompare.length > 0 && (
+        <div style={{ background: 'var(--primary)', color: 'white', padding: '12px 24px', borderRadius: '8px', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <strong>{selectedForCompare.length}</strong> candidate(s) selected for comparison. (Max 4)
+          </div>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <button onClick={() => setSelectedForCompare([])} style={{ background: 'transparent', border: '1px solid white', color: 'white', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer' }}>Cancel</button>
+            <button 
+              onClick={() => onCompare && onCompare(selectedForCompare)} 
+              style={{ background: 'white', color: 'var(--primary)', border: 'none', padding: '6px 16px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+            >
+              Compare Candidates
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Kanban Scroll View */}
       <div style={{ flexGrow: 1, overflow: 'hidden' }}>
         <div className="kanban-board">
@@ -715,13 +735,31 @@ export default function PipelineBoard({
                           onDragStart={(e) => handleDragStart(e, candidate.id)}
                           onDragEnd={handleDragEnd}
                         >
-                          {/* Top Row: Score & Name */}
+                          {/* Top Row: Checkbox, Name & Score */}
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                            <div>
-                              <h4 style={{ fontSize: '15px', fontWeight: '700', marginBottom: '2px', color: 'var(--text-primary)' }}>{candidate.name}</h4>
-                              <p style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <Briefcase size={10} /> {job ? job.title : 'General'}
-                              </p>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                              <input 
+                                type="checkbox" 
+                                checked={selectedForCompare.includes(candidate.id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    if (selectedForCompare.length >= 4) {
+                                      alert("You can only compare up to 4 candidates at a time.");
+                                    } else {
+                                      setSelectedForCompare([...selectedForCompare, candidate.id]);
+                                    }
+                                  } else {
+                                    setSelectedForCompare(selectedForCompare.filter(id => id !== candidate.id));
+                                  }
+                                }}
+                                style={{ marginTop: '4px', cursor: 'pointer' }}
+                              />
+                              <div>
+                                <h4 style={{ fontSize: '15px', fontWeight: '700', marginBottom: '2px', color: 'var(--text-primary)' }}>{candidate.name}</h4>
+                                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  <Briefcase size={10} /> {job ? job.title : 'General'}
+                                </p>
+                              </div>
                             </div>
                             
                             <div className={`score-badge ${scoreColorClass}`} style={{ width: '32px', height: '32px', fontSize: '11px', flexShrink: 0 }}>

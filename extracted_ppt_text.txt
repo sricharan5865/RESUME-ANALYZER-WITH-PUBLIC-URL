@@ -1,0 +1,436 @@
+
+=========================================
+FILE: TalentFlow_Presentation.pptx
+=========================================
+
+--- Slide 1 ---
+[TextBox 2]: TALENTFLOW
+Next-Generation AI Recruitment & RAG Sourcing Suite
+Empowering HR Teams with Automated Sourcing, Semantic Matching, and Hallucination-Free Audits
+
+--- Slide 2 ---
+[TextBox 1]: VISION & VALUE PROP
+[TextBox 2]: Executive Summary: Redefining Talent Acquisition
+[TextBox 4]: 01
+Smart Sourcing
+Automatically reads incoming resume attachments from email and extracts text from low-contrast scans using Python OCR.
+[TextBox 6]: 02
+Semantic Matching
+Scores and ranks candidates against natural-language Job Descriptions using vector search embeddings.
+[TextBox 8]: 03
+Audited Reliability
+Eliminates AI hallucinations mathematically using a programmatic experience safety filter.
+
+--- Slide 3 ---
+[TextBox 1]: THE CHALLENGE
+[TextBox 2]: The Market Problem: The Recruiter's Overhead
+[TextBox 4]: THE RECRUITMENT BOTTLENECK
+Manual Screening Limits Scale
+• 75%+ of Resumes are unqualified, yet recruiters spend hours reviewing them manually.• Sourcing channels are fragmented (emails, portals, direct uploads) leading to lost candidate profiles.• Time-to-Hire stretches over weeks, resulting in top talent accepting competing offers before interviews can be scheduled.
+[TextBox 6]: ADMINISTRATIVE BURDEN
+High Volume, Low Efficiency
+• Recruiter Focus is split between sourcing administration, scheduling interviews, and candidate evaluations.• Database Pollution: Duplicate submissions and outdated profiles clog traditional applicant systems.• Assessment Gaps: Inconsistencies in the initial pre-screening phone-screen questions reduce quality-of-hire.
+
+--- Slide 4 ---
+[TextBox 1]: THE KEYWORD GAP
+[TextBox 2]: The Keyword Trap: Legacy ATS Limitations
+[TextBox 4]: LEGACY KEYWORD FILTERS
+Rigid and Non-Intuitive
+• Syntactic Matching: Rejects candidates who use synonyms instead of exact keywords (e.g. searching 'NodeJS' misses 'Express Developer').• Keyword Stuffing: Unqualified candidates game the system by pasting hidden keywords in their CV text.• No Understanding of Context: Treats a keyword in a hobby section same as one in a principal role.
+[TextBox 6]: TALENTFLOW SEMANTIC RAG
+Conceptual Intelligence
+• Vector Embeddings: Understands core concepts, related technical packages, and equivalent roles natively.• Senses Experience Depth: Prioritizes skills based on time duration and impact descriptions in previous roles.• Intent-Based Queries: Search matches are returned based on what recruiters *mean*, not just the specific words they type.
+
+--- Slide 5 ---
+[TextBox 1]: RELIABILITY RISKS
+[TextBox 2]: The AI Deficit: LLM Hallucinations & Date Math
+[TextBox 4]: THE PROBLEM WITH RAW LLMS
+Hallucinations & Date Bugs
+• Static Context: LLMs don't know 'today's date' natively. They miscalculate durations for roles ending in 'Present'.• Syntactic Math Failures: AI models fail to compute sum timelines properly, flagging a candidate with 8 years of experience as missing a '5+ years' requirement.• Structural Failures: Raw completions truncate output or fail to return valid JSON parser schemas.
+[TextBox 6]: TALENTFLOW SAFEGUARDS
+Structured Engineering Rules
+• Dynamic Date Injection: Injecting context date on every API call allows the parser to compute relative dates reliably.• Programmatic Safety Filters: Post-processing code intercepts and validates LLM findings against mathematical candidate histories.• Hardened Token Configurations: Limits outputs and applies robust bracket repair algorithms to handle parsing mistakes.
+
+--- Slide 6 ---
+[TextBox 1]: OUR PRODUCT
+[TextBox 2]: The TalentFlow Solution: Resilient Recruitment
+[TextBox 4]: THE RECRUITMENT OPERATING SYSTEM
+A Reliable, Safe, and Automated Platform
+• Enterprise Integration: Collects resumes, normalizes data, and publishes structured files to MongoDB.• High-Performance UI: Glassmorphism HUD layout that handles large tables, date filtering, and active tabs natively.• Adaptive Intelligence: Switch backend models dynamically based on cost or speed demands (Gemini, Claude, Ollama).• Recruiter Control: Empowering decisions via transparent ratings, complete history log tracking, and security role controls.
+
+--- Slide 7 ---
+[TextBox 1]: INGESTION CHANNEL
+[TextBox 2]: Feature Spotlight: Hybrid Ingestion & OCR Fallback
+[TextBox 4]: ✔
+Manual Portal Upload
+Recruiters upload standard PDF resumes directly. Node-Multer manages secure disk upload storage paths.
+[TextBox 6]: ✔
+Scheduled Email Sourcing
+Cron scheduler loops (Gmail/Outlook) pull CV attachments automatically, categorizing them using AI classifiers.
+[TextBox 8]: ✔
+Python OCR Fallback
+Scanned or low-contrast PDFs trigger Python routines (OpenCV preprocessing, PyMuPDF, and Tesseract-OCR) to capture text.
+
+--- Slide 8 ---
+[TextBox 1]: AI SEARCH
+[TextBox 2]: Feature Spotlight: Semantic RAG Search Engine
+[TextBox 4]: VECTOR REPRESENTATIONS
+Embedding & Indexing
+• Semantic Vector Indexing: Translates parsed resume descriptions into high-dimensional vector representations.• In-Memory Fast Retrieval: Executes similarity vector searches across candidate profiles instantly in the backend.• Contextual Matching: Identifies candidates based on experience definitions, not just literal keyword spelling.
+[TextBox 6]: JOB DESCRIPTION MATCHING
+JD Scoring & Skill Mapping
+• Real-Time JD Matching: Pasting a JD ranks candidates by score (0-100), comparing resume content against required credentials.• Skills Gap Analysis: The UI renders color-coded badges highlighting 'Matching Skills' and 'Missing Skills' side-by-side.• Auto-generated JD Questions: Produces custom interview questions focused on resolved gaps.
+
+--- Slide 9 ---
+[TextBox 1]: SAFETY INTERCEPTOR
+[TextBox 2]: Feature Spotlight: Algorithmic Safety Filters
+[TextBox 4]: DETERMINISTIC VERIFICATION
+Curing LLM Hallucinations
+• Safety Layer Interception: Overrides LLM outputs using local Javascript date-math functions on candidate history arrays.• Dynamic Experience Alignment: Mathematically confirms timeline values (e.g. if timeline equals 8 years, auto-moves '5+ years' requirement to 'Matches').• Recruiter Validation: Ensures zero false negatives, preventing valid candidates from being hidden from recruiter pipelines.
+[TextBox 6]: THE MATHEMATICAL GUARANTEE
+Reliable Timeline Math
+• Injects 'today's date' context dynamically to parse relative date keywords (e.g. 'Present').• Sanitizes candidate profiles before saving them to MongoDB, correcting duration errors.• Decouples unstructured LLM reasoning from strict business logic constraints, maintaining high system trust.
+
+--- Slide 10 ---
+[TextBox 1]: PIPELINE VISUALS
+[TextBox 2]: Feature Spotlight: Pipeline Board & Kanban HUD
+[TextBox 4]: Inbox
+New applications gathered from email and portals.
+• Drag Guard• Log Guard• Excel Export
+[TextBox 6]: Shortlist
+Candidates matching key credentials.
+• Drag Guard• Log Guard• Excel Export
+[TextBox 8]: Interview
+Scheduled and mapped in recruiter lists.
+• Drag Guard• Log Guard• Excel Export
+[TextBox 10]: Offered
+Pre-screened and approved profiles.
+• Drag Guard• Log Guard• Excel Export
+[TextBox 12]: Rejected
+Archived files with clear reasons.
+• Drag Guard• Log Guard• Excel Export
+
+--- Slide 11 ---
+[TextBox 1]: PRE-SCREEN ASSISTANT
+[TextBox 2]: Feature Spotlight: Double Question Banks (HR + Tech)
+[TextBox 4]: HR PRE-SCREENING ASSISTANT
+14 Standardized HR Questions
+• First 7: Standardized screening questions automatically prepended (expectations, reason for change, negotiation context, notice period).• Last 7: Dynamic, AI-generated questions tailored to the candidate's specific background details.• Integrated UI: Renders all 14 questions inside details tabs for instant recruiter access.
+[TextBox 6]: TECHNICAL KNOWLEDGE AUDIT
+Custom Tech Q&A Panel
+• Experience-Specific: Focuses on frameworks, databases, and architectures listed in their candidate profile.• On-Demand Refresh: A single click triggers backend regeneration, refreshing questions directly.• Structural Integrity: Validated in database documents under candidate details schema.
+
+--- Slide 12 ---
+[TextBox 1]: DATA SANITY
+[TextBox 2]: Feature Spotlight: Duplicate Candidate Resolution
+[TextBox 4]: 1. Update Details
+Overwrites existing database values and files, keeping history logs and candidate ID.
+[TextBox 6]: 2. Delete & Re-Import
+Deletes existing candidate profile and search indexes first, then runs a fresh AI parse.
+[TextBox 8]: 3. Delete Only
+Deletes the existing candidate profile and halts the current upload immediately.
+[TextBox 10]: 4. Cancel Sourcing
+Discards the temp uploaded file, keeping the database intact.
+
+--- Slide 13 ---
+[TextBox 1]: SECURITY
+[TextBox 2]: Security & Governance: Role-Based Access Control
+[TextBox 4]: ■
+Administrator
+Full system rights. Accesses settings panel, manages recruiter credentials, triggers DB tools, and resets passwords.
+[TextBox 6]: ■
+HR Recruiter
+Functional power. Uploads/deletes resumes, drags candidates on board, manages pipelines, and shares candidates with managers.
+[TextBox 8]: ■
+Hiring Manager
+Restricted access. Read-only candidate lists. Only views candidate profiles that are shared/assigned to them.
+
+--- Slide 14 ---
+[TextBox 1]: SYSTEM DESIGN
+[TextBox 2]: Architecture & Cloud Infrastructure
+[TextBox 4]: FRONTEND
+React.js, Vite, Vanilla CSS (HUD glassmorphic layout), Lucide icons, DOM state retention.
+[TextBox 6]: BACKEND & DATABASE
+Node.js, Express.js REST API, MongoDB Atlas, Node-Scheduler, Multer file upload.
+[TextBox 8]: AI ENGINES & OCR
+google/gemini-2.5-flash, local Ollama integrations, Python OCR Subsystem (OpenCV, PyMuPDF, Tesseract-OCR).
+
+--- Slide 15 ---
+[TextBox 1]: ROI METRICS
+[TextBox 2]: The Business Value: ROI & Metric Projections
+[TextBox 4]: -90%
+Screening Overhead
+Eliminates administrative burden, moving candidates from upload to first contact in seconds.
+[TextBox 6]: +80%
+Matching Accuracy
+Semantic vector queries prevent qualified candidates from being rejected by legacy keyword systems.
+[TextBox 8]: 100%
+Reliability Guarantee
+Algorithmic safety filters eliminate date-math mistakes and LLM hallucinations.
+
+--- Slide 16 ---
+[TextBox 2]: Thank You
+Empowering Recruitment Teams with Accurate AI
+Questions & AnswersTalentFlow Pitch Deck
+
+=========================================
+FILE: TalentFlow_Presentation_v2.pptx
+=========================================
+
+--- Slide 1 ---
+[TextBox 2]: TALENTFLOW
+Next-Generation AI Recruitment & RAG Sourcing Suite
+
+--- Slide 2 ---
+[TextBox 1]: VISION
+[TextBox 2]: Executive Summary: Redefining Talent Acquisition
+[TextBox 4]: 01
+Smart Sourcing
+Automatically reads incoming resume attachments from email and extracts text from low-contrast scans using Python OCR.
+[TextBox 6]: 02
+Semantic Matching
+Scores and ranks candidates against natural-language Job Descriptions using vector search embeddings.
+[TextBox 8]: 03
+Audited Reliability
+Eliminates AI hallucinations mathematically using a programmatic experience safety filter.
+
+--- Slide 3 ---
+[TextBox 1]: WHY WE BUILT TALENTFLOW
+[TextBox 2]: The Problem Statement
+[TextBox 4]: Recruiters are drowning in administrative tasks, missing out on top talent.
+1. Extreme Pre-Screening Volume: Recruiters spend hours manually filtering hundreds of unqualified resumes.2. Legacy ATS Keyword Traps: Traditional systems miss highly qualified candidates simply because they use synonyms instead of exact keywords.3. AI Deficits & Hallucinations: Standard LLMs fail at basic date math (e.g. evaluating 'Present' roles) leading to critical false-negative matching.
+
+--- Slide 4 ---
+[TextBox 1]: THE KEYWORD GAP
+[TextBox 2]: The Keyword Trap: Legacy ATS Limitations
+[TextBox 4]: LEGACY KEYWORD FILTERS
+Rigid and Non-Intuitive
+• Syntactic Matching: Rejects candidates who use synonyms instead of exact keywords.• Keyword Stuffing: Unqualified candidates game the system by pasting hidden keywords in their CV text.
+[TextBox 6]: TALENTFLOW SEMANTIC RAG
+Conceptual Intelligence
+• Vector Embeddings: Understands core concepts, related technical packages, and equivalent roles natively.• Intent-Based Queries: Search matches are returned based on what recruiters *mean*, not just specific words.
+
+--- Slide 5 ---
+[TextBox 1]: RELIABILITY RISKS
+[TextBox 2]: The AI Deficit: LLM Hallucinations
+[TextBox 4]: Raw LLMs are not enough for secure, accurate enterprise recruitment.
+• Static Context: LLMs don't know 'today's date' natively. They miscalculate durations for roles ending in 'Present'.• Syntactic Math Failures: AI models fail to compute sum timelines properly, flagging a candidate with 8 years of experience as missing a '5+ years' requirement.• Structural Failures: Raw completions truncate output or fail to return valid JSON parser schemas.
+
+--- Slide 6 ---
+[TextBox 1]: HOW WE SOLVE IT
+[TextBox 2]: The Solution: Resilient Intelligence
+[TextBox 4]: The TalentFlow Command Center
+• Automated Pipeline: Sourcing, reading, and parsing directly from emails.• Semantic RAG Matching: Discovers intent and actual skills rather than raw keywords.• Programmatic Guardrails: Math-backed safety filters correct AI timeline hallucinations.
+
+--- Slide 7 ---
+[TextBox 1]: INGESTION CHANNEL
+[TextBox 2]: Feature Spotlight: Hybrid Ingestion & OCR
+[TextBox 4]: ✔
+Manual Portal Upload
+Recruiters upload standard PDF resumes directly. Node-Multer manages secure disk upload storage paths.
+[TextBox 6]: ✔
+Scheduled Email Sourcing
+Cron scheduler loops (Gmail/Outlook) pull CV attachments automatically, categorizing them using AI classifiers.
+[TextBox 8]: ✔
+Python OCR Fallback
+Scanned or low-contrast PDFs trigger Python routines (OpenCV preprocessing, PyMuPDF, and Tesseract-OCR) to capture text.
+
+--- Slide 8 ---
+[TextBox 1]: AI SEARCH
+[TextBox 2]: Feature Spotlight: Semantic RAG Search
+[TextBox 4]: VECTOR REPRESENTATIONS
+Embedding & Indexing
+• Semantic Vector Indexing: Translates parsed resume descriptions into high-dimensional vector representations.• Contextual Matching: Identifies candidates based on experience definitions, not just literal keyword spelling.
+
+--- Slide 9 ---
+[TextBox 1]: SAFETY INTERCEPTOR
+[TextBox 2]: Feature Spotlight: Algorithmic Safety Filters
+[TextBox 4]: Curing LLM Hallucinations
+• Safety Layer Interception: Overrides LLM outputs using local Javascript date-math functions on candidate history arrays.• Dynamic Experience Alignment: Mathematically confirms timeline values (e.g. if timeline equals 8 years, auto-moves '5+ years' requirement to 'Matches').• Recruiter Validation: Ensures zero false negatives, preventing valid candidates from being hidden from recruiter pipelines.
+
+--- Slide 10 ---
+[TextBox 1]: PIPELINE VISUALS
+[TextBox 2]: Feature Spotlight: Pipeline Board
+[TextBox 4]: Inbox
+New applications gathered from email and portals.
+[TextBox 6]: Shortlist
+Candidates matching key credentials.
+[TextBox 8]: Interview
+Scheduled and mapped in recruiter lists.
+[TextBox 10]: Offered
+Pre-screened and approved profiles.
+[TextBox 12]: Rejected
+Archived files with clear reasons.
+
+--- Slide 11 ---
+[TextBox 1]: PRE-SCREEN ASSISTANT
+[TextBox 2]: Feature Spotlight: Double Question Banks
+[TextBox 4]: HR PRE-SCREENING ASSISTANT
+14 Standardized HR Questions
+• First 7: Standardized screening questions automatically prepended.• Last 7: Dynamic, AI-generated questions tailored to the candidate's specific background details.
+[TextBox 6]: TECHNICAL KNOWLEDGE AUDIT
+Custom Tech Q&A Panel
+• Experience-Specific: Focuses on frameworks, databases, and architectures listed in their candidate profile.• On-Demand Refresh: A single click triggers backend regeneration, refreshing questions directly.
+
+--- Slide 12 ---
+[TextBox 1]: DATA SANITY
+[TextBox 2]: Feature Spotlight: Duplicate Candidate Resolution
+[TextBox 4]: 1. Update Details
+Overwrites existing database values and files.
+[TextBox 6]: 2. Delete & Re-Import
+Deletes existing candidate profile, runs fresh parse.
+[TextBox 8]: 3. Delete Only
+Deletes existing candidate profile and halts upload.
+[TextBox 10]: 4. Cancel Sourcing
+Discards temp uploaded file, keeping DB intact.
+
+--- Slide 13 ---
+[TextBox 1]: SECURITY
+[TextBox 2]: Security & Governance: Role-Based Access Control
+
+--- Slide 14 ---
+[TextBox 1]: SYSTEM DESIGN
+[TextBox 2]: Architecture & Cloud Infrastructure
+[TextBox 4]: FRONTEND
+React.js, Vite, Vanilla CSS (HUD glassmorphic layout), Lucide icons, DOM state retention.
+[TextBox 6]: BACKEND & DATABASE
+Node.js, Express.js REST API, MongoDB Atlas, Node-Scheduler, Multer file upload.
+[TextBox 8]: AI ENGINES & OCR
+google/gemini-2.5-flash, local Ollama integrations, Python OCR Subsystem (OpenCV, PyMuPDF, Tesseract-OCR).
+
+--- Slide 15 ---
+[TextBox 1]: ROI METRICS
+[TextBox 2]: The Business Value: ROI & Metric Projections
+[TextBox 4]: -90%
+Screening Overhead
+Eliminates administrative burden, moving candidates from upload to first contact in seconds.
+[TextBox 6]: +80%
+Matching Accuracy
+Semantic vector queries prevent qualified candidates from being rejected by legacy keyword systems.
+[TextBox 8]: 100%
+Reliability Guarantee
+Algorithmic safety filters eliminate date-math mistakes and LLM hallucinations.
+
+--- Slide 16 ---
+[TextBox 2]: Thank You
+Empowering Recruitment Teams with Accurate AI
+
+=========================================
+FILE: TalentFlow_Features_Presentation.pptx
+=========================================
+
+--- Slide 1 ---
+[TextBox 1]: TalentFlow
+AI-Powered Recruitment Command CenterAutomating Resume Parsing, Matching & Interviewing
+
+--- Slide 2 ---
+[TextBox 1]: The Recruiting Bottleneck
+Why Traditional Hiring Workflows Fail
+[TextBox 2]: •  Manual Sourcing: Hours spent copying candidate data from PDFs into databases.
+•  Inboxes Scattered: Resumes get lost in chaotic Gmail and Outlook folders.
+•  Subjective Screening: Human bias, inconsistent rubrics, and high fatigue.
+•  Disconnected Prep: Inefficient, non-standardized technical interviews.
+
+--- Slide 3 ---
+[TextBox 1]: Introducing TalentFlow
+Next-Generation Sourcing, Parsing, and Matching
+[TextBox 2]: •  24/7 Sourcing Agent: Runs in the background, polling email inboxes for resumes.
+•  Multi-LLM Integration: Powered by OpenAI, Gemini, Claude, Ollama, and Grok.
+•  Interactive Pipeline: Manage candidates via a unified Kanban command center.
+•  Standardized Evaluation: Objective scoring models aligned strictly with JDs.
+
+--- Slide 4 ---
+[TextBox 1]: Platform Architecture & Stack
+Core Technologies Powering TalentFlow
+[TextBox 2]: •  Frontend: React.js with modern Glassmorphic Tailwind CSS UI.
+•  Backend: Node.js (Express.js) handling REST APIs and async tasks.
+•  Database: Light, high-performance JSON-based document store.
+•  AI Layer: OpenRouter & native client wrappers with robust retry logic.
+
+--- Slide 5 ---
+[TextBox 1]: Feature 1: Multi-Provider AI Engine
+Flexibility to Choose the Best AI Model
+[TextBox 2]: •  Model Variety: Swap between Grok 4.5, Gemini 2.0/2.5, GPT-4o, and Claude.
+•  Local AI: Connects to local Ollama endpoints (Llama 3, Qwen) for absolute privacy.
+•  Intelligent Failover: Automatic token-limit detection with token compression.
+•  Settings Panel: Easily configure, test, and save provider API keys.
+
+--- Slide 6 ---
+[TextBox 1]: Feature 2: Automated Email Polling
+Sourcing Directly from Your Inbox
+[TextBox 2]: •  Dual Pollers: Integrates directly with Google Gmail API and Microsoft Graph (Outlook).
+•  Automated Extraction: Detects incoming emails, reads attachments, and extracts resumes.
+•  Smart Dismissal: Cleanly dismiss unwanted emails to avoid queue clutter.
+•  Interactive Inbox: View details and parse emails directly inside the app.
+
+--- Slide 7 ---
+[TextBox 1]: Feature 3: Resume Parsing & Extraction
+Structured Data from Unstructured PDFs
+[TextBox 2]: •  Deep Extraction: Captures name, email, phone, skills, education, and experience.
+•  Project Parsing: Details project architectures, tools, and technical roles.
+•  OCR Fallback: Integrated Python OCR scanner for image-only or scanned resumes.
+•  Raw Text Viewer: Switch between original PDF rendering and extracted text.
+
+--- Slide 8 ---
+[TextBox 1]: Feature 4: Ingestion Tracker & Upload Logs
+Real-time Monitoring of Ingestion Pipelines
+[TextBox 2]: •  Bulk PDF Upload: Drag and drop batches of resumes for parallel processing.
+•  Live Progress Tracker: Real-time progress bars showing parsing and scoring states.
+•  Ingestion Logs: Comprehensive log of successful parses and file failures.
+•  Error Auditing: Clear display of API errors (e.g., credit limits, network timeout).
+
+--- Slide 9 ---
+[TextBox 1]: Feature 5: Dynamic Match Scoring & Ranking
+Finding the Top Candidates Instantly
+[TextBox 2]: •  Job Compatibility: AI checks skills and experience against Job Descriptions.
+•  Dual Score Modes: 'Match According to JD' vs. 'General Own Category Score'.
+•  Instant Sorting: Instantly ranks all pipeline candidates by highest compatibility.
+•  Smart Badges: Color-coded scores show strong matches vs. weak profiles.
+
+--- Slide 10 ---
+[TextBox 1]: Feature 6: Visual Kanban Pipeline Board
+Intuitive Drag-and-Drop Workflow Management
+[TextBox 2]: •  Kanban Stages: Inbox ➔ Shortlisted ➔ Technical Interview ➔ Offered ➔ Rejected.
+•  Drag-and-Drop: Simple cards that update stage and logs instantly upon moving.
+•  KPI Integration: Real-time counts on total candidates, average score, and status.
+•  Stunning Aesthetics: Glassmorphic theme supporting responsive Light & Dark modes.
+
+--- Slide 11 ---
+[TextBox 1]: Feature 7: AI Interview Question Bank
+Personalized Screening and Deep-Dive Technical Questions
+[TextBox 2]: •  Resume Verification: Generates questions verifying candidates' claimed skills.
+•  Architecture Queries: Deep questions testing candidates' projects and frameworks.
+•  Behavioral & Leadership: Customized scenarios checking teamwork/leadership.
+•  Increasing Difficulty: Categories organized from easy screening to hard scenario.
+
+--- Slide 12 ---
+[TextBox 1]: Feature 8: RAG Semantic Search
+Conversational Candidate Discovery
+[TextBox 2]: •  Natural Language Queries: Ask 'Find developers with python and docker experience'.
+•  Semantic Retrieval: Uses embeddings to search meaning, not just exact keywords.
+•  Interactive Sources: Shows search results with match details and fast preview links.
+•  Fast Filtering: Narrow down thousands of candidates in milliseconds.
+
+--- Slide 13 ---
+[TextBox 1]: Feature 9: Duplicate Candidate Resolution
+Clean Data Management for Automated Sourcing
+[TextBox 2]: •  Upload Safety: Automatically checks if the candidate is already in the database.
+•  Four Action Options: Overwrite info, delete & import new, delete only, or cancel.
+•  Clean Profiles: Keeps pipeline neat by preventing candidate duplicates.
+•  Visual Prompts: Real-time modal choices for manual resolutions.
+
+--- Slide 14 ---
+[TextBox 1]: Feature 10: Integrated Communication Center
+Direct Outreach from the Recruiting Command Center
+[TextBox 2]: •  Direct Email Client: Send emails directly from the Candidate Details panel.
+•  AI Template Generator: Automatically drafts customized offer/interview emails.
+•  Outbox Status Tracker: Logs outgoing correspondence and dates on the candidate profile.
+•  Seamless Integration: Connects with your local SMTP or configured mail client.
+
+--- Slide 15 ---
+[TextBox 1]: Conclusion: The TalentFlow Advantage
+Elevating the Talent Acquisition Process
+[TextBox 2]: •  Time Reduction: Saves up to 70% of manual sourcing and pre-screening time.
+•  Consistent Standard: Objective AI evaluation removes subjectivity from initial scans.
+•  Privacy-First: Full support for local models via Ollama settings.
+•  Scalable Pipeline: Built to scale to thousands of resumes and active jobs.

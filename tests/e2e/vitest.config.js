@@ -8,15 +8,16 @@ const workspaceRoot = path.resolve(__dirname, '../..');
 
 export default defineConfig({
   test: {
-    include: ['../tests/e2e/**/*.test.js'],
-    setupFiles: ['../tests/e2e/setup.js'],
+    include: [path.resolve(__dirname, '**/*.test.js').replace(/\\/g, '/')],
+    setupFiles: [path.resolve(__dirname, 'setup.js').replace(/\\/g, '/')],
     testTimeout: 30000,
     hookTimeout: 30000,
     fileParallelism: false
   },
   resolve: {
     alias: {
-      'mongoose': path.resolve(workspaceRoot, 'server/node_modules/mongoose')
+      'mongoose': path.resolve(workspaceRoot, 'server/node_modules/mongoose'),
+      'pdfkit': path.resolve(workspaceRoot, 'server/node_modules/pdfkit')
     }
   },
   server: {

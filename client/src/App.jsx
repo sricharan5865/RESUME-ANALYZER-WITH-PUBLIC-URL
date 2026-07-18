@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, Mail, GitCommit, Settings, CheckCircle2, AlertCircle, RefreshCw, Search, Sun, Moon, ClipboardList, BarChart3, Sparkles, KeyRound, Users } from 'lucide-react';
+import { LayoutDashboard, Mail, GitCommit, Settings, CheckCircle2, AlertCircle, RefreshCw, Search, Sun, Moon, ClipboardList, BarChart3, Sparkles, KeyRound, Users, DollarSign, UserPlus, FileText, GitCompare, LayoutTemplate, Briefcase } from 'lucide-react';
 
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Dashboard from './components/Dashboard';
 import Inbox from './components/Inbox';
 import PipelineBoard from './components/PipelineBoard';
@@ -12,6 +13,19 @@ import Reporting from './components/Reporting';
 import RAGSearch from './components/RAGSearch';
 import Login from './components/Login';
 import UserManagement from './components/UserManagement';
+
+import Placements from './components/Placements';
+import Referrals from './components/Referrals';
+import PendingCvs from './components/PendingCvs';
+import CompareCandidates from './components/CompareCandidates';
+import FormBuilder from './components/FormBuilder';
+import Applicants from './components/Applicants';
+import JobPositions from './components/JobPositions';
+
+import Careers from './pages/Careers';
+import PublicApply from './pages/PublicApply';
+import StatusTracker from './pages/StatusTracker';
+import ReferForm from './pages/ReferForm';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '';
 
@@ -40,6 +54,8 @@ export default function App() {
   const [emailConnectionError, setEmailConnectionError] = useState(null);
   const [emailConfigured, setEmailConfigured] = useState(false);
   const [emailConnected, setEmailConnected] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [compareIds, setCompareIds] = useState([]);
   
   // Dialog/modal overlay state
   const [selectedCandidate, setSelectedCandidate] = useState(null);
@@ -53,9 +69,6 @@ export default function App() {
   // Theme state
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
   
-  // Ranking mode state
-  const [rankAccordingToJob, setRankAccordingToJob] = useState(false);
-
   // Change Password Modal state
   const [showPasswordChangeModal, setShowPasswordChangeModal] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
@@ -168,7 +181,6 @@ export default function App() {
         }
       }
       setSettings(settingsData || { emailTemplates: {} });
-      setRankAccordingToJob(!!settingsData.rankAccordingToJob);
 
       // Fetch Gmail Sourcing unread queue count (if authenticated)
       if (authData.authenticated && user?.role !== 'manager') {
@@ -236,25 +248,6 @@ export default function App() {
     showToast('Recruitment letter sent successfully!', 'success');
   };
 
-  const handleToggleRankingMode = async () => {
-    const newVal = !rankAccordingToJob;
-    setRankAccordingToJob(newVal);
-    try {
-      await fetch(`${BACKEND_URL}/api/settings`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ rankAccordingToJob: newVal })
-      });
-      showToast(`Ranking mode switched to: ${newVal ? 'According to Job' : 'By Own Category'}`, 'success');
-    } catch (e) {
-      console.error(e);
-      showToast('Failed to save ranking mode setting.', 'error');
-    }
-  };
-
   const handleCandidateImported = (newCandidate, isUpdate = false) => {
     setCandidates(prev => {
       const exists = prev.some(c => c.id === newCandidate.id);
@@ -308,6 +301,26 @@ export default function App() {
       setPasswordError(err.message);
     }
   };
+
+  const location = useLocation();
+  const isPublicRoute = location.pathname.startsWith('/careers') || 
+                        location.pathname.startsWith('/apply') || 
+                        location.pathname.startsWith('/status') || 
+                        location.pathname.startsWith('/refer');
+
+  if (isPublicRoute) {
+    return (
+      <div className="public-app">
+        <Routes>
+          <Route path="/careers" element={<Careers backendUrl={BACKEND_URL} />} />
+          <Route path="/apply/:jobId" element={<PublicApply backendUrl={BACKEND_URL} />} />
+          <Route path="/status/:trackingId?" element={<StatusTracker backendUrl={BACKEND_URL} />} />
+          <Route path="/status" element={<StatusTracker backendUrl={BACKEND_URL} />} />
+          <Route path="/refer" element={<ReferForm backendUrl={BACKEND_URL} />} />
+        </Routes>
+      </div>
+    );
+  }
 
   if (!token) {
     return <Login backendUrl={BACKEND_URL} onLoginSuccess={(newToken, loggedInUser) => {
@@ -367,7 +380,7 @@ export default function App() {
         </div>
 
         {/* Navigation items */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flexGrow: 1 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flexGrow: 1, overflowY: 'auto', overflowX: 'hidden', paddingRight: '4px' }}>
           <button 
             className="btn" 
             style={{ 
@@ -382,6 +395,22 @@ export default function App() {
             onClick={() => setActiveTab('dashboard')}
           >
             <LayoutDashboard size={16} /> Dashboard
+          </button>
+
+          <button 
+            className="btn" 
+            style={{ 
+              justifyContent: 'flex-start',
+              background: activeTab === 'jobs' ? 'rgba(99, 102, 241, 0.1)' : 'transparent',
+              color: activeTab === 'jobs' ? 'var(--text-primary)' : 'var(--text-secondary)',
+              borderLeft: activeTab === 'jobs' ? '3px solid var(--accent-primary)' : '3px solid transparent',
+              borderRadius: '0 var(--radius-md) var(--radius-md) 0',
+              marginLeft: '-16px',
+              paddingLeft: '28px'
+            }}
+            onClick={() => setActiveTab('jobs')}
+          >
+            <Briefcase size={16} /> Job Positions
           </button>
           
           {user?.role !== 'manager' && (
@@ -424,6 +453,101 @@ export default function App() {
             <GitCommit size={16} /> Pipeline Board
           </button>
 
+          <button 
+            className="btn" 
+            style={{ 
+              justifyContent: 'flex-start',
+              background: activeTab === 'applicants' ? 'rgba(99, 102, 241, 0.1)' : 'transparent',
+              color: activeTab === 'applicants' ? 'var(--text-primary)' : 'var(--text-secondary)',
+              borderLeft: activeTab === 'applicants' ? '3px solid var(--accent-primary)' : '3px solid transparent',
+              borderRadius: '0 var(--radius-md) var(--radius-md) 0',
+              marginLeft: '-16px',
+              paddingLeft: '28px'
+            }}
+            onClick={() => setActiveTab('applicants')}
+          >
+            <Users size={16} /> Applicants
+          </button>
+
+          <button 
+            className="btn" 
+            style={{ 
+              justifyContent: 'flex-start',
+              background: activeTab === 'placements' ? 'rgba(99, 102, 241, 0.1)' : 'transparent',
+              color: activeTab === 'placements' ? 'var(--text-primary)' : 'var(--text-secondary)',
+              borderLeft: activeTab === 'placements' ? '3px solid var(--accent-primary)' : '3px solid transparent',
+              borderRadius: '0 var(--radius-md) var(--radius-md) 0',
+              marginLeft: '-16px',
+              paddingLeft: '28px'
+            }}
+            onClick={() => setActiveTab('placements')}
+          >
+            <DollarSign size={16} /> Placements
+          </button>
+
+          <button 
+            className="btn" 
+            style={{ 
+              justifyContent: 'flex-start',
+              background: activeTab === 'referrals' ? 'rgba(99, 102, 241, 0.1)' : 'transparent',
+              color: activeTab === 'referrals' ? 'var(--text-primary)' : 'var(--text-secondary)',
+              borderLeft: activeTab === 'referrals' ? '3px solid var(--accent-primary)' : '3px solid transparent',
+              borderRadius: '0 var(--radius-md) var(--radius-md) 0',
+              marginLeft: '-16px',
+              paddingLeft: '28px'
+            }}
+            onClick={() => setActiveTab('referrals')}
+          >
+            <UserPlus size={16} /> Referrals
+          </button>
+
+          <button 
+            className="btn" 
+            style={{ 
+              justifyContent: 'flex-start',
+              background: activeTab === 'pending-cvs' ? 'rgba(99, 102, 241, 0.1)' : 'transparent',
+              color: activeTab === 'pending-cvs' ? 'var(--text-primary)' : 'var(--text-secondary)',
+              borderLeft: activeTab === 'pending-cvs' ? '3px solid var(--accent-primary)' : '3px solid transparent',
+              borderRadius: '0 var(--radius-md) var(--radius-md) 0',
+              marginLeft: '-16px',
+              paddingLeft: '28px'
+            }}
+            onClick={() => setActiveTab('pending-cvs')}
+          >
+            <FileText size={16} /> Pending CVs
+          </button>
+
+          <button 
+            className="btn" 
+            style={{ 
+              justifyContent: 'flex-start',
+              background: activeTab === 'compare' ? 'rgba(99, 102, 241, 0.1)' : 'transparent',
+              color: activeTab === 'compare' ? 'var(--text-primary)' : 'var(--text-secondary)',
+              borderLeft: activeTab === 'compare' ? '3px solid var(--accent-primary)' : '3px solid transparent',
+              borderRadius: '0 var(--radius-md) var(--radius-md) 0',
+              marginLeft: '-16px',
+              paddingLeft: '28px'
+            }}
+            onClick={() => setActiveTab('compare')}
+          >
+            <GitCompare size={16} /> Compare Candidates
+          </button>
+
+          <button 
+            className="btn" 
+            style={{ 
+              justifyContent: 'flex-start',
+              background: activeTab === 'forms' ? 'rgba(99, 102, 241, 0.1)' : 'transparent',
+              color: activeTab === 'forms' ? 'var(--text-primary)' : 'var(--text-secondary)',
+              borderLeft: activeTab === 'forms' ? '3px solid var(--accent-primary)' : '3px solid transparent',
+              borderRadius: '0 var(--radius-md) var(--radius-md) 0',
+              marginLeft: '-16px',
+              paddingLeft: '28px'
+            }}
+            onClick={() => setActiveTab('forms')}
+          >
+            <LayoutTemplate size={16} /> Form Builder
+          </button>
 
           <button 
             className="btn" 
@@ -646,10 +770,17 @@ export default function App() {
         {/* Top Header */}
         <header className="header glass">
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            <h2 style={{ fontSize: '18px', fontWeight: '700', marginBottom: 0 }}>
-              {activeTab === 'dashboard' && 'Recruitment Analytics'}
+            <h2 style={{ fontSize: '18px', fontWeight: 'bold' }}>
+              {activeTab === 'dashboard' && 'Dashboard Overview'}
+              {activeTab === 'jobs' && 'Job Positions'}
               {activeTab === 'inbox' && (emailProvider === 'outlook' ? 'Outlook Sourcing Queue' : 'Gmail Sourcing Queue')}
               {activeTab === 'pipeline' && 'Talent Pipeline Kanban'}
+              {activeTab === 'applicants' && 'Applicants Database'}
+              {activeTab === 'placements' && 'Placements Dashboard'}
+              {activeTab === 'referrals' && 'Employee Referrals'}
+              {activeTab === 'pending-cvs' && 'Pending CVs Worklist'}
+              {activeTab === 'compare' && 'Candidate Comparison'}
+              {activeTab === 'forms' && 'Job Form Builder'}
               {activeTab === 'ai-search' && 'AI Resume Search'}
               {activeTab === 'ingestion' && 'Ingestion & Upload Log'}
               {activeTab === 'reporting' && 'Reporting & Analytics'}
@@ -661,42 +792,6 @@ export default function App() {
           </div>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            {/* According to Job Toggle */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginRight: '8px' }}>
-              <span style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)' }}>According to Job</span>
-              <button 
-                onClick={handleToggleRankingMode}
-                style={{
-                  width: '42px',
-                  height: '24px',
-                  borderRadius: '12px',
-                  background: rankAccordingToJob ? 'var(--accent-primary)' : 'var(--bg-tertiary)',
-                  border: '1px solid var(--glass-border)',
-                  position: 'relative',
-                  cursor: 'pointer',
-                  transition: 'background-color 0.3s',
-                  padding: 0,
-                  display: 'flex',
-                  alignItems: 'center'
-                }}
-                title={rankAccordingToJob ? 'Currently ranking against selected Job. Click to rank by profile category.' : 'Currently ranking by Profile Category. Click to rank against selected Job.'}
-              >
-                <div 
-                  style={{
-                    width: '18px',
-                    height: '18px',
-                    borderRadius: '50%',
-                    background: 'white',
-                    position: 'absolute',
-                    top: '2px',
-                    left: rankAccordingToJob ? '22px' : '2px',
-                    transition: 'left 0.3s',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
-                  }}
-                />
-              </button>
-            </div>
-
             <button className="btn btn-secondary" style={{ padding: '8px 12px', fontSize: '12px' }} onClick={() => fetchData()} disabled={syncing}>
               <RefreshCw size={14} className={syncing ? 'animate-spin' : ''} style={{ animation: syncing ? 'spin 1.5s linear infinite' : 'none' }} /> Sync Data
             </button>
@@ -728,8 +823,19 @@ export default function App() {
               jobs={jobs} 
               unreadCount={unreadCount} 
               setActiveTab={setActiveTab} 
-              rankAccordingToJob={rankAccordingToJob}
               emailProvider={emailProvider}
+              currentRole={mappedRole}
+            />
+          </div>
+
+          <div style={{ display: activeTab === 'jobs' ? 'block' : 'none', height: '100%' }}>
+            <JobPositions 
+              token={token} 
+              jobs={jobs} 
+              onJobCreated={(newJob) => setJobs(prev => [...prev, newJob])}
+              onJobDeleted={(id) => setJobs(prev => prev.filter(j => j.id !== id))}
+              onJobUpdated={(updatedJob) => setJobs(prev => prev.map(j => j.id === updatedJob.id ? updatedJob : j))}
+              backendUrl={BACKEND_URL}
               currentRole={mappedRole}
             />
           </div>
@@ -743,7 +849,7 @@ export default function App() {
               emailProvider={emailProvider}
             />
           </div>
-
+          
           <div style={{ display: activeTab === 'pipeline' ? 'block' : 'none', height: '100%' }}>
             <PipelineBoard 
               candidates={candidates} 
@@ -753,10 +859,42 @@ export default function App() {
               onOpenEmailModal={setEmailCandidate}
               onManualUpload={handleCandidateImported}
               onCandidateDeleted={handleCandidateDeleted}
+              onCompare={(ids) => { setCompareIds(ids); setActiveTab('compare'); }}
               backendUrl={BACKEND_URL}
-              rankAccordingToJob={rankAccordingToJob}
               token={token}
             />
+          </div>
+
+          <div style={{ display: activeTab === 'applicants' ? 'block' : 'none', height: '100%' }}>
+            <Applicants 
+              candidates={candidates}
+              jobs={jobs}
+              onStageChanged={handleStageChanged}
+              onSelectCandidate={setSelectedCandidate}
+              onCompare={(ids) => { setCompareIds(ids); setActiveTab('compare'); }}
+              backendUrl={BACKEND_URL}
+              token={token}
+            />
+          </div>
+
+          <div style={{ display: activeTab === 'placements' ? 'block' : 'none', height: '100%' }}>
+            <Placements backendUrl={BACKEND_URL} token={token} />
+          </div>
+
+          <div style={{ display: activeTab === 'referrals' ? 'block' : 'none', height: '100%' }}>
+            <Referrals backendUrl={BACKEND_URL} token={token} />
+          </div>
+
+          <div style={{ display: activeTab === 'pending-cvs' ? 'block' : 'none', height: '100%' }}>
+            <PendingCvs backendUrl={BACKEND_URL} token={token} />
+          </div>
+
+          <div style={{ display: activeTab === 'compare' ? 'block' : 'none', height: '100%' }}>
+            <CompareCandidates candidates={candidates} compareIds={compareIds} onBack={() => setActiveTab('pipeline')} />
+          </div>
+
+          <div style={{ display: activeTab === 'forms' ? 'block' : 'none', height: '100%' }}>
+            <FormBuilder />
           </div>
           
 
@@ -814,7 +952,6 @@ export default function App() {
           onStageChanged={handleStageChanged}
           onCandidateDeleted={handleCandidateDeleted}
           backendUrl={BACKEND_URL}
-          rankAccordingToJob={rankAccordingToJob}
           currentRole={mappedRole}
           token={token}
         />

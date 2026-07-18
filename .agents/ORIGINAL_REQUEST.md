@@ -135,3 +135,69 @@ Verify that the IngestionLog status is correctly updated to 'success', 'cancelle
 - [ ] The test server should mock LLM parser calls correctly for duplicate scenarios.
 - [ ] Running `npm run test:e2e` runs all tests, including the new tests, successfully.
 
+## Follow-up — 2026-07-10T15:50:10+05:30
+
+Optimize the light mode color branding, scheming, and palette of the TalentFlow web application by researching popular sites and running an iterative design-evaluation loop until the design scores 9/10.
+
+Working directory: c:/Users/sri charan/Documents/projects/hr recruter
+Integrity mode: development
+
+## Requirements
+
+### R1. Color Research & Selection
+The team must research and analyze the light mode color palettes of at least 10–15 industry-leading web applications (e.g., Vercel, Linear, Stripe, Tailwind CSS, GitHub, Framer, Figma, Notion, Slack, Shopify) to identify patterns in text contrast, border structure, card shading, and accent harmony.
+
+### R2. Color Palette Implementation
+Update the `.light-theme` CSS variables in c:/Users/sri charan/Documents/projects/hr recruter/client/src/index.css to apply the optimized scheme. No functional code or JSX layout files should be modified.
+
+### R3. Iterative Feedback Loop (AI Critic)
+Configure an independent AI Critic Agent equipped with a strict design evaluation rubric (assessing text contrast, visual hierarchy, color harmony, and overall premium polish). The critic must rate the updated palette on a scale of 1–10. The team must loop, research, adjust, and re-evaluate until the design scores a 9/10 or higher.
+
+## Acceptance Criteria
+
+### Research & Analysis
+- Document the light mode analysis of 10-15 popular websites in a markdown research report, outlining their color choices.
+
+### High Contrast & Cohesion
+- No washed-out colors or low-contrast text elements.
+- Cards, sidebars, and main content panes must have crisp, clear, modern division lines.
+
+### Iteration & Rating
+- The critique history of each iteration loop must be documented in a log file, showing the progressive scores.
+- The final palette iteration must receive a score of 9/10 or higher from the independent AI Critic agent.
+
+## Follow-up — 2026-07-15T10:27:59+05:30
+
+Optimize the recruitment platform (TalentFlow) by refining general candidate question generation (concise/professional), isolating JD questions to on-demand generation only with a dedicated 'Construct questions according to JD Match' button, and optimizing the LLM prompts for Ollama.
+
+Working directory: c:\Users\sri charan\Documents\projects\hr recruter
+Integrity mode: development
+
+## Requirements
+
+### R1. Professional and Concise General Candidate Questions
+- General candidate questions (`hrQuestions` and `technicalQuestions` mapped during resume parse/analysis) must remain highly professional and technically challenging, but strictly short, direct, and under 15-20 words.
+- They must not contain verbose introductory prefixes detailing candidate history.
+- The standard screening questions must be kept professional and not silly.
+
+### R2. On-Demand JD Match Questions & "Construct questions according to JD Match" Button
+- JD-relevant questions must **never** be generated automatically on candidate ingestion (manual upload or email resolve).
+- When a candidate details card is opened in a JD context (either from the JD Match search results, or when a job is selected and the global "rank according to job description" toggle is ON), a button with the text `"Construct questions according to JD Match"` must be rendered if JD questions have not yet been generated for that candidate-job combination.
+- Clicking the button must trigger the API call to generate the JD-relevant questions on-demand.
+- The button text must be exactly `"Construct questions according to JD Match"`.
+
+### R3. Optimized Ollama Prompts for JD Questions
+- The prompt sent to the LLM (specifically Ollama) for JD-specific question generation must be highly optimized, compact, and context-stripped to minimize pre-processing latency and ensure fast generation.
+- The generated JD questions must also be concise, direct, and short (under 15-20 words).
+
+## Acceptance Criteria
+
+### Question Formatting & Styling
+- [ ] General HR and Technical questions are short, direct, and concise (strictly under 15-20 words) while remaining technically precise and professional.
+- [ ] No verbose, explanatory setups exist in the questions.
+
+### JD Match UI & Flow
+- [ ] Opening a candidate card in the general view does not display JD questions or the construct button.
+- [ ] Opening a candidate card in the JD Match page or with the "rank according to job description" toggle ON displays a button with the text `"Construct questions according to JD Match"`.
+- [ ] Clicking the button calls the backend to generate questions and saves them, displaying them on the card.
+- [ ] Ingestion (upload/resolve) does not auto-generate JD questions.

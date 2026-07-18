@@ -1,0 +1,1293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TalentFlow — AI-Powered Recruitment Automation Platform</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/reveal.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/theme/black.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --accent: #6366f1;
+    --accent2: #8b5cf6;
+    --accent3: #a78bfa;
+    --green: #10b981;
+    --amber: #f59e0b;
+    --rose: #f43f5e;
+    --sky: #38bdf8;
+    --bg-dark: #0a0a1a;
+    --bg-card: rgba(255,255,255,0.04);
+    --border: rgba(255,255,255,0.08);
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+  }
+
+  .reveal {
+    font-family: 'Inter', -apple-system, sans-serif;
+    font-size: 22px;
+    color: var(--text-primary);
+  }
+
+  .reveal .slides {
+    text-align: left;
+  }
+
+  .reveal .slides section {
+    padding: 40px 60px;
+    height: 100%;
+    display: flex !important;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .slide-title {
+    font-size: 2.6em;
+    font-weight: 800;
+    background: linear-gradient(135deg, #6366f1, #a78bfa, #38bdf8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+  }
+
+  .slide-subtitle {
+    font-size: 1em;
+    color: var(--text-secondary);
+    font-weight: 400;
+    margin-bottom: 32px;
+    line-height: 1.5;
+  }
+
+  .slide-label {
+    font-size: 0.65em;
+    color: var(--accent);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    margin-bottom: 12px;
+  }
+
+  .feature-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 16px;
+  }
+
+  .feature-grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 14px;
+    margin-top: 16px;
+  }
+
+  .feature-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    transition: all 0.3s;
+  }
+
+  .feature-card:hover {
+    background: rgba(99, 102, 241, 0.06);
+    border-color: rgba(99, 102, 241, 0.2);
+    transform: translateY(-2px);
+  }
+
+  .feature-card .icon {
+    font-size: 1.6em;
+    margin-bottom: 10px;
+    display: block;
+  }
+
+  .feature-card h4 {
+    font-size: 0.85em;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 6px 0;
+  }
+
+  .feature-card p {
+    font-size: 0.72em;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.55;
+  }
+
+  .flow-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 20px 0;
+    flex-wrap: wrap;
+  }
+
+  .flow-step {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 18px;
+    text-align: center;
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .flow-step .step-icon {
+    font-size: 1.4em;
+    margin-bottom: 6px;
+    display: block;
+  }
+
+  .flow-step .step-label {
+    font-size: 0.72em;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .flow-step .step-detail {
+    font-size: 0.6em;
+    color: var(--text-secondary);
+    margin-top: 3px;
+  }
+
+  .flow-arrow {
+    font-size: 1.2em;
+    color: var(--accent);
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .tag {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.65em;
+    font-weight: 600;
+    margin: 3px 4px 3px 0;
+  }
+
+  .tag-purple { background: rgba(139, 92, 246, 0.15); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.25); }
+  .tag-blue { background: rgba(59, 130, 246, 0.15); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.25); }
+  .tag-green { background: rgba(16, 185, 129, 0.15); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.25); }
+  .tag-amber { background: rgba(245, 158, 11, 0.15); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.25); }
+  .tag-rose { background: rgba(244, 63, 94, 0.15); color: #fda4af; border: 1px solid rgba(244, 63, 94, 0.25); }
+  .tag-sky { background: rgba(56, 189, 248, 0.15); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.25); }
+
+  .stat-row {
+    display: flex;
+    gap: 16px;
+    margin: 16px 0;
+  }
+
+  .stat-card {
+    flex: 1;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+  }
+
+  .stat-card .stat-value {
+    font-size: 2em;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--accent), var(--accent3));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .stat-card .stat-label {
+    font-size: 0.65em;
+    color: var(--text-secondary);
+    margin-top: 4px;
+    font-weight: 500;
+  }
+
+  .list-clean {
+    list-style: none;
+    padding: 0;
+    margin: 12px 0;
+  }
+
+  .list-clean li {
+    padding: 8px 0;
+    font-size: 0.82em;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    line-height: 1.5;
+  }
+
+  .list-clean li::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+    margin-top: 7px;
+  }
+
+  .list-clean li strong {
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    margin-top: 16px;
+  }
+
+  .code-box {
+    background: rgba(0,0,0,0.4);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 18px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68em;
+    color: #a5b4fc;
+    line-height: 1.7;
+    overflow-x: auto;
+  }
+
+  .pipeline-stages {
+    display: flex;
+    gap: 0;
+    margin: 20px 0;
+  }
+
+  .pipeline-stage {
+    flex: 1;
+    padding: 16px 12px;
+    text-align: center;
+    position: relative;
+    border-radius: 0;
+  }
+
+  .pipeline-stage:first-child { border-radius: 10px 0 0 10px; }
+  .pipeline-stage:last-child { border-radius: 0 10px 10px 0; }
+
+  .pipeline-stage .stage-icon { font-size: 1.5em; margin-bottom: 6px; display: block; }
+  .pipeline-stage .stage-name { font-size: 0.72em; font-weight: 700; color: white; }
+  .pipeline-stage .stage-desc { font-size: 0.58em; color: rgba(255,255,255,0.7); margin-top: 3px; }
+
+  .bg-inbox { background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.3); }
+  .bg-shortlist { background: rgba(234, 179, 8, 0.2); border: 1px solid rgba(234, 179, 8, 0.3); }
+  .bg-interview { background: rgba(168, 85, 247, 0.2); border: 1px solid rgba(168, 85, 247, 0.3); }
+  .bg-offered { background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.3); }
+  .bg-rejected { background: rgba(244, 63, 94, 0.2); border: 1px solid rgba(244, 63, 94, 0.3); }
+
+  .highlight-box {
+    background: rgba(99, 102, 241, 0.08);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin: 12px 0;
+  }
+
+  .highlight-box h4 {
+    font-size: 0.8em;
+    font-weight: 700;
+    color: var(--accent3);
+    margin: 0 0 6px 0;
+  }
+
+  .highlight-box p {
+    font-size: 0.72em;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.55;
+  }
+
+  .divider {
+    width: 60px;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 2px;
+    margin: 12px 0 20px 0;
+  }
+
+  /* Title slide special */
+  .title-slide {
+    text-align: center !important;
+    justify-content: center !important;
+    align-items: center !important;
+  }
+
+  .title-slide .slide-title {
+    font-size: 3.4em;
+  }
+
+  .reveal .slide-number {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    color: var(--text-secondary);
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 10px;
+  }
+
+  .reveal .controls .navigate-left, .reveal .controls .navigate-right,
+  .reveal .controls .navigate-up, .reveal .controls .navigate-down {
+    color: var(--accent);
+  }
+
+  .reveal .progress span {
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+  }
+
+  .comparison-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 0.75em;
+  }
+
+  .comparison-table th {
+    background: rgba(99, 102, 241, 0.12);
+    color: var(--accent3);
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 700;
+    border-bottom: 2px solid rgba(99, 102, 241, 0.2);
+  }
+
+  .comparison-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-secondary);
+  }
+
+  .comparison-table tr:hover td {
+    background: rgba(255,255,255,0.02);
+  }
+
+  .arch-layer {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 20px;
+    margin: 6px 0;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .arch-layer .layer-label {
+    font-size: 0.75em;
+    font-weight: 700;
+    color: var(--accent3);
+    min-width: 140px;
+  }
+
+  .arch-layer .layer-items {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+</style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- ========== SLIDE 1: TITLE ========== -->
+<section class="title-slide">
+  <div class="slide-label">Final Year Project Presentation</div>
+  <div class="slide-title">TalentFlow</div>
+  <div class="slide-subtitle" style="text-align:center; max-width:700px; margin: 0 auto 24px auto;">
+    AI-Powered Recruitment Automation Platform<br>
+    <span style="font-size:0.85em; color:var(--text-secondary);">Streamlining the entire hiring lifecycle — from resume sourcing to candidate evaluation</span>
+  </div>
+  <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+    <span class="tag tag-purple">Generative AI</span>
+    <span class="tag tag-blue">Semantic Search</span>
+    <span class="tag tag-green">Email Automation</span>
+    <span class="tag tag-amber">Smart Matching</span>
+    <span class="tag tag-rose">Interview Generation</span>
+    <span class="tag tag-sky">Analytics</span>
+  </div>
+</section>
+
+<!-- ========== SLIDE 2: PROBLEM STATEMENT ========== -->
+<section>
+  <div class="slide-label">Context</div>
+  <div class="slide-title" style="font-size:2.2em;">Problem Statement</div>
+  <div class="divider"></div>
+
+  <div class="feature-grid">
+    <div class="feature-card">
+      <span class="icon">⏱️</span>
+      <h4>Time-Intensive Screening</h4>
+      <p>Recruiters spend 23 hours on average reviewing resumes per hire. Manual screening of hundreds of applications creates bottlenecks and delays qualified candidates.</p>
+    </div>
+    <div class="feature-card">
+      <span class="icon">📧</span>
+      <h4>Fragmented Email Management</h4>
+      <p>Resumes arrive across multiple email accounts (Gmail, Outlook). Manually downloading, opening, and reading each attachment is repetitive and error-prone.</p>
+    </div>
+    <div class="feature-card">
+      <span class="icon">🔍</span>
+      <h4>Keyword-Only Search Limitations</h4>
+      <p>Traditional ATS systems rely on exact keyword matching, missing qualified candidates who use different terminology (e.g., "Express.js Engineer" vs. "Node.js Developer").</p>
+    </div>
+    <div class="feature-card">
+      <span class="icon">📋</span>
+      <h4>Inconsistent Candidate Evaluation</h4>
+      <p>Different recruiters evaluate candidates differently. There is no standardized scoring, no automated interview question generation, and no objective comparison framework.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SLIDE 3: SOLUTION OVERVIEW ========== -->
+<section>
+  <div class="slide-label">Our Approach</div>
+  <div class="slide-title" style="font-size:2.2em;">Solution: TalentFlow Platform</div>
+  <div class="divider"></div>
+
+  <div class="slide-subtitle" style="margin-bottom:20px;">A full-stack AI-powered recruitment platform that automates the entire hiring pipeline — from resume collection through candidate ranking and interview preparation.</div>
+
+  <div class="feature-grid">
+    <div class="feature-card">
+      <span class="icon">🤖</span>
+      <h4>AI-Powered Resume Parsing</h4>
+      <p>Generative AI (Gemini / OpenAI / Claude / Ollama) extracts structured candidate profiles from raw PDF resumes — name, skills, experience, education, projects, seniority level.</p>
+    </div>
+    <div class="feature-card">
+      <span class="icon">📬</span>
+      <h4>Automated Email Sourcing</h4>
+      <p>Continuously monitors Gmail (IMAP) and Outlook (Microsoft Graph API) inboxes. AI categorizes each email, extracts PDF attachments, and processes resumes automatically.</p>
+    </div>
+    <div class="feature-card">
+      <span class="icon">🧠</span>
+      <h4>Semantic Vector Search (RAG)</h4>
+      <p>Converts resumes into vector embeddings. Natural language queries find semantically related candidates — "Frontend Developer" matches "React Engineer" without exact keywords.</p>
+    </div>
+    <div class="feature-card">
+      <span class="icon">📊</span>
+      <h4>JD Matching & Interview Generation</h4>
+      <p>AI scores candidates against job descriptions (0–100), identifies matching/missing skills, generates tailored HR and technical interview questions with answers.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SLIDE 4: SYSTEM ARCHITECTURE ========== -->
+<section>
+  <div class="slide-label">Architecture</div>
+  <div class="slide-title" style="font-size:2.2em;">System Architecture</div>
+  <div class="divider"></div>
+
+  <div class="arch-layer">
+    <div class="layer-label">🖥️ Frontend</div>
+    <div class="layer-items">
+      <span class="tag tag-blue">React 18 + Vite</span>
+      <span class="tag tag-blue">Lucide Icons</span>
+      <span class="tag tag-blue">Glassmorphism UI</span>
+      <span class="tag tag-blue">Dark Theme</span>
+    </div>
+  </div>
+
+  <div class="arch-layer">
+    <div class="layer-label">⚡ API Server</div>
+    <div class="layer-items">
+      <span class="tag tag-green">Node.js + Express</span>
+      <span class="tag tag-green">REST API</span>
+      <span class="tag tag-green">JWT Auth</span>
+      <span class="tag tag-green">Multer Uploads</span>
+    </div>
+  </div>
+
+  <div class="arch-layer">
+    <div class="layer-label">🧠 AI Layer</div>
+    <div class="layer-items">
+      <span class="tag tag-purple">Gemini API</span>
+      <span class="tag tag-purple">OpenAI GPT-4o</span>
+      <span class="tag tag-purple">Claude 3.5</span>
+      <span class="tag tag-purple">Ollama (Local)</span>
+      <span class="tag tag-purple">OpenRouter</span>
+    </div>
+  </div>
+
+  <div class="arch-layer">
+    <div class="layer-label">🗄️ Data Layer</div>
+    <div class="layer-items">
+      <span class="tag tag-amber">MongoDB + Mongoose</span>
+      <span class="tag tag-amber">Vector Embeddings</span>
+      <span class="tag tag-amber">Cosine Similarity</span>
+      <span class="tag tag-amber">File Storage</span>
+    </div>
+  </div>
+
+  <div class="arch-layer">
+    <div class="layer-label">📧 Integrations</div>
+    <div class="layer-items">
+      <span class="tag tag-rose">Gmail IMAP</span>
+      <span class="tag tag-rose">Microsoft Graph API</span>
+      <span class="tag tag-rose">PDF.js Parser</span>
+      <span class="tag tag-rose">OCR Fallback</span>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SLIDE 5: INPUT METHODS ========== -->
+<section>
+  <div class="slide-label">Candidate Sourcing</div>
+  <div class="slide-title" style="font-size:2.2em;">Three Input Methods</div>
+  <div class="divider"></div>
+  <div class="slide-subtitle">Candidates enter the system through three distinct channels, each fully automated.</div>
+
+  <div class="feature-grid-3">
+    <div class="feature-card" style="border-top: 3px solid #6366f1;">
+      <span class="icon">📤</span>
+      <h4>1. Direct Upload</h4>
+      <p>Recruiter manually uploads PDF resumes through the web interface. Supports single and bulk file upload. Files are stored on the server and immediately queued for AI parsing.</p>
+      <div style="margin-top:10px;">
+        <span class="tag tag-purple">Drag & Drop</span>
+        <span class="tag tag-purple">Bulk Upload</span>
+      </div>
+    </div>
+    <div class="feature-card" style="border-top: 3px solid #ea4335;">
+      <span class="icon">📧</span>
+      <h4>2. Gmail Integration</h4>
+      <p>Connects via IMAP protocol using App Password. Background sync loop polls inbox every 30 seconds. Filters for unread emails with PDF attachments from the last 7 days. Marks processed emails as read.</p>
+      <div style="margin-top:10px;">
+        <span class="tag tag-rose">IMAP Protocol</span>
+        <span class="tag tag-rose">Auto-Sync</span>
+      </div>
+    </div>
+    <div class="feature-card" style="border-top: 3px solid #0078d4;">
+      <span class="icon">📨</span>
+      <h4>3. Outlook Integration</h4>
+      <p>Connects via Microsoft Graph API using OAuth 2.0 Client Credentials flow. Fetches unread emails with attachments, downloads PDF content bytes, and supports sending emails directly from the platform.</p>
+      <div style="margin-top:10px;">
+        <span class="tag tag-blue">Graph API</span>
+        <span class="tag tag-blue">OAuth 2.0</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SLIDE 6: EMAIL PROCESSING WORKFLOW ========== -->
+<section>
+  <div class="slide-label">Workflow</div>
+  <div class="slide-title" style="font-size:2.2em;">Email Processing Pipeline</div>
+  <div class="divider"></div>
+
+  <div class="flow-container">
+    <div class="flow-step">
+      <span class="step-icon">📧</span>
+      <span class="step-label">Email Arrives</span>
+      <span class="step-detail">Gmail / Outlook</span>
+    </div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step">
+      <span class="step-icon">🔄</span>
+      <span class="step-label">Background Sync</span>
+      <span class="step-detail">30s polling loop</span>
+    </div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step">
+      <span class="step-icon">🤖</span>
+      <span class="step-label">AI Categorization</span>
+      <span class="step-detail">7 categories</span>
+    </div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step">
+      <span class="step-icon">📎</span>
+      <span class="step-label">PDF Extraction</span>
+      <span class="step-detail">Attachment download</span>
+    </div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step">
+      <span class="step-icon">✅</span>
+      <span class="step-label">Auto Process</span>
+      <span class="step-detail">Parse & Store</span>
+    </div>
+  </div>
+
+  <div class="two-col" style="margin-top: 20px;">
+    <div class="highlight-box">
+      <h4>🏷️ AI Email Categorization</h4>
+      <p>Each incoming email is classified by AI into one of seven categories for intelligent routing:</p>
+      <div style="margin-top:8px;">
+        <span class="tag tag-green">Resume</span>
+        <span class="tag tag-blue">HR</span>
+        <span class="tag tag-amber">Interview</span>
+        <span class="tag tag-purple">Client</span>
+        <span class="tag tag-sky">Notification</span>
+        <span class="tag tag-rose">Spam</span>
+        <span class="tag tag-amber">Other</span>
+      </div>
+    </div>
+    <div class="highlight-box">
+      <h4>🔁 Deduplication System</h4>
+      <p>When a duplicate candidate is detected, the system offers four resolution options:</p>
+      <ul class="list-clean" style="margin:8px 0 0 0;">
+        <li><strong>Update</strong> — Overwrite existing info & CV</li>
+        <li><strong>Delete & Import</strong> — Replace with new profile</li>
+        <li><strong>Delete Only</strong> — Remove existing, halt import</li>
+        <li><strong>Cancel</strong> — Discard uploaded file</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SLIDE 7: AI RESUME PARSING ========== -->
+<section>
+  <div class="slide-label">Core Engine</div>
+  <div class="slide-title" style="font-size:2.2em;">AI-Powered Resume Parsing</div>
+  <div class="divider"></div>
+
+  <div class="two-col">
+    <div>
+      <div class="slide-subtitle" style="margin-bottom:14px;">The parsing engine uses generative AI to extract structured candidate data from raw PDF text.</div>
+
+      <div class="highlight-box" style="margin-bottom:12px;">
+        <h4>📄 PDF Text Extraction Pipeline</h4>
+        <p>PDF.js extracts raw text from uploaded resumes. If text extraction fails (scanned documents), an OCR fallback using Python Tesseract processes the image-based content.</p>
+      </div>
+
+      <div class="highlight-box">
+        <h4>🧠 Multi-Provider AI Engine</h4>
+        <p>Supports 5 AI providers. The system automatically dispatches to whichever provider the admin has configured, with intelligent JSON repair for malformed responses.</p>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:0.8em; font-weight:700; margin-bottom:10px; color:var(--accent3);">Extracted Candidate Schema</div>
+      <div class="code-box">
+{<br>
+&nbsp;&nbsp;"name": "John Doe",<br>
+&nbsp;&nbsp;"email": "john@example.com",<br>
+&nbsp;&nbsp;"phone": "+1-555-0123",<br>
+&nbsp;&nbsp;"linkedinUrl": "linkedin.com/in/john",<br>
+&nbsp;&nbsp;"skills": ["React", "Node.js", "Python"],<br>
+&nbsp;&nbsp;"experience": [{<br>
+&nbsp;&nbsp;&nbsp;&nbsp;"role": "Senior Developer",<br>
+&nbsp;&nbsp;&nbsp;&nbsp;"company": "TechCorp",<br>
+&nbsp;&nbsp;&nbsp;&nbsp;"duration": "3 years 4 months"<br>
+&nbsp;&nbsp;}],<br>
+&nbsp;&nbsp;"education": [{<br>
+&nbsp;&nbsp;&nbsp;&nbsp;"degree": "B.Tech in CSE",<br>
+&nbsp;&nbsp;&nbsp;&nbsp;"institution": "MIT"<br>
+&nbsp;&nbsp;}],<br>
+&nbsp;&nbsp;"projects": [...],<br>
+&nbsp;&nbsp;"seniorityLevel": "Senior",<br>
+&nbsp;&nbsp;"tags": [{<br>
+&nbsp;&nbsp;&nbsp;&nbsp;"value": "Backend", "category": "Domain"<br>
+&nbsp;&nbsp;}]<br>
+}
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SLIDE 8: AI PROVIDERS ========== -->
+<section>
+  <div class="slide-label">AI Configuration</div>
+  <div class="slide-title" style="font-size:2.2em;">Multi-Provider AI Engine</div>
+  <div class="divider"></div>
+  <div class="slide-subtitle">TalentFlow supports 5 different AI providers. The admin can switch providers at any time from the Settings panel without code changes.</div>
+
+  <table class="comparison-table">
+    <thead>
+      <tr>
+        <th>Provider</th>
+        <th>Model</th>
+        <th>Use Case</th>
+        <th>Configuration</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Google Gemini</strong></td>
+        <td>gemini-2.0-flash</td>
+        <td>Resume parsing, scoring, categorization</td>
+        <td>API Key via Settings UI</td>
+      </tr>
+      <tr>
+        <td><strong>OpenAI</strong></td>
+        <td>GPT-4o</td>
+        <td>Resume parsing, scoring, categorization</td>
+        <td>API Key via Settings UI</td>
+      </tr>
+      <tr>
+        <td><strong>Anthropic Claude</strong></td>
+        <td>Claude 3.5 Sonnet</td>
+        <td>Resume parsing, scoring, categorization</td>
+        <td>API Key via Settings UI</td>
+      </tr>
+      <tr>
+        <td><strong>Ollama (Local)</strong></td>
+        <td>LLaMA 3 / Custom</td>
+        <td>Offline parsing, privacy-sensitive use</td>
+        <td>URL + Model name configurable</td>
+      </tr>
+      <tr>
+        <td><strong>OpenRouter</strong></td>
+        <td>Grok 4.5 / Any model</td>
+        <td>Routing to 100+ models via single key</td>
+        <td>sk-or-* prefixed API key</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="highlight-box">
+    <h4>🔧 Ollama Configuration</h4>
+    <p><strong>Default URL:</strong> <code style="color:#a5b4fc;">https://istgenai.smartgeoapps.com/</code> &nbsp;|&nbsp; <strong>Model:</strong> <code style="color:#a5b4fc;">llama3</code> &nbsp;|&nbsp; <strong>Embedding:</strong> <code style="color:#a5b4fc;">gpt-oss:20b</code> &nbsp;|&nbsp; Supports custom num_ctx & num_predict tuning for context and output limits.</p>
+  </div>
+</section>
+
+<!-- ========== SLIDE 9: SEARCH METHODS ========== -->
+<section>
+  <div class="slide-label">Candidate Discovery</div>
+  <div class="slide-title" style="font-size:2.2em;">Intelligent Search System</div>
+  <div class="divider"></div>
+
+  <div class="feature-grid">
+    <div class="feature-card" style="border-left: 3px solid var(--accent);">
+      <span class="icon">🔍</span>
+      <h4>Advanced Tag & Keyword Search</h4>
+      <p>Real-time filtering across all parsed candidate fields — skills, tags, location, seniority. Uses fuzzy matching with Dice-Sørensen coefficient for typo-tolerant search. Supports multi-filter combinations: skills + seniority + experience range.</p>
+      <div style="margin-top:8px;">
+        <span class="tag tag-blue">Token Matching</span>
+        <span class="tag tag-blue">Fuzzy Search</span>
+        <span class="tag tag-blue">Multi-Filter</span>
+      </div>
+    </div>
+    <div class="feature-card" style="border-left: 3px solid var(--green);">
+      <span class="icon">🧠</span>
+      <h4>Semantic RAG Search</h4>
+      <p>Natural language queries are converted to vector embeddings. Cosine similarity finds semantically related candidates — "Node.js Developer" matches "Express.js Backend Engineer" automatically. Keyword fallback if embedding service is offline.</p>
+      <div style="margin-top:8px;">
+        <span class="tag tag-green">Vector Embeddings</span>
+        <span class="tag tag-green">Cosine Similarity</span>
+        <span class="tag tag-green">Semantic</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="highlight-box" style="margin-top:16px;">
+    <h4>🔄 Retrieve-and-Rerank Pattern (JD Match)</h4>
+    <p>The JD Match combines both search methods: <strong>Step 1</strong> — RAG semantic search retrieves the top-K most relevant candidates. <strong>Step 2</strong> — Each candidate is scored by the LLM against the full job description, returning a match percentage (0–100), matching skills, missing skills, and reasoning.</p>
+  </div>
+</section>
+
+<!-- ========== SLIDE 10: JD MATCHING ========== -->
+<section>
+  <div class="slide-label">Candidate Scoring</div>
+  <div class="slide-title" style="font-size:2.2em;">Job Description Matching</div>
+  <div class="divider"></div>
+
+  <div class="flow-container">
+    <div class="flow-step">
+      <span class="step-icon">📋</span>
+      <span class="step-label">Paste JD</span>
+      <span class="step-detail">Job description text</span>
+    </div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step">
+      <span class="step-icon">🧠</span>
+      <span class="step-label">RAG Pre-Filter</span>
+      <span class="step-detail">Semantic top-K</span>
+    </div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step">
+      <span class="step-icon">⚖️</span>
+      <span class="step-label">LLM Scoring</span>
+      <span class="step-detail">scoreCandidate()</span>
+    </div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step">
+      <span class="step-icon">📊</span>
+      <span class="step-label">Results Ranked</span>
+      <span class="step-detail">0–100% match</span>
+    </div>
+  </div>
+
+  <div class="two-col" style="margin-top:16px;">
+    <div>
+      <div style="font-size:0.82em; font-weight:700; margin-bottom:10px; color:var(--accent3);">AI Scoring Output</div>
+      <div class="code-box">
+{<br>
+&nbsp;&nbsp;"score": 78,<br>
+&nbsp;&nbsp;"matchingSkills": [<br>
+&nbsp;&nbsp;&nbsp;&nbsp;"React", "Node.js", "MongoDB"<br>
+&nbsp;&nbsp;],<br>
+&nbsp;&nbsp;"missingSkills": [<br>
+&nbsp;&nbsp;&nbsp;&nbsp;"Kubernetes", "AWS"<br>
+&nbsp;&nbsp;],<br>
+&nbsp;&nbsp;"reasoning": "Strong full-stack<br>
+&nbsp;&nbsp;&nbsp;&nbsp;profile with 4+ years of<br>
+&nbsp;&nbsp;&nbsp;&nbsp;relevant experience..."<br>
+}
+      </div>
+    </div>
+    <div>
+      <ul class="list-clean">
+        <li><strong>Semantic Understanding:</strong> The LLM understands that "Express.js Backend Engineer" is a match for "Node.js Developer" requirement</li>
+        <li><strong>Experience Validation:</strong> Mathematically compares total years of experience (e.g., "6 years 4 months") against JD requirements (e.g., "5+ years")</li>
+        <li><strong>Dual Scoring Modes:</strong> "Job-specific score" ranks candidates against a selected JD. "Own-category score" evaluates candidates against their own field</li>
+        <li><strong>Bulk Matching:</strong> Score all candidates in the database against a single JD in one batch operation</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SLIDE 11: CANDIDATE PIPELINE ========== -->
+<section>
+  <div class="slide-label">Pipeline Management</div>
+  <div class="slide-title" style="font-size:2.2em;">Kanban Pipeline Board</div>
+  <div class="divider"></div>
+  <div class="slide-subtitle">Visual drag-and-drop Kanban board for tracking candidates through the hiring process. Every stage transition is logged in the candidate's history.</div>
+
+  <div class="pipeline-stages">
+    <div class="pipeline-stage bg-inbox">
+      <span class="stage-icon">📥</span>
+      <span class="stage-name">Inbox</span>
+      <span class="stage-desc">Newly sourced candidates awaiting review</span>
+    </div>
+    <div class="pipeline-stage bg-shortlist">
+      <span class="stage-icon">⭐</span>
+      <span class="stage-name">Shortlist</span>
+      <span class="stage-desc">Qualified profiles selected for next steps</span>
+    </div>
+    <div class="pipeline-stage bg-interview">
+      <span class="stage-icon">🎤</span>
+      <span class="stage-name">Interview</span>
+      <span class="stage-desc">Candidates scheduled for technical/HR rounds</span>
+    </div>
+    <div class="pipeline-stage bg-offered">
+      <span class="stage-icon">🎉</span>
+      <span class="stage-name">Offered</span>
+      <span class="stage-desc">Offer letter extended to the candidate</span>
+    </div>
+    <div class="pipeline-stage bg-rejected">
+      <span class="stage-icon">❌</span>
+      <span class="stage-name">Rejected</span>
+      <span class="stage-desc">Archived profiles not moving forward</span>
+    </div>
+  </div>
+
+  <div class="feature-grid" style="margin-top:16px;">
+    <div class="feature-card">
+      <h4>📊 Score-Based Ranking</h4>
+      <p>Candidates are ranked by their AI match score within each pipeline column. Supports toggling between job-specific and own-category scoring modes.</p>
+    </div>
+    <div class="feature-card">
+      <h4>📝 Activity History</h4>
+      <p>Every action — stage change, comment, score update — is timestamped and logged. Full audit trail for each candidate throughout the hiring lifecycle.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SLIDE 12: CANDIDATE DETAILS ========== -->
+<section>
+  <div class="slide-label">Candidate Profile</div>
+  <div class="slide-title" style="font-size:2.2em;">360° Candidate View</div>
+  <div class="divider"></div>
+  <div class="slide-subtitle">Clicking any candidate opens a comprehensive detail panel with all parsed information and AI-generated insights.</div>
+
+  <div class="feature-grid">
+    <div class="feature-card">
+      <span class="icon">👤</span>
+      <h4>Contact & Profile</h4>
+      <p>Name, email, phone, LinkedIn URL, seniority level badge. Direct links to LinkedIn profile. Full contact information extracted from the resume.</p>
+    </div>
+    <div class="feature-card">
+      <span class="icon">💼</span>
+      <h4>Experience & Education</h4>
+      <p>Structured timeline of work experience — role, company, duration, description. Education history with degree, institution, and year.</p>
+    </div>
+    <div class="feature-card">
+      <span class="icon">🏷️</span>
+      <h4>Skills & Tags</h4>
+      <p>AI-extracted skills list displayed as tags. Matching skills (green) and missing skills (red) shown against the assigned job description. Customizable tag categories.</p>
+    </div>
+    <div class="feature-card">
+      <span class="icon">📄</span>
+      <h4>Resume PDF Preview</h4>
+      <p>In-browser PDF viewer for the original uploaded resume. No external downloads required — recruiters can review the document directly in the detail panel.</p>
+    </div>
+    <div class="feature-card">
+      <span class="icon">📂</span>
+      <h4>Projects Portfolio</h4>
+      <p>AI-extracted project details from the resume — project name, description, and the skills used in each project. Helps evaluate hands-on experience.</p>
+    </div>
+    <div class="feature-card">
+      <span class="icon">💬</span>
+      <h4>Comments & Notes</h4>
+      <p>Recruiters can add freeform comments and notes. Internal team collaboration on each candidate's profile with persistent comment storage.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SLIDE 13: INTERVIEW QUESTION GENERATION ========== -->
+<section>
+  <div class="slide-label">Interview Preparation</div>
+  <div class="slide-title" style="font-size:2.2em;">AI Interview Question Generator</div>
+  <div class="divider"></div>
+
+  <div class="two-col">
+    <div>
+      <div class="slide-subtitle">The system generates tailored interview questions based on each candidate's profile and the assigned job description.</div>
+
+      <div class="feature-card" style="margin-bottom:12px;">
+        <h4>🧑‍💼 HR & Behavioral Questions</h4>
+        <p>AI generates screening questions about work culture, career goals, strengths/weaknesses — customized based on the candidate's experience level and role.</p>
+      </div>
+
+      <div class="feature-card" style="margin-bottom:12px;">
+        <h4>💻 Technical & Domain Questions</h4>
+        <p>Questions based on the candidate's specific skills and projects. Tests depth of knowledge in their claimed areas — React hooks, database optimization, system design, etc.</p>
+      </div>
+
+      <div class="feature-card">
+        <h4>📋 JD-Relevant Questions</h4>
+        <p>When a job is assigned, additional questions are generated specifically targeting the job description requirements and the candidate's matching/missing skills.</p>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:0.82em; font-weight:700; margin-bottom:10px; color:var(--accent3);">Question Importance Levels</div>
+
+      <div style="margin-bottom:10px; padding:10px 14px; border-radius:8px; background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2);">
+        <div style="font-size:0.75em; font-weight:700; color:#fca5a5;">🔴 MUST ASK / VERY IMPORTANT</div>
+        <div style="font-size:0.65em; color:var(--text-secondary); margin-top:4px;">Critical questions that assess core competency gaps</div>
+      </div>
+
+      <div style="margin-bottom:10px; padding:10px 14px; border-radius:8px; background:rgba(249,115,22,0.08); border:1px solid rgba(249,115,22,0.2);">
+        <div style="font-size:0.75em; font-weight:700; color:#fdba74;">🟠 IMPORTANT</div>
+        <div style="font-size:0.65em; color:var(--text-secondary); margin-top:4px;">Significant questions about role-specific requirements</div>
+      </div>
+
+      <div style="margin-bottom:10px; padding:10px 14px; border-radius:8px; background:rgba(234,179,8,0.08); border:1px solid rgba(234,179,8,0.2);">
+        <div style="font-size:0.75em; font-weight:700; color:#fde047;">🟡 GOOD TO ASK</div>
+        <div style="font-size:0.65em; color:var(--text-secondary); margin-top:4px;">Useful for understanding breadth of knowledge</div>
+      </div>
+
+      <div style="margin-bottom:10px; padding:10px 14px; border-radius:8px; background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.2);">
+        <div style="font-size:0.75em; font-weight:700; color:#93c5fd;">🔵 SCREENING</div>
+        <div style="font-size:0.65em; color:var(--text-secondary); margin-top:4px;">Quick verification of basic qualifications</div>
+      </div>
+
+      <div style="padding:10px 14px; border-radius:8px; background:rgba(34,197,94,0.08); border:1px solid rgba(34,197,94,0.2);">
+        <div style="font-size:0.75em; font-weight:700; color:#86efac;">🟢 OPTIONAL</div>
+        <div style="font-size:0.65em; color:var(--text-secondary); margin-top:4px;">Nice-to-have questions if time permits</div>
+      </div>
+
+      <div class="highlight-box" style="margin-top:12px;">
+        <h4>💡 Answers Included</h4>
+        <p>Each question includes an expected answer guide for interviewers to evaluate responses objectively.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SLIDE 14: INBOX & INGESTION TRACKER ========== -->
+<section>
+  <div class="slide-label">Operations</div>
+  <div class="slide-title" style="font-size:2.2em;">Inbox & Ingestion Tracking</div>
+  <div class="divider"></div>
+
+  <div class="two-col">
+    <div>
+      <div style="font-size:0.95em; font-weight:700; margin-bottom:12px; color:var(--text-primary);">📥 Smart Inbox</div>
+      <ul class="list-clean">
+        <li><strong>Email preview panel</strong> — View sender, subject, date, body snippet, and attachment list directly in the app</li>
+        <li><strong>Attachment-level processing</strong> — Select individual PDF attachments from emails with multiple files</li>
+        <li><strong>AI category badge</strong> — Each email shows its AI classification (Resume, HR, Spam, etc.) with confidence score</li>
+        <li><strong>One-click import</strong> — Process a resume attachment with a single button click</li>
+        <li><strong>Auto-process toggle</strong> — Enable fully automatic processing where resume-categorized emails are imported without manual intervention</li>
+        <li><strong>Email compose</strong> — Send emails directly to candidates from within the platform</li>
+      </ul>
+    </div>
+    <div>
+      <div style="font-size:0.95em; font-weight:700; margin-bottom:12px; color:var(--text-primary);">📊 Ingestion Tracker</div>
+      <ul class="list-clean">
+        <li><strong>Real-time status</strong> — Live processing status for each resume: Processing → Success / Failed / Duplicate / Cancelled</li>
+        <li><strong>Source tracking</strong> — Shows whether the resume came from Manual Upload, Gmail, or Outlook</li>
+        <li><strong>Error details</strong> — If parsing fails, displays the exact error message for debugging</li>
+        <li><strong>Candidate linking</strong> — Successful imports show the parsed candidate name and ID for quick navigation</li>
+        <li><strong>File name preservation</strong> — Original file name retained for traceability</li>
+        <li><strong>Timestamp logging</strong> — Exact import time recorded for each file</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SLIDE 15: RBAC & AUTHENTICATION ========== -->
+<section>
+  <div class="slide-label">Security</div>
+  <div class="slide-title" style="font-size:2.2em;">Authentication & Access Control</div>
+  <div class="divider"></div>
+
+  <div class="feature-grid-3">
+    <div class="feature-card" style="border-top:3px solid var(--accent);">
+      <span class="icon">🔐</span>
+      <h4>Admin</h4>
+      <p>Full system access. Manage all jobs, candidates, settings, user accounts. Configure AI providers, email integrations, and tag preferences. Access all dashboard analytics.</p>
+    </div>
+    <div class="feature-card" style="border-top:3px solid var(--green);">
+      <span class="icon">👨‍💻</span>
+      <h4>Recruiter</h4>
+      <p>Upload and parse resumes. Manage candidate pipeline. Run searches and JD matching. View and process inbox emails. Access the ingestion tracker and reporting.</p>
+    </div>
+    <div class="feature-card" style="border-top:3px solid var(--amber);">
+      <span class="icon">👔</span>
+      <h4>Hiring Manager</h4>
+      <p>View-only access to assigned candidate profiles. Review match scores and interview questions. Cannot upload, delete, or modify candidate data. Focused review interface.</p>
+    </div>
+  </div>
+
+  <div class="two-col" style="margin-top:16px;">
+    <div class="highlight-box">
+      <h4>🔑 JWT Token Authentication</h4>
+      <p>Secure login with email/password. Server issues JWT tokens for session management. All API endpoints are protected with middleware token verification. Passwords stored with bcrypt hashing.</p>
+    </div>
+    <div class="highlight-box">
+      <h4>👥 User Management Panel</h4>
+      <p>Admins can create new users, assign roles, reset passwords, and delete accounts through a dedicated management interface. Role changes take effect immediately.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SLIDE 16: REPORTING & ANALYTICS ========== -->
+<section>
+  <div class="slide-label">Analytics</div>
+  <div class="slide-title" style="font-size:2.2em;">Reporting & Analytics Dashboard</div>
+  <div class="divider"></div>
+
+  <div class="stat-row">
+    <div class="stat-card">
+      <div class="stat-value">4</div>
+      <div class="stat-label">KPI Dashboard Cards</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">5</div>
+      <div class="stat-label">Pipeline Stages Tracked</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">3</div>
+      <div class="stat-label">Sourcing Channels</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">5</div>
+      <div class="stat-label">Seniority Segments</div>
+    </div>
+  </div>
+
+  <div class="feature-grid">
+    <div class="feature-card">
+      <h4>📈 Recruitment Funnel</h4>
+      <p>Visual conversion funnel from Sourced → Shortlisted → Interviewed → Offered. Shows conversion rates between stages and identifies pipeline bottlenecks.</p>
+    </div>
+    <div class="feature-card">
+      <h4>🎯 Match Score Distribution</h4>
+      <p>Categorizes candidates into Excellent (90–100), Good (70–89), Average (50–69), and Poor (&lt;50) bands with percentage breakdowns.</p>
+    </div>
+    <div class="feature-card">
+      <h4>📬 Sourcing Channel Breakdown</h4>
+      <p>Tracks how many candidates came from Manual Upload, Gmail Integration, and Outlook Integration. Helps evaluate channel effectiveness.</p>
+    </div>
+    <div class="feature-card">
+      <h4>👥 Seniority Distribution</h4>
+      <p>Bar chart showing the distribution of candidates across Junior, Mid, Senior, Lead, and Executive levels. Visual talent pool composition.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SLIDE 17: JOB MANAGEMENT ========== -->
+<section>
+  <div class="slide-label">Job Management</div>
+  <div class="slide-title" style="font-size:2.2em;">Job Requisition & Settings</div>
+  <div class="divider"></div>
+
+  <div class="two-col">
+    <div>
+      <div style="font-size:0.95em; font-weight:700; margin-bottom:12px; color:var(--text-primary);">📋 Job Management</div>
+      <ul class="list-clean">
+        <li><strong>Create job requisitions</strong> — Title, department, location, status, full description, and requirements</li>
+        <li><strong>Multi-platform posting flags</strong> — Mark jobs for LinkedIn, Indeed, ZipRecruiter, Internal Career portals</li>
+        <li><strong>Candidate-to-job assignment</strong> — Link candidates to specific job openings for targeted scoring</li>
+        <li><strong>Active/Closed status management</strong> — Track which positions are actively hiring</li>
+        <li><strong>Pipeline view per job</strong> — Filter pipeline board by individual job requisitions</li>
+      </ul>
+    </div>
+    <div>
+      <div style="font-size:0.95em; font-weight:700; margin-bottom:12px; color:var(--text-primary);">⚙️ Settings Panel</div>
+      <ul class="list-clean">
+        <li><strong>AI Provider selection</strong> — Switch between Gemini, OpenAI, Claude, Ollama with API key management</li>
+        <li><strong>Email provider config</strong> — Gmail IMAP credentials or Microsoft Outlook OAuth 2.0 client configuration</li>
+        <li><strong>Tag preferences</strong> — Define custom tag categories and descriptions for resume parsing</li>
+        <li><strong>Sourcing agent toggle</strong> — Enable/disable the background email polling agent</li>
+        <li><strong>Scoring mode toggle</strong> — Switch between ranking by job match score or own-category score</li>
+        <li><strong>Ollama endpoint config</strong> — Custom URL, model name, and embedding model for local AI</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SLIDE 18: TECHNOLOGY STACK ========== -->
+<section>
+  <div class="slide-label">Technology</div>
+  <div class="slide-title" style="font-size:2.2em;">Technology Stack</div>
+  <div class="divider"></div>
+
+  <div class="feature-grid-3">
+    <div class="feature-card">
+      <span class="icon">⚛️</span>
+      <h4>Frontend</h4>
+      <p><strong>React 18</strong> with Vite build tool. Component-based SPA with glassmorphism dark theme. Lucide React icon library. Responsive grid layouts.</p>
+    </div>
+    <div class="feature-card">
+      <span class="icon">🟢</span>
+      <h4>Backend</h4>
+      <p><strong>Node.js + Express.js</strong> REST API server. Multer for file uploads. JWT authentication middleware. CORS-enabled for cross-origin requests.</p>
+    </div>
+    <div class="feature-card">
+      <span class="icon">🍃</span>
+      <h4>Database</h4>
+      <p><strong>MongoDB</strong> with Mongoose ODM. Collections: Candidates, Jobs, Settings, Users, EmailLogs, IngestionLogs, ResumeChunks, ProcessedEmails.</p>
+    </div>
+    <div class="feature-card">
+      <span class="icon">🤖</span>
+      <h4>AI & ML</h4>
+      <p><strong>5 AI providers</strong> for text generation. Vector embedding service for semantic search. Cosine similarity for candidate retrieval. JSON repair for robustness.</p>
+    </div>
+    <div class="feature-card">
+      <span class="icon">📧</span>
+      <h4>Email Integration</h4>
+      <p><strong>ImapFlow</strong> for Gmail IMAP. <strong>Microsoft Graph API</strong> for Outlook. Mailparser for email parsing. Background polling with deduplication.</p>
+    </div>
+    <div class="feature-card">
+      <span class="icon">📄</span>
+      <h4>Document Processing</h4>
+      <p><strong>PDF.js</strong> (pdfjs-dist) for text extraction. <strong>Python Tesseract OCR</strong> fallback for scanned/image-based PDFs. Handles all PDF formats.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SLIDE 19: COMPLETE WORKFLOW ========== -->
+<section>
+  <div class="slide-label">End-to-End</div>
+  <div class="slide-title" style="font-size:2.2em;">Complete Recruitment Workflow</div>
+  <div class="divider"></div>
+
+  <div class="flow-container">
+    <div class="flow-step" style="border-top:3px solid #6366f1;">
+      <span class="step-icon">📤</span>
+      <span class="step-label">Source</span>
+      <span class="step-detail">Upload / Gmail / Outlook</span>
+    </div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step" style="border-top:3px solid #8b5cf6;">
+      <span class="step-icon">📄</span>
+      <span class="step-label">Extract</span>
+      <span class="step-detail">PDF.js / OCR</span>
+    </div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step" style="border-top:3px solid #a78bfa;">
+      <span class="step-icon">🤖</span>
+      <span class="step-label">Parse</span>
+      <span class="step-detail">AI → Structured JSON</span>
+    </div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step" style="border-top:3px solid #38bdf8;">
+      <span class="step-icon">🗄️</span>
+      <span class="step-label">Store</span>
+      <span class="step-detail">MongoDB + Vectors</span>
+    </div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step" style="border-top:3px solid #10b981;">
+      <span class="step-icon">🔍</span>
+      <span class="step-label">Search</span>
+      <span class="step-detail">Keyword / Semantic</span>
+    </div>
+  </div>
+
+  <div class="flow-container">
+    <div class="flow-step" style="border-top:3px solid #eab308;">
+      <span class="step-icon">📊</span>
+      <span class="step-label">Match & Score</span>
+      <span class="step-detail">JD → 0-100%</span>
+    </div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step" style="border-top:3px solid #f97316;">
+      <span class="step-icon">📋</span>
+      <span class="step-label">Pipeline</span>
+      <span class="step-detail">Kanban Board</span>
+    </div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step" style="border-top:3px solid #f43f5e;">
+      <span class="step-icon">❓</span>
+      <span class="step-label">Interview Prep</span>
+      <span class="step-detail">AI-Generated Q&A</span>
+    </div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step" style="border-top:3px solid #ec4899;">
+      <span class="step-icon">📈</span>
+      <span class="step-label">Analytics</span>
+      <span class="step-detail">Funnel & Reports</span>
+    </div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step" style="border-top:3px solid #10b981;">
+      <span class="step-icon">🎉</span>
+      <span class="step-label">Hire</span>
+      <span class="step-detail">Offer Extended</span>
+    </div>
+  </div>
+
+  <div class="highlight-box" style="margin-top:16px; text-align:center;">
+    <h4 style="font-size:0.9em;">From Resume Upload to Offer — Fully AI-Assisted, End-to-End</h4>
+    <p style="font-size:0.78em;">Every step in the recruitment lifecycle is automated or AI-assisted. Manual intervention is only needed for final human judgment calls — shortlisting, interviewing, and extending offers.</p>
+  </div>
+</section>
+
+<!-- ========== SLIDE 20: THANK YOU ========== -->
+<section class="title-slide">
+  <div class="slide-title" style="font-size:3em;">Thank You</div>
+  <div class="divider" style="margin: 12px auto 24px auto;"></div>
+  <div class="slide-subtitle" style="text-align:center; max-width:600px; margin: 0 auto;">
+    TalentFlow — AI-Powered Recruitment Automation Platform<br>
+    <span style="font-size:0.9em;">Questions & Discussion</span>
+  </div>
+  <div style="margin-top:24px; display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+    <span class="tag tag-purple">React 18</span>
+    <span class="tag tag-green">Node.js</span>
+    <span class="tag tag-amber">MongoDB</span>
+    <span class="tag tag-blue">Gemini AI</span>
+    <span class="tag tag-rose">IMAP / Graph API</span>
+    <span class="tag tag-sky">Vector Search</span>
+  </div>
+</section>
+
+</div><!-- end slides -->
+</div><!-- end reveal -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/reveal.min.js"></script>
+<script>
+  Reveal.initialize({
+    hash: true,
+    slideNumber: 'c/t',
+    transition: 'slide',
+    transitionSpeed: 'default',
+    width: 1280,
+    height: 720,
+    margin: 0,
+    controls: true,
+    progress: true,
+    center: false,
+    mouseWheel: false,
+    backgroundTransition: 'fade'
+  });
+</script>
+</body>
+</html>

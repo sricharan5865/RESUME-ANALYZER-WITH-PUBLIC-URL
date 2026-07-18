@@ -1,0 +1,2 @@
+## 2026-07-15T16:21:03Z
+Analyze the Ollama setup, prompts, and parameters (num_ctx: 8192, num_predict: 2048/256) in server/geminiParser.js and server/server.js. Verify that the prompts are compressed and optimized for Ollama to reduce pre-processing latency. Also verify that the duplicate candidate resolution flow (Update, Delete & Import New, Delete Existing Only, Cancel) is fully preserved. Write your findings to handoff.md in your working directory.

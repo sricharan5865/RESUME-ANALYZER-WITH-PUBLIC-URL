@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Shield, Briefcase, Mail, Plus, Trash2, Info, AlertTriangle, Tag } from 'lucide-react';
 
 export default function SettingsView({ token, jobs, templates, onJobCreated, onJobDeleted, onJobUpdated, onSettingsSaved, backendUrl, currentRole }) {
-  const [activeSubTab, setActiveSubTab] = useState('jobs');
+  const [activeSubTab, setActiveSubTab] = useState('templates');
 
   // New Job Form State
   const [jobTitle, setJobTitle] = useState('');
@@ -12,6 +12,7 @@ export default function SettingsView({ token, jobs, templates, onJobCreated, onJ
   const [jobReqs, setJobReqs] = useState('');
 
   // Email Template Form State
+  const [tplApplicationReceived, setTplApplicationReceived] = useState('');
   const [tplInterview, setTplInterview] = useState('');
   const [tplOffer, setTplOffer] = useState('');
   const [tplReject, setTplReject] = useState('');
@@ -67,9 +68,10 @@ export default function SettingsView({ token, jobs, templates, onJobCreated, onJ
 
   useEffect(() => {
     if (templates) {
-      setTplInterview(templates.interview || '');
-      setTplOffer(templates.offer || '');
-      setTplReject(templates.reject || '');
+      setTplApplicationReceived(templates.applicationReceived || 'Subject: Application Received - {job_title}\n\nHi {candidate_name},\n\nThank you for applying for the {job_title} role at {company_name}. We have received your application and our team will review it shortly.\n\nBest regards,\nTalent Acquisition Team');
+      setTplInterview(templates.interview || 'Subject: Interview Invitation: {job_title} at {company_name}\n\nHi {candidate_name},\n\nWe were impressed by your background and would like to invite you to an interview for the {job_title} position.\n\nPlease let us know your availability for next week.\n\nBest regards,\nTalent Acquisition Team');
+      setTplOffer(templates.offer || 'Subject: Job Offer: {job_title} at {company_name}\n\nHi {candidate_name},\n\nWe are thrilled to offer you the position of {job_title} at {company_name}!\n\nPlease review the attached offer letter and let us know if you have any questions.\n\nBest regards,\nTalent Acquisition Team');
+      setTplReject(templates.reject || 'Subject: Update on your application for {job_title}\n\nHi {candidate_name},\n\nThank you for taking the time to apply for the {job_title} role. \n\nWhile your background is impressive, we have decided to move forward with other candidates who more closely fit our current needs.\n\nWe wish you the best in your job search.\n\nBest regards,\nTalent Acquisition Team');
     }
   }, [templates]);
 
@@ -256,6 +258,7 @@ export default function SettingsView({ token, jobs, templates, onJobCreated, onJ
     e.preventDefault();
     try {
       const newTpls = {
+        applicationReceived: tplApplicationReceived,
         interview: tplInterview,
         offer: tplOffer,
         reject: tplReject
@@ -453,17 +456,6 @@ export default function SettingsView({ token, jobs, templates, onJobCreated, onJ
           className="btn" 
           style={{ 
             justifyContent: 'flex-start', 
-            background: activeSubTab === 'jobs' ? 'var(--accent-gradient)' : 'transparent',
-            color: activeSubTab === 'jobs' ? 'white' : 'var(--text-secondary)'
-          }}
-          onClick={() => setActiveSubTab('jobs')}
-        >
-          <Briefcase size={16} /> Job Positions
-        </button>
-        <button 
-          className="btn" 
-          style={{ 
-            justifyContent: 'flex-start', 
             background: activeSubTab === 'templates' ? 'var(--accent-gradient)' : 'transparent',
             color: activeSubTab === 'templates' ? 'white' : 'var(--text-secondary)'
           }}
@@ -497,127 +489,6 @@ export default function SettingsView({ token, jobs, templates, onJobCreated, onJ
 
       {/* Main Settings Display */}
       <div className="glass" style={{ padding: '32px', borderRadius: 'var(--radius-lg)', overflowY: 'auto' }}>
-        
-        {/* VIEW 1: JOBS MANAGEMENT */}
-        {activeSubTab === 'jobs' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-            <div>
-              <h3 style={{ fontSize: '20px', marginBottom: '8px' }}>Job Postings</h3>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
-                Manage the job descriptions used by the Google Gemini AI engine to calculate candidate match scores.
-              </p>
-            </div>
-
-            {/* List active jobs */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <h4 style={{ fontSize: '15px', color: 'var(--text-secondary)' }}>Active Positions ({jobs.length})</h4>
-              {jobs.length === 0 ? (
-                <div style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', textAlign: 'center', color: 'var(--text-muted)' }}>
-                  No active job postings. Create one below to begin matching.
-                </div>
-              ) : (
-                jobs.map(job => (
-                  <div key={job.id} style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '20px', background: 'var(--bg-secondary)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius-md)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <h4 style={{ fontSize: '15px', fontWeight: '600' }}>{job.title}</h4>
-                        <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{job.department} • {job.location}</p>
-                      </div>
-                      {currentRole !== 'Hiring Manager' && (
-                        <button className="btn btn-danger" style={{ padding: '6px' }} onClick={() => handleDeleteJob(job.id)}>
-                          <Trash2 size={14} />
-                        </button>
-                      )}
-                    </div>
-                    
-                    {/* Distribution Hub Switchers */}
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', borderTop: '1px dashed var(--glass-border)', paddingTop: '12px' }}>
-                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', width: '100%', textTransform: 'uppercase', marginBottom: '4px' }}>Simulated External Portal Distribution</span>
-                      
-                      {[
-                        { key: 'linkedIn', label: 'LinkedIn', color: '#0077b5' },
-                        { key: 'indeed', label: 'Indeed', color: '#003a9b' },
-                        { key: 'zipRecruiter', label: 'ZipRecruiter', color: '#00b388' },
-                        { key: 'internalCareer', label: 'Internal Career Site', color: 'var(--accent-primary)' }
-                      ].map(platform => {
-                        const isPosted = job.postings?.[platform.key] || false;
-                        return (
-                          <button
-                            key={platform.key}
-                            type="button"
-                            onClick={() => currentRole !== 'Hiring Manager' && handleTogglePosting(job, platform.key)}
-                            disabled={currentRole === 'Hiring Manager'}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '6px',
-                              padding: '4px 10px',
-                              borderRadius: '4px',
-                              fontSize: '11px',
-                              fontWeight: '600',
-                              cursor: currentRole === 'Hiring Manager' ? 'default' : 'pointer',
-                              border: `1px solid ${isPosted ? platform.color : 'var(--glass-border)'}`,
-                              background: isPosted ? 'rgba(16, 185, 129, 0.08)' : 'transparent',
-                              color: isPosted ? 'var(--status-offered)' : 'var(--text-secondary)',
-                              transition: 'all 0.2s'
-                            }}
-                          >
-                            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: isPosted ? 'var(--status-offered)' : 'var(--text-muted)' }}></span>
-                            {platform.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-
-            {/* Add Job Form */}
-            {currentRole !== 'Hiring Manager' && (
-              <form onSubmit={handleCreateJob} style={{ borderTop: '1px solid var(--glass-border)', paddingTop: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <h4 style={{ fontSize: '15px' }}>Add New Position</h4>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
-                  <div className="form-group">
-                    <label className="form-label">Job Title*</label>
-                    <input type="text" className="form-input" placeholder="e.g. Node Backend Engineer" value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Department</label>
-                    <input type="text" className="form-input" placeholder="e.g. Engineering" value={jobDept} onChange={(e) => setJobDept(e.target.value)} />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Location</label>
-                    <input type="text" className="form-input" placeholder="e.g. Remote / Hyderabad" value={jobLoc} onChange={(e) => setJobLoc(e.target.value)} />
-                  </div>
-                </div>
-                
-                <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-end', background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--glass-border)' }}>
-                  <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
-                    <label className="form-label">AI Generator Keywords / Core Skills</label>
-                    <input type="text" className="form-input" placeholder="e.g. 5 years Experience, Microservices, AWS" value={jdKeywords} onChange={(e) => setJdKeywords(e.target.value)} />
-                  </div>
-                  <button type="button" className="btn btn-secondary" onClick={handleGenerateJD} disabled={generatingJD} style={{ height: '38px', padding: '0 20px' }}>
-                    {generatingJD ? 'Generating...' : 'Generate JD with AI'}
-                  </button>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Job Description Summary*</label>
-                  <textarea className="form-input" rows={3} placeholder="Describe the role responsibilities..." value={jobDesc} onChange={(e) => setJobDesc(e.target.value)} />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Requirements Criteria* (One per line or comma-separated)</label>
-                  <textarea className="form-input" rows={4} placeholder="e.g. React.js, Node.js, 3+ years of experience, Docker, AWS..." value={jobReqs} onChange={(e) => setJobReqs(e.target.value)} />
-                </div>
-                <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start' }}>
-                  <Plus size={14} /> Add Position
-                </button>
-              </form>
-            )}
-          </div>
-        )}
-
         {/* VIEW 2: TEMPLATE SETTINGS */}
         {activeSubTab === 'templates' && (
           <form onSubmit={handleSaveTemplates} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -635,6 +506,11 @@ export default function SettingsView({ token, jobs, templates, onJobCreated, onJ
                 <br />
                 The first line starting with <code>Subject:</code> will be parsed as the email subject line.
               </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Application Received (Auto-Reply) Template</label>
+              <textarea className="form-input" rows={6} value={tplApplicationReceived} onChange={(e) => setTplApplicationReceived(e.target.value)} style={{ fontFamily: 'monospace', fontSize: '13px' }} placeholder="Subject: Application Received&#10;&#10;Hi {candidate_name},&#10;&#10;Thank you for applying for the {job_title} role at {company_name}. We have received your application." />
             </div>
 
             <div className="form-group">

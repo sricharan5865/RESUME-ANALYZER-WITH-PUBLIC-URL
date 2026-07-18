@@ -847,6 +847,22 @@ export default function CandidateDetails({ candidate: propCandidate, job, onClos
                 </div>
               </div>
 
+              {candidate.redFlags && candidate.redFlags.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingTop: '16px', borderTop: '1px solid var(--glass-border)', marginTop: '16px' }}>
+                  <h4 style={{ fontSize: '12px', color: 'var(--status-rejected)', display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    <AlertCircle size={14} /> Red Flags / Discrepancies Detected
+                  </h4>
+                  {candidate.redFlags.map((flag, idx) => (
+                    <div key={idx} style={{ background: 'rgba(239, 68, 68, 0.05)', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#f87171' }}>{flag.issue}</span>
+                        <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}><strong>Severity:</strong> {flag.severity}</span>
+                        <span style={{ fontSize: '12px', color: 'var(--text-primary)' }}><strong>Suggestion:</strong> {flag.fix_suggestion}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

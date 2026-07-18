@@ -22,7 +22,7 @@ import { ImapFlow } from 'imapflow';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { fetchIMAPEmails, markIMAPEmailAsRead, getIMAPAttachmentData } from './imapSourcing.js';
-import { parseResume, scoreCandidate, scoreCandidateByOwnCategory, generateTags, generateJobDescription, generateQuestionsForCandidate } from './geminiParser.js';
+import { parseResume, scoreCandidate, scoreCandidateByOwnCategory, generateTags, generateJobDescription, generateQuestionsForCandidate, scoreCandidateAgainstChecklist, extractChecklistFromJob } from './geminiParser.js';
 import { extractTextFromPDF, extractTextFromFile, convertDocxToHtml } from './parser.js';
 import { searchIndex } from './searchIndex.js';
 import { Candidate, Job, Settings, ProcessedEmail, IngestionLog, User } from './models.js';
@@ -655,8 +655,11 @@ async function processEmailAttachment(messageId, filename, buffer, emailConfig, 
     console.log(`Scoring according to candidate's own category...`);
     const ownCategoryResult = await scoreCandidateByOwnCategory(parsedData);
 
-    let job = await Job.findOne({ status: 'Active' });
-    let jobId = job ? job.id : null;
+    let jobId = null;
+    let job = await autoRouteCandidate(parsedData);
+    if (job) {
+      jobId = job.id;
+    }
     let scoringResult = { score: 0, matchingSkills: [], missingSkills: [], reasoning: '' };
 
     if (job) {
@@ -1080,6 +1083,14 @@ app.post('/api/candidates/extract-gmail', authenticateToken, requireRole(['admin
     if (jobId) {
       job = await Job.findOne({ id: jobId });
     }
+    
+    // Auto-Routing: If no explicit jobId is provided, try to find the best match
+    if (!jobId || !job) {
+      job = await autoRouteCandidate(parsedData);
+      if (job) {
+        jobId = job.id;
+      }
+    }
     if (job) {
       console.log(`Scoring against job: ${job.title}...`);
       scoringResult = await scoreCandidate(parsedData, job);
@@ -1252,10 +1263,59 @@ app.get('/api/candidates/:id/resume-html', authenticateToken, async (req, res) =
   }
 });
 
+// --- Auto-Routing Helper ---
+async function autoRouteCandidate(parsedData) {
+  try {
+    const activeJobs = await Job.find({ status: 'Active' });
+    if (!activeJobs || activeJobs.length === 0) return null;
+    
+    let bestJob = null;
+    let highestScore = 0;
+    
+    // Quick heuristic: keyword overlap between candidate skills and job requirements
+    const candidateSkills = (parsedData.skills || []).map(s => s.toLowerCase());
+    if (candidateSkills.length === 0) return null;
+    
+    for (const job of activeJobs) {
+      let score = 0;
+      const jobReqs = (job.requirementsChecklist || []).map(r => r.toLowerCase());
+      const jobDesc = (job.requirements || '').toLowerCase() + ' ' + (job.description || '').toLowerCase();
+      
+      // 1. Check overlap with requirementsChecklist
+      for (const req of jobReqs) {
+        if (candidateSkills.some(skill => req.includes(skill) || skill.includes(req))) {
+          score += 2; // high weight for checklist overlap
+        }
+      }
+      
+      // 2. Check overlap of candidate skills within job description text
+      for (const skill of candidateSkills) {
+        if (skill.length > 2 && jobDesc.includes(skill)) {
+          score += 1;
+        }
+      }
+      
+      if (score > highestScore && score > 0) {
+        highestScore = score;
+        bestJob = job;
+      }
+    }
+    
+    if (bestJob) {
+      console.log(`Auto-routed candidate '${parsedData.name}' to job '${bestJob.title}' (overlap score: ${highestScore})`);
+      return bestJob;
+    }
+    return null;
+  } catch (err) {
+    console.error('Auto-routing failed:', err);
+    return null;
+  }
+}
+
 app.post('/api/candidates/upload', authenticateToken, requireRole(['admin', 'recruiter']), upload.single('resume'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No resume file uploaded.' });
   global.lastUploadedFilename = req.file.originalname;
-  const { jobId, logId } = req.body;
+  let { jobId, logId } = req.body;
 
   let activeLogId = logId;
   let existingLog = null;
@@ -1337,17 +1397,49 @@ app.post('/api/candidates/upload', authenticateToken, requireRole(['admin', 'rec
     if (jobId) {
       job = await Job.findOne({ id: jobId });
     }
+    
+    // Auto-Routing: If no explicit jobId is provided, try to find the best match
+    if (!jobId || !job) {
+      job = await autoRouteCandidate(parsedData);
+      if (job) {
+        jobId = job.id;
+      }
+    }
+
+    if (job && (!job.requirementsChecklist || job.requirementsChecklist.length === 0)) {
+      console.log(`Auto-generating requirements checklist for job ${job.title}...`);
+      const generatedChecklist = await extractChecklistFromJob(job);
+      job.requirementsChecklist = generatedChecklist;
+      await job.save().catch(e => console.error('Failed to save auto-generated checklist:', e));
+    }
+
+    let checklistResult = { score: 0, passedCoreSkills: true, matchedRequirements: [], unmatchedRequirements: [], reasoning: '', checklist: [] };
+    let jdQuestions = null;
 
     try {
       console.log('Running analysis, scoring, and tag generation in parallel...');
       const results = await Promise.all([
         scoreCandidateByOwnCategory(parsedData).catch(e => { console.error('Own category score failed:', e.message); return null; }),
         job ? scoreCandidate(parsedData, job).catch(e => { console.error('Job match score failed:', e.message); return null; }) : Promise.resolve(null),
-        generateTags(parsedData, job || { title: 'General', description: '' }, settings?.tagPreferences || []).catch(e => { console.error('Tag generation failed:', e.message); return null; })
+        generateTags(parsedData, job || { title: 'General', description: '' }, settings?.tagPreferences || []).catch(e => { console.error('Tag generation failed:', e.message); return null; }),
+        job ? scoreCandidateAgainstChecklist(parsedData, job).catch(e => { console.error('Checklist score failed:', e.message); return null; }) : Promise.resolve(null),
+        job ? generateQuestionsForCandidate(parsedData, job).catch(e => { console.error('JD question generation failed:', e.message); return null; }) : Promise.resolve(null)
       ]);
       if (results[0]) ownCategoryResult = results[0];
       if (results[1]) scoringResult = results[1];
       if (results[2]) generatedTags = results[2];
+      if (results[3]) checklistResult = results[3];
+      if (results[4]) jdQuestions = results[4];
+      
+      // Override primary holistic score with the checklist score if a checklist was generated and evaluated
+      if (checklistResult.checklist && checklistResult.checklist.length > 0) {
+        scoringResult = {
+          score: checklistResult.score,
+          matchingSkills: checklistResult.matchedRequirements,
+          missingSkills: checklistResult.unmatchedRequirements,
+          reasoning: checklistResult.reasoning
+        };
+      }
     } catch (err) {
       console.error('Parallel scoring/tagging failed:', err.message);
     }
@@ -1369,13 +1461,31 @@ app.post('/api/candidates/upload', authenticateToken, requireRole(['admin', 'rec
       comments: '',
       seniorityLevel: parsedData.seniorityLevel || 'Mid',
       interviewQuestions: parsedData.interviewQuestions || [],
-      hrQuestions: parsedData.hrQuestions || [],
-      technicalQuestions: parsedData.technicalQuestions || [],
+      hrQuestions: jdQuestions?.hrQuestions || parsedData.hrQuestions || [],
+      technicalQuestions: jdQuestions?.technicalQuestions || parsedData.technicalQuestions || [],
+      redFlags: jdQuestions?.red_flags || parsedData.red_flags || [],
       projects: parsedData.projects || [],
+      checklist: checklistResult.checklist || [],
+      checklistScore: checklistResult.score || 0,
+      matchedRequirements: checklistResult.matchedRequirements || [],
+      unmatchedRequirements: checklistResult.unmatchedRequirements || [],
+      passedCoreSkills: checklistResult.passedCoreSkills !== false,
       history: [{ date: new Date().toISOString(), type: 'Imported', text: `Manual upload: ${req.file.originalname}` }]
     });
 
     await newCandidate.save();
+
+    // Re-calculate ranks for all candidates of the same job
+    if (jobId) {
+      const candidatesForJob = await Candidate.find({ jobId }).sort({ matchScore: -1 });
+      const totalApplicants = candidatesForJob.length;
+      for (let index = 0; index < candidatesForJob.length; index++) {
+        const cand = candidatesForJob[index];
+        cand.rank = index + 1;
+        cand.totalApplicants = totalApplicants;
+        await cand.save().catch(e => console.error('Failed to update candidate rank:', e));
+      }
+    }
 
     await IngestionLog.updateOne(
       { id: activeLogId },
@@ -1390,7 +1500,10 @@ app.post('/api/candidates/upload', authenticateToken, requireRole(['admin', 'rec
     searchIndex.buildIndex(await Candidate.find());
     // Async RAG indexing (non-blocking)
     indexCandidate(newCandidate).catch(err => console.error('RAG index failed for', newCandidate.name, err.message));
-    const candObj = newCandidate.toObject();
+    
+    // Refresh Candidate object with updated rank
+    const finalCandidateObj = await Candidate.findOne({ id: newCandidate.id });
+    const candObj = finalCandidateObj ? finalCandidateObj.toObject() : newCandidate.toObject();
     res.json({
       ...candObj,
       candidate: candObj
@@ -1409,7 +1522,7 @@ app.post('/api/candidates/upload', authenticateToken, requireRole(['admin', 'rec
 });
 
 app.post('/api/candidates/upload/resolve', authenticateToken, requireRole(['admin', 'recruiter']), async (req, res) => {
-  const { action, candidateId, tempFile, parsedData, pdfText, jobId, logId } = req.body;
+  let { action, candidateId, tempFile, parsedData, pdfText, jobId, logId } = req.body;
   const data = (parsedData && typeof parsedData === 'object') ? parsedData : {};
 
   if (tempFile) {
@@ -1606,6 +1719,14 @@ app.post('/api/candidates/upload/resolve', authenticateToken, requireRole(['admi
       let job = null;
       if (jobId) {
         job = await Job.findOne({ id: jobId });
+      }
+      
+      // Auto-Routing: If no explicit jobId is provided, try to find the best match
+      if (!jobId || !job) {
+        job = await autoRouteCandidate(data);
+        if (job) {
+          jobId = job.id;
+        }
       }
 
       try {
@@ -1945,20 +2066,101 @@ app.get('/api/jobs', authenticateToken, async (req, res) => {
 
 app.post('/api/jobs', authenticateToken, requireRole(['admin', 'recruiter']), async (req, res) => {
   try {
-    const { title, department, location, description, requirements, postings } = req.body;
+    const { id, title, department, location, description, requirements, publicDescription, postings, workMode, requiredExperience, closingDate, customFields, publishToCareers } = req.body;
+
+    if (id) {
+      const existingJob = await Job.findOne({ id });
+      if (existingJob) {
+        existingJob.title = title || existingJob.title;
+        existingJob.department = department || existingJob.department;
+        existingJob.location = location || existingJob.location;
+        existingJob.description = description || existingJob.description;
+        existingJob.requirements = requirements || existingJob.requirements;
+        existingJob.publicDescription = publicDescription || existingJob.publicDescription;
+        if (postings) existingJob.postings = postings;
+        existingJob.workMode = workMode || existingJob.workMode;
+        existingJob.requiredExperience = requiredExperience || existingJob.requiredExperience;
+        existingJob.closingDate = closingDate || existingJob.closingDate;
+        existingJob.customFields = customFields || existingJob.customFields;
+        existingJob.publishToCareers = publishToCareers !== undefined ? publishToCareers : existingJob.publishToCareers;
+        if (publishToCareers && !existingJob.publicSlug) {
+          existingJob.publicSlug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Math.floor(Math.random() * 1000);
+        }
+        await existingJob.save();
+        return res.json(existingJob);
+      }
+    }
+
+    let publicSlug = null;
+    if (publishToCareers) {
+      publicSlug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Math.floor(Math.random() * 1000);
+    }
     const newJob = new Job({ 
-      id: `job-${Date.now()}`, 
+      id: id || `job-${Date.now()}`, 
       title, 
       department, 
       location, 
       description, 
       requirements,
-      postings: postings || { linkedIn: false, indeed: false, zipRecruiter: false, internalCareer: false }
+      publicDescription,
+      postings: postings || { linkedIn: false, indeed: false, zipRecruiter: false, internalCareer: false },
+      workMode,
+      requiredExperience,
+      closingDate,
+      customFields,
+      publishToCareers,
+      publicSlug
     });
     await newJob.save();
     res.json(newJob);
   } catch (error) {
     console.error('Failed to create job:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/jobs/:id', authenticateToken, requireRole(['admin', 'recruiter']), async (req, res) => {
+  try {
+    const { title, jobRole, department, location, description, jobDescription, requirements, publicDescription, postings, workMode, requiredExperience, closingDate, customFields, publishToCareers } = req.body;
+    
+    // Support payloads coming from both Settings.jsx (title, description) and FormBuilder.jsx (jobRole, jobDescription)
+    const finalTitle = title || jobRole;
+    const finalDescription = description || jobDescription;
+
+    const updateData = {
+      title: finalTitle,
+      department,
+      location,
+      description: finalDescription,
+      requirements,
+      publicDescription,
+      workMode,
+      requiredExperience,
+      closingDate,
+      customFields,
+      publishToCareers
+    };
+
+    if (postings) updateData.postings = postings;
+    
+    // Regenerate public slug if it's being published and doesn't have one
+    if (publishToCareers) {
+      const existingJob = await Job.findOne({ id: req.params.id });
+      if (!existingJob.publicSlug) {
+        updateData.publicSlug = finalTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Math.floor(Math.random() * 1000);
+      }
+    }
+
+    const updatedJob = await Job.findOneAndUpdate(
+      { id: req.params.id },
+      { $set: updateData },
+      { new: true, runValidators: true }
+    );
+    
+    if (!updatedJob) return res.status(404).json({ error: 'Job not found' });
+    res.json(updatedJob);
+  } catch (error) {
+    console.error('Failed to update job:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -2022,7 +2224,7 @@ app.post('/api/settings', authenticateToken, requireRole(['admin']), async (req,
       'outlookClientId', 'outlookTenantId', 'outlookClientSecret', 'outlookUserEmail',
       'aiProvider', 'geminiApiKey', 'openaiApiKey', 'claudeApiKey',
       'ollamaUrl', 'ollamaModel', 'ollamaEmbeddingModel',
-      'rankAccordingToJob'
+      'rankAccordingToJob', 'emailTemplates'
     ];
 
     const updateData = {};
@@ -2477,6 +2679,640 @@ app.get('/api/ingestion-logs', authenticateToken, requireRole(['admin', 'recruit
     res.status(500).json({ error: error.message });
   }
 });
+
+// ==========================================
+// SMART HR HUB PORTED ROUTES (PUBLIC)
+// ==========================================
+
+app.get('/api/public/jobs', async (req, res) => {
+  try {
+    const jobs = await Job.find({ status: 'Active' });
+    // Strip sensitive fields if any, map to simple format
+    const mapped = jobs.map(j => ({
+      id: j.id,
+      title: j.title,
+      jobRole: j.title,
+      department: j.department,
+      location: j.location,
+      workMode: 'On-site' // Defaulting since it wasn't in original Job schema
+    }));
+    res.json(mapped);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/public/jobs/:id', async (req, res) => {
+  try {
+    const job = await Job.findOne({ id: req.params.id, status: 'Active' });
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+    
+    let fieldsToReturn = job.customFields;
+    if (!fieldsToReturn || fieldsToReturn.length === 0) {
+      fieldsToReturn = [
+        { id: 'fn', label: 'First Name', fieldType: 'ShortText', isRequired: true },
+        { id: 'ln', label: 'Last Name', fieldType: 'ShortText', isRequired: true },
+        { id: 'em', label: 'Email', fieldType: 'Email', fieldKey: 'email', isRequired: true },
+        { id: 'ph', label: 'Phone', fieldType: 'Phone', fieldKey: 'phone', isRequired: true },
+        { id: 'ks', label: 'Key Skills', fieldType: 'LongText', isRequired: true },
+        { id: 'ex', label: 'Total Experience (years)', fieldType: 'Number', isRequired: true },
+        { id: 'cv', label: 'Upload CV', fieldType: 'CvUpload', isRequired: true }
+      ];
+    }
+    
+    res.json({
+      id: job.id,
+      title: job.title,
+      jobRole: job.title,
+      department: job.department,
+      location: job.location,
+      workMode: job.workMode || 'On-site',
+      jobDescription: job.publicDescription || job.description || job.requirements,
+      requiredExperience: job.requiredExperience || null,
+      closingDate: job.closingDate || null,
+      customFields: fieldsToReturn
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// A helper to generate tracking IDs
+function generateTrackingId() {
+  return `IST-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`;
+}
+
+// Temporary file upload for public routes
+app.post('/api/public/cv', upload.single('file'), (req, res) => {
+  if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
+  // For simplicity, we're returning the path. 
+  // In a real app, this should go to a temp bucket and get moved on submit.
+  res.json({ fileRef: req.file.path, fileName: req.file.originalname });
+});
+
+app.post('/api/public/apply', async (req, res) => {
+  try {
+    const { jobId, cvFileRef, cvFileName, answers } = req.body;
+    
+    // Convert answers array to map
+    const ansMap = {};
+    if (answers && Array.isArray(answers)) {
+      answers.forEach(a => ansMap[a.label] = a.value);
+    }
+    
+    const trackingId = generateTrackingId();
+    const candidateId = `cand_${Date.now()}`;
+    const name = (ansMap['First Name'] || '') + ' ' + (ansMap['Last Name'] || '');
+    const finalName = name.trim() || 'Unknown Candidate';
+    const finalEmail = ansMap['Email'] || ansMap['Email Address'] || '';
+    const finalPhone = ansMap['Phone Number'] || ansMap['Phone'] || '';
+    
+    let formSkills = [];
+    if (ansMap['Key Skills']) {
+      formSkills = ansMap['Key Skills'].split(',').map(s => s.trim()).filter(Boolean);
+    }
+
+    // 1. Create candidate immediately in 'processing' state
+    const newCandidate = new Candidate({
+      id: candidateId,
+      trackingId,
+      source: 'direct_apply',
+      jobId: jobId,
+      name: finalName,
+      email: finalEmail,
+      phone: finalPhone,
+      skills: formSkills,
+      resumeUrl: cvFileRef ? `/api/uploads/${path.basename(cvFileRef)}` : '',
+      isProcessing: true,
+      stage: 'Inbox',
+      history: [{ date: new Date().toISOString(), type: 'Status', text: 'Application submitted. AI Analysis in progress...' }]
+    });
+    
+    await newCandidate.save();
+
+    // 2. Create Ingestion Log immediately
+    const logId = `log-${Date.now()}`;
+    const ingestionLog = new IngestionLog({
+      id: logId,
+      fileName: cvFileName || (cvFileRef ? path.basename(cvFileRef) : 'Resume.pdf'),
+      source: 'manual', // or mapped to manual
+      status: 'processing',
+      candidateId: candidateId,
+      candidateName: finalName
+    });
+    await ingestionLog.save().catch(e => console.error('Failed to create ingestion log for public apply:', e));
+
+    // 3. Process LLM parser & scoring in background
+    setTimeout(async () => {
+      let pdfText = '';
+      let parsedData = {};
+      let ownCategoryResult = { score: 0, matchingSkills: [], missingSkills: [], reasoning: '' };
+      let scoringResult = { score: 0, matchingSkills: [], missingSkills: [], reasoning: '' };
+      let generatedTags = [];
+
+      try {
+        if (cvFileRef && fs.existsSync(cvFileRef)) {
+          console.log(`Extracting text from public upload: ${cvFileRef}`);
+          try {
+            pdfText = await extractTextFromFile(cvFileRef, cvFileName || path.basename(cvFileRef), null);
+          } catch (err) {
+            console.warn('Failed to extract text locally for public apply:', err.message);
+          }
+          
+          const fileBuffer = fs.readFileSync(cvFileRef);
+          const pdfBase64 = fileBuffer.toString('base64');
+          console.log('Parsing resume with LLM for public apply...');
+          parsedData = await parseResume(pdfText, pdfBase64);
+          if (!parsedData || Object.keys(parsedData).length === 0) {
+            throw new Error('LLM parser returned empty structured data.');
+          }
+        }
+
+        let job = null;
+        if (jobId) {
+          job = await Job.findOne({ id: jobId });
+          if (job && (!job.requirementsChecklist || job.requirementsChecklist.length === 0)) {
+            console.log(`Auto-generating requirements checklist for job ${job.title}...`);
+            const generatedChecklist = await extractChecklistFromJob(job);
+            job.requirementsChecklist = generatedChecklist;
+            await job.save().catch(e => console.error('Failed to save auto-generated checklist:', e));
+          }
+        }
+        
+        const settings = await Settings.findById('global');
+        let checklistResult = { score: 0, passedCoreSkills: true, matchedRequirements: [], unmatchedRequirements: [], reasoning: '', checklist: [] };
+        let jdQuestions = null;
+        
+        try {
+          console.log('Running analysis, scoring, and tag generation in parallel for public apply...');
+          const results = await Promise.all([
+            scoreCandidateByOwnCategory(parsedData).catch(e => { console.error('Own category score failed:', e.message); return null; }),
+            job ? scoreCandidate(parsedData, job).catch(e => { console.error('Job match score failed:', e.message); return null; }) : Promise.resolve(null),
+            generateTags(parsedData, job || { title: 'General', description: '' }, settings?.tagPreferences || []).catch(e => { console.error('Tag generation failed:', e.message); return null; }),
+            job ? scoreCandidateAgainstChecklist(parsedData, job).catch(e => { console.error('Checklist score failed:', e.message); return null; }) : Promise.resolve(null),
+            job ? generateQuestionsForCandidate({ ...parsedData, formAnswers: answers }, job).catch(e => { console.error('JD question generation failed:', e.message); return null; }) : Promise.resolve(null)
+          ]);
+          if (results[0]) ownCategoryResult = results[0];
+          if (results[1]) scoringResult = results[1];
+          if (results[2]) generatedTags = results[2];
+          if (results[3]) checklistResult = results[3];
+          if (results[4]) jdQuestions = results[4];
+          
+          // Override primary holistic score with the checklist score if a checklist was generated and evaluated
+          if (checklistResult.checklist && checklistResult.checklist.length > 0) {
+            scoringResult = {
+              score: checklistResult.score,
+              matchingSkills: checklistResult.matchedRequirements,
+              missingSkills: checklistResult.unmatchedRequirements,
+              reasoning: checklistResult.reasoning
+            };
+          }
+        } catch (err) {
+          console.error('Parallel scoring/tagging failed for public apply:', err.message);
+        }
+
+        // Update candidate in DB
+        const updatedCandidate = await Candidate.findOneAndUpdate(
+          { id: candidateId },
+          {
+            $set: {
+              name: (finalName && finalName !== 'Unknown Candidate' && finalName.trim() !== '') ? finalName : (parsedData.name || 'Unknown'),
+              email: (finalEmail && finalEmail.trim() !== '') ? finalEmail : (parsedData.email || ''),
+              phone: (finalPhone && finalPhone.trim() !== '') ? finalPhone : (parsedData.phone || ''),
+              linkedinUrl: parsedData.linkedinUrl || '',
+              skills: formSkills.length > 0 ? formSkills : (parsedData.skills || []),
+              experience: parsedData.experience || [],
+              education: parsedData.education || [],
+              tags: generatedTags,
+              resumeText: pdfText,
+              matchScore: scoringResult.score || 0,
+              matchingSkills: scoringResult.matchingSkills || [],
+              missingSkills: scoringResult.missingSkills || [],
+              matchExplanation: scoringResult.reasoning || '',
+              ownCategoryScore: ownCategoryResult.score || 0,
+              ownCategoryMatchingSkills: ownCategoryResult.matchingSkills || [],
+              ownCategoryMissingSkills: ownCategoryResult.missingSkills || [],
+              ownCategoryExplanation: ownCategoryResult.reasoning || '',
+              seniorityLevel: parsedData.seniorityLevel || 'Mid',
+              interviewQuestions: parsedData.interviewQuestions || [],
+              hrQuestions: jdQuestions?.hrQuestions || parsedData.hrQuestions || [],
+              technicalQuestions: jdQuestions?.technicalQuestions || parsedData.technicalQuestions || [],
+              projects: parsedData.projects || [],
+              redFlags: jdQuestions?.red_flags || parsedData.red_flags || [],
+              checklist: checklistResult.checklist || [],
+              checklistScore: checklistResult.score || 0,
+              matchedRequirements: checklistResult.matchedRequirements || [],
+              unmatchedRequirements: checklistResult.unmatchedRequirements || [],
+              passedCoreSkills: checklistResult.passedCoreSkills !== false,
+              isProcessing: false
+            },
+            $push: {
+              history: { date: new Date().toISOString(), type: 'Status', text: 'AI parsing and scoring complete.' }
+            }
+          },
+          { returnDocument: 'after' }
+        );
+
+        // Re-calculate ranks for all candidates of the same job
+        if (jobId) {
+          const candidatesForJob = await Candidate.find({ jobId }).sort({ matchScore: -1 });
+          const totalApplicants = candidatesForJob.length;
+          for (let index = 0; index < candidatesForJob.length; index++) {
+            const cand = candidatesForJob[index];
+            cand.rank = index + 1;
+            cand.totalApplicants = totalApplicants;
+            await cand.save().catch(e => console.error('Failed to update candidate rank:', e));
+          }
+        }
+
+        // Update Ingestion Log to success
+        await IngestionLog.updateOne(
+          { id: logId },
+          { 
+            status: 'success', 
+            candidateId: candidateId,
+            candidateName: updatedCandidate ? updatedCandidate.name : finalName,
+            extractedData: parsedData
+          }
+        ).catch(e => console.error('Failed to update ingestion log to success:', e));
+
+        // Rebuild index and RAG
+        if (updatedCandidate) {
+          Candidate.find().then(allCands => searchIndex.buildIndex(allCands)).catch(e => console.error('Failed to rebuild search index:', e));
+          indexCandidate(updatedCandidate).catch(err => console.error('RAG index failed for', updatedCandidate.name, err.message));
+        }
+
+      } catch (err) {
+        console.error('Background processing failed:', err);
+        // Update candidate isProcessing to false so it doesn't stay stuck
+        await Candidate.updateOne({ id: candidateId }, { $set: { isProcessing: false } }).catch(e => console.error('Failed to reset candidate isProcessing:', e));
+        // Update Ingestion Log to failed
+        await IngestionLog.updateOne(
+          { id: logId },
+          { 
+            status: 'failed', 
+            error: err.message
+          }
+        ).catch(e => console.error('Failed to update ingestion log to failed:', e));
+      }
+    }, 0);
+
+
+    
+    // Send confirmation email if configured
+    try {
+      if (newCandidate.email) {
+        const settings = await Settings.findById('global');
+        if (settings && settings.emailTemplates && settings.emailTemplates.applicationReceived) {
+          const emailConfig = await getEmailConfig();
+          
+          let jobTitle = 'General Role';
+          if (jobId) {
+            const job = await Job.findOne({ id: jobId });
+            if (job) jobTitle = job.title;
+          }
+          
+          let template = settings.emailTemplates.applicationReceived;
+          template = template.replace(/{candidate_name}/g, newCandidate.name || 'Candidate');
+          template = template.replace(/{job_title}/g, jobTitle);
+          template = template.replace(/{company_name}/g, 'Our Company');
+          
+          let subject = `Application Received: ${jobTitle}`;
+          let body = template;
+          
+          // Parse Subject line from template if it exists
+          const lines = template.split('\n');
+          if (lines[0].toLowerCase().startsWith('subject:')) {
+            subject = lines[0].substring(8).trim();
+            body = lines.slice(1).join('\n').trim();
+          }
+          
+          if (emailConfig.provider === 'outlook' && emailConfig.outlookClientId && emailConfig.outlookClientSecret && emailConfig.outlookUserEmail) {
+            const { getOutlookToken } = await import('./outlookAuth.js');
+            const accessToken = await getOutlookToken(
+              emailConfig.outlookClientId,
+              emailConfig.outlookTenantId,
+              emailConfig.outlookClientSecret
+            );
+            await sendOutlookEmail(accessToken, emailConfig.outlookUserEmail, { to: newCandidate.email, subject, body });
+          } else if (emailConfig.user && emailConfig.pass) {
+            await sendSMTPMessage({ to: newCandidate.email, subject, body });
+          }
+          newCandidate.history.push({ date: new Date().toISOString(), type: 'EmailSent', text: 'Sent Application Received auto-reply' });
+          await newCandidate.save();
+        }
+      }
+    } catch (emailErr) {
+      console.error('Failed to send auto-reply email:', emailErr);
+    }
+    
+    res.json({ trackingId, message: 'Your application has been received successfully.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/public/status/:trackingId', async (req, res) => {
+  try {
+    const cand = await Candidate.findOne({ trackingId: req.params.trackingId });
+    if (!cand) return res.status(404).json({ error: 'Not found' });
+    
+    let jobTitle = 'General Role';
+    if (cand.jobId) {
+      const job = await Job.findOne({ id: cand.jobId });
+      if (job) jobTitle = job.title;
+    }
+    
+    res.json({
+      trackingId: cand.trackingId,
+      role: jobTitle,
+      status: cand.stage,
+      appliedOn: cand.createdAt
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/public/refer', async (req, res) => {
+  try {
+    const { 
+      referrerName, referrerEmployeeId, candidateName, candidateEmail, 
+      candidatePhone, keySkills, jobId, cvFileRef 
+    } = req.body;
+    
+    const trackingId = generateTrackingId();
+    const candidateId = `cand_${Date.now()}`;
+    
+    const newCandidate = new Candidate({
+      id: candidateId,
+      trackingId,
+      source: 'referral',
+      referrerName,
+      referrerEmployeeId,
+      jobId: jobId,
+      name: candidateName,
+      email: candidateEmail || '',
+      phone: candidatePhone || '',
+      skills: (keySkills || '').split(',').map(s => s.trim()),
+      resumeUrl: cvFileRef || '',
+      stage: 'Inbox',
+      history: [{ date: new Date().toISOString(), type: 'Status', text: `Referred by ${referrerName}` }]
+    });
+    
+    await newCandidate.save();
+    
+    res.json({ trackingId, message: 'Referral submitted successfully.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==========================================
+// SMART HR HUB PORTED ROUTES (INTERNAL)
+// ==========================================
+
+app.get('/api/placements', authenticateToken, async (req, res) => {
+  try {
+    const placed = await Candidate.find({ stage: 'Placed' });
+    const formatted = placed.map(c => ({
+      id: c.id,
+      applicantId: c.id,
+      name: c.name,
+      trackingId: c.trackingId || 'N/A',
+      rolePlaced: (c.placementData && c.placementData.rolePlaced) ? c.placementData.rolePlaced : 'Unknown',
+      department: 'N/A',
+      previousSalary: (c.placementData && c.placementData.previousSalary) ? c.placementData.previousSalary : null,
+      newSalary: (c.placementData && c.placementData.newSalary) ? c.placementData.newSalary : null,
+      increase: (c.placementData && c.placementData.newSalary && c.placementData.previousSalary) 
+                ? c.placementData.newSalary - c.placementData.previousSalary : 0,
+      placementDate: (c.placementData && c.placementData.placementDate) ? c.placementData.placementDate : c.updatedAt,
+      sourceChannel: c.source || 'manual'
+    }));
+    res.json(formatted);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/placements/analytics', authenticateToken, async (req, res) => {
+  try {
+    const placed = await Candidate.find({ stage: 'Placed' });
+    
+    let totalPlacements = placed.length;
+    let placementsThisMonth = 0;
+    let totalIncrease = 0;
+    let candidatesWithIncrease = 0;
+    
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    const byMonthMap = {};
+    const byDepartmentMap = {};
+    const byChannelMap = {};
+
+    placed.forEach(c => {
+      // Calculate this month
+      const date = new Date((c.placementData && c.placementData.placementDate) ? c.placementData.placementDate : c.updatedAt);
+      if (date.getMonth() === currentMonth && date.getFullYear() === currentYear) {
+        placementsThisMonth++;
+      }
+
+      // Calculate increase
+      const prevSalary = c.placementData?.previousSalary || 0;
+      const newSalary = c.placementData?.newSalary || 0;
+      if (newSalary > 0 && prevSalary > 0) {
+        totalIncrease += (newSalary - prevSalary);
+        candidatesWithIncrease++;
+      }
+
+      // By month
+      const monthStr = date.toLocaleString('default', { month: 'short' }) + ' ' + date.getFullYear();
+      byMonthMap[monthStr] = (byMonthMap[monthStr] || 0) + 1;
+
+      // By department
+      // We don't have department easily accessible in Candidate, but let's mock or use job info if available
+      const dept = 'Engineering'; // Fallback
+      byDepartmentMap[dept] = (byDepartmentMap[dept] || 0) + 1;
+
+      // By channel
+      const channel = c.source || 'manual';
+      if (!byChannelMap[channel]) byChannelMap[channel] = { count: 0, totalInc: 0, incCount: 0 };
+      byChannelMap[channel].count++;
+      if (newSalary > 0 && prevSalary > 0) {
+        byChannelMap[channel].totalInc += (newSalary - prevSalary);
+        byChannelMap[channel].incCount++;
+      }
+    });
+
+    const avgSalaryIncrease = candidatesWithIncrease > 0 ? (totalIncrease / candidatesWithIncrease) : 0;
+    
+    const byMonth = Object.keys(byMonthMap).map(k => ({ month: k, count: byMonthMap[k] }));
+    const byDepartment = Object.keys(byDepartmentMap).map(k => ({ department: k, count: byDepartmentMap[k] }));
+    const byChannel = Object.keys(byChannelMap).map(k => ({
+      channel: k,
+      count: byChannelMap[k].count,
+      avgIncrease: byChannelMap[k].incCount > 0 ? (byChannelMap[k].totalInc / byChannelMap[k].incCount) : 0
+    }));
+
+    res.json({
+      totalPlacements,
+      placementsThisMonth,
+      avgSalaryIncrease,
+      byMonth,
+      byDepartment,
+      byChannel
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/referrals', authenticateToken, async (req, res) => {
+  try {
+    const { search, bonusOnly } = req.query;
+    
+    let filter = { source: 'referral' };
+    if (bonusOnly === 'true') {
+      filter.bonusEligible = true;
+    }
+    
+    const refs = await Candidate.find(filter);
+    
+    let formatted = refs.map(c => ({
+      id: c.id,
+      applicantId: c.id,
+      referrerName: c.referrerName || 'Unknown',
+      referrerEmployeeId: c.referrerEmployeeId || null,
+      candidateName: c.name || 'Unknown',
+      candidateEmail: c.email || null,
+      candidatePhone: c.phone || null,
+      roleReferredFor: 'Unknown',
+      createdAt: c.createdAt,
+      status: c.stage,
+      ats: c.matchScore,
+      hasCv: !!c.resumeUrl,
+      bonusEligible: c.bonusEligible || false
+    }));
+
+    if (search) {
+      const lowerSearch = search.toLowerCase();
+      formatted = formatted.filter(r => 
+        (r.candidateName && r.candidateName.toLowerCase().includes(lowerSearch)) ||
+        (r.referrerName && r.referrerName.toLowerCase().includes(lowerSearch)) ||
+        (r.referrerEmployeeId && r.referrerEmployeeId.toLowerCase().includes(lowerSearch))
+      );
+    }
+
+    res.json(formatted);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/referrals/dashboard', authenticateToken, async (req, res) => {
+  try {
+    const refs = await Candidate.find({ source: 'referral' });
+    
+    let total = refs.length;
+    let thisMonth = 0;
+    let bonusEligible = 0;
+    
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    const byEmployeeMap = {};
+    const byMonthMap = {};
+
+    refs.forEach(c => {
+      if (c.bonusEligible) bonusEligible++;
+      
+      const date = new Date(c.createdAt);
+      if (date.getMonth() === currentMonth && date.getFullYear() === currentYear) {
+        thisMonth++;
+      }
+
+      // By employee
+      const empKey = c.referrerName || 'Unknown';
+      if (!byEmployeeMap[empKey]) byEmployeeMap[empKey] = { referrerName: empKey, referrerEmployeeId: c.referrerEmployeeId || null, total: 0, bonusEligible: 0 };
+      byEmployeeMap[empKey].total++;
+      if (c.bonusEligible) byEmployeeMap[empKey].bonusEligible++;
+
+      // By month
+      const monthStr = date.toLocaleString('default', { month: 'short' });
+      const labelStr = date.toLocaleString('default', { month: 'short' }) + ' ' + date.getFullYear();
+      if (!byMonthMap[labelStr]) byMonthMap[labelStr] = { month: monthStr, label: labelStr, count: 0 };
+      byMonthMap[labelStr].count++;
+    });
+
+    const uniqueReferrers = Object.keys(byEmployeeMap).length;
+    const byEmployee = Object.values(byEmployeeMap);
+    const byMonth = Object.values(byMonthMap);
+
+    res.json({
+      total, thisMonth, bonusEligible, uniqueReferrers,
+      byEmployee, byMonth
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/referrals', authenticateToken, async (req, res) => {
+  try {
+    const { referrerName, referrerEmployeeId, candidateName, candidateEmail, candidatePhone, jobId, keySkills } = req.body;
+    
+    // Create new candidate
+    const newCandidate = new Candidate({
+      name: candidateName,
+      email: candidateEmail,
+      phone: candidatePhone,
+      source: 'referral',
+      stage: 'Inbox',
+      jobId: jobId || null,
+      skills: keySkills ? keySkills.split(',').map(s => s.trim()) : [],
+      referrerName: referrerName,
+      referrerEmployeeId: referrerEmployeeId,
+      bonusEligible: false,
+      trackingId: 'REF-' + Math.floor(Math.random() * 100000)
+    });
+    
+    await newCandidate.save();
+    res.json({ success: true, candidate: newCandidate });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/pending-cvs', authenticateToken, async (req, res) => {
+  try {
+    // Return candidates in early stages
+    const pending = await Candidate.find({ stage: { $in: ['Inbox', 'AI Processed'] } });
+    const formatted = pending.map(c => {
+      const daysPending = Math.floor((Date.now() - new Date(c.createdAt).getTime()) / (1000 * 3600 * 24));
+      return {
+        id: c.id,
+        name: c.name,
+        jobRole: 'Unknown',
+        formTitle: 'Unknown',
+        currentLocation: 'Unknown',
+        noticePeriod: 'Unknown',
+        keySkills: c.skills ? c.skills.join(', ') : '',
+        ats: c.matchScore,
+        status: c.stage,
+        daysPending: daysPending,
+        isAging: daysPending > 5
+      };
+    });
+    res.json(formatted);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 const server = app.listen(PORT, () => {
   console.log(`\n=================================================`);

@@ -347,3 +347,174 @@ Verify that the IngestionLog status is correctly updated to 'success', 'cancelle
 - [ ] The test server should mock LLM parser calls correctly for duplicate scenarios.
 - [ ] Running `npm run test:e2e` runs all tests, including the new tests, successfully.
 
+## Follow-up — 2026-07-10T15:50:10+05:30
+
+Optimize the light mode color branding, scheming, and palette of the TalentFlow web application by researching popular sites and running an iterative design-evaluation loop until the design scores 9/10.
+
+Working directory: c:/Users/sri charan/Documents/projects/hr recruter
+Integrity mode: development
+
+## Requirements
+
+### R1. Color Research & Selection
+The team must research and analyze the light mode color palettes of at least 10–15 industry-leading web applications (e.g., Vercel, Linear, Stripe, Tailwind CSS, GitHub, Framer, Figma, Notion, Slack, Shopify) to identify patterns in text contrast, border structure, card shading, and accent harmony.
+
+### R2. Color Palette Implementation
+Update the `.light-theme` CSS variables in c:/Users/sri charan/Documents/projects/hr recruter/client/src/index.css to apply the optimized scheme. No functional code or JSX layout files should be modified.
+
+### R3. Iterative Feedback Loop (AI Critic)
+Configure an independent AI Critic Agent equipped with a strict design evaluation rubric (assessing text contrast, visual hierarchy, color harmony, and overall premium polish). The critic must rate the updated palette on a scale of 1–10. The team must loop, research, adjust, and re-evaluate until the design scores a 9/10 or higher.
+
+## Acceptance Criteria
+
+### Research & Analysis
+- Document the light mode analysis of 10-15 popular websites in a markdown research report, outlining their color choices.
+
+### High Contrast & Cohesion
+- No washed-out colors or low-contrast text elements.
+- Cards, sidebars, and main content panes must have crisp, clear, modern division lines.
+
+### Iteration & Rating
+- The critique history of each iteration loop must be documented in a log file, showing the progressive scores.
+- The final palette iteration must receive a score of 9/10 or higher from the independent AI Critic agent.
+
+## Follow-up — 2026-07-12T10:06:49+05:30
+
+# Teamwork Project Prompt
+
+## Project Description
+Perform a comprehensive audit of the TalentFlow recruitment codebase, compare it against the current configuration baseline, assess upgrade viability for key technologies (Node, React, Mongoose, Vite, LLMs), and produce a detailed improvements roadmap. All recommendations must prioritize free-of-cost operation.
+
+Working directory: c:\Users\sri charan\Documents\projects\hr recruter
+Integrity mode: development
+
+## Requirements
+
+### R1. Codebase & Configuration Audit
+Audit the current configuration of the project, detailing framework versions, dependencies (Node, Express, React, Vite, Mongoose, Python OCR), and AI settings.
+
+### R2. Upgrade Viability Assessment
+Evaluate upgrading core dependencies (e.g. Node, React, Vite, MongoDB/Mongoose, Gemini API, Ollama models) with respect to the latest stable versions. Provide a structured pros/cons analysis for each.
+
+### R3. Free-of-Cost Optimization Strategy
+Design an execution strategy that keeps setup and operational costs at zero (leveraging local Ollama configurations, free-tier Gemini API, MongoDB Atlas Free tier, and Render free tier).
+
+### R4. Improvement Recommendations & Risk Analysis
+Recommend concrete software and system-level improvements (e.g., performance optimizations, deprecation warnings, timeout safeguards) along with a risk assessment.
+
+### R5. Prioritized Implementation Roadmap
+Detail a prioritized, milestone-based roadmap for implementing the suggested improvements.
+
+## Acceptance Criteria
+
+### Content & Structure
+- [ ] The final report contains all requested sections: Executive Summary, Current State Baseline, Upgrade Assessment, Cost Optimization, Recommendations, Risk Assessment, and Implementation Roadmap.
+- [ ] Baseline configuration lists current versions from `package.json` files and Python/system config files.
+- [ ] Recommendations are aligned with keeping the platform free of cost.
+- [ ] No implementation code is modified or deleted.
+
+### Delivery Format
+- [ ] The comprehensive report is returned in full directly in the conversation chat response.
+
+## Follow-up — 2026-07-14T22:42:38+05:30
+
+Add three features to an existing, fully working Node.js/React recruitment platform (TalentFlow): (1) hybrid AI call caching to reduce LLM token usage, (2) an admin-only "Clear Database" button with typing confirmation, and (3) a 24-hour login session expiry popup.
+
+Working directory: c:\Users\sri charan\Documents\projects\hr recruter
+Integrity mode: development
+
+CRITICAL: This is a working production application. Every existing feature works perfectly. Make only the minimal, surgical code changes described below. Do NOT refactor, restructure, rename, reformat, or delete any existing code that is unrelated to these three features. If you are unsure whether a change is needed, do NOT make it.
+
+## Requirements
+
+### R1. Hybrid AI Call Caching (In-Memory + MongoDB)
+
+Add a caching layer to the centralized AI dispatch functions to avoid redundant LLM API calls. When the same prompt+context combination is sent to an AI provider, return the cached result instead of making a new API call. The cache must survive server restarts (persistent MongoDB storage) and also provide fast in-memory lookups during a running session.
+
+**Files to modify (and ONLY these sections):**
+
+- `server/models.js` — Add a new `AICache` Mongoose schema/model at the end of the file. Schema: `cacheKey` (String, unique), `response` (Mixed), `type` (String), `createdAt` (Date, with MongoDB TTL expiry of 7 days). Export it alongside existing models.
+
+- `server/geminiParser.js` — Import `crypto` (Node.js built-in) and the new `AICache` model. Add a module-level `Map` for in-memory caching (max 500 entries). Add a `generateCacheKey()` helper that creates a SHA-256 hash of: `prompt + systemInstruction + JSON.stringify(schema) + (pdfBase64 || '') + aiProvider`. Modify the `callAIProvider` function to: (a) compute the cache key using the current `aiProvider` from settings, (b) check in-memory cache first, (c) if miss, check MongoDB `AICache` collection, (d) if miss, execute the existing AI call as-is, (e) store the result in both caches. Add an optional `bypassCache` parameter (default `false`) that skips cache lookup when true. **Do NOT change any of the existing AI provider logic (fetch calls, response parsing, error handling, retry logic). Only wrap the existing logic with cache check/save.**
+
+- `server/emailCategorizer.js` — Apply the same caching pattern to `callAIProviderForClassification`. Add a separate in-memory `Map` and use `AICache` for persistence. **Do NOT change any existing classification logic, prompt construction, or JSON repair utilities.**
+
+- `server/server.js` — Add one new route: `POST /api/settings/clear-cache` (protected by `authenticateToken`). This route should clear the in-memory caches (by importing a `clearAICaches()` function exported from `geminiParser.js` and a `clearClassificationCache()` from `emailCategorizer.js`) and call `AICache.deleteMany({})`. **Do NOT modify any existing routes or middleware.**
+
+- `client/src/components/Settings.jsx` — In the AI configuration sub-tab (`activeSubTab === 'ai'`), add a small card/section with a "Clear AI Cache" button. On click, it calls `POST /api/settings/clear-cache` and shows a success/error toast. **Do NOT modify any existing UI elements, forms, or state variables.**
+
+### R2. Admin-Only "Clear Database" Button
+
+Add a protected endpoint and UI element that allows only the main admin to wipe all candidate/job data from the database while preserving user accounts and settings.
+
+**Files to modify (and ONLY these sections):**
+
+- `server/server.js` — Add one new route: `POST /api/admin/clear-database` (protected by `authenticateToken` and `requireRole(['admin'])`). This route deletes all documents from: `Candidate`, `Job`, `ProcessedEmail`, `IngestionLog`, `EmailLog`, `ResumeChunk`, and `AICache`. It must NOT delete `User` or `Settings` documents. Return a JSON summary of deleted counts. **Do NOT modify any existing routes.**
+
+- `client/src/components/Settings.jsx` — At the bottom of the Settings view, add a "Danger Zone" section that is ONLY rendered when `currentRole === 'Admin'`. It should contain a red-bordered card with a "Clear Entire Database" button. Clicking it opens a confirmation modal where the user must type "CLEAR" into a text input before the delete button becomes active. On successful deletion, call `onSettingsSaved()` to refresh the app state and show a success message. **Do NOT modify any existing UI elements.**
+
+### R3. 24-Hour Login Session Expiry Popup
+
+Add a client-side check that detects when a user's login session is older than 24 hours and displays a popup message.
+
+**Files to modify (and ONLY these sections):**
+
+- `client/src/App.jsx` — Three small changes:
+  1. **On Login** (where `localStorage.setItem('token', newToken)` is called around line 319-320): Add `localStorage.setItem('loginTime', Date.now().toString());` immediately after.
+  2. **On Load** (add a new `useEffect` near the existing auth effects): If `token` exists, read `loginTime` from localStorage. If `Date.now() - parseInt(loginTime, 10) > 24 * 60 * 60 * 1000`, show an alert or styled modal with the message: `"Please logout and log in to access "`.
+  3. **On Logout** (where `localStorage.removeItem('token')` is called around lines 122-123 and 627-628): Add `localStorage.removeItem('loginTime');` alongside.
+  
+  **Do NOT modify any existing state, routing, component rendering, or any other logic.**
+
+## Acceptance Criteria
+
+### Caching
+- [ ] Uploading the same resume PDF twice results in an AI cache hit on the second upload (verify by checking server console logs for cache hit messages or by observing significantly faster processing time)
+- [ ] The `AICache` MongoDB collection contains documents after a resume upload
+- [ ] Clicking "Clear AI Cache" in Settings empties the `AICache` collection and the in-memory caches
+- [ ] Changing the AI provider in settings and re-uploading produces a fresh AI call (different cache key due to different provider)
+
+### Database Clear
+- [ ] The "Danger Zone" section is NOT visible when logged in as a Recruiter or Manager
+- [ ] The "Danger Zone" section IS visible when logged in as Admin
+- [ ] Typing anything other than "CLEAR" keeps the delete button disabled
+- [ ] After typing "CLEAR" and confirming, all Candidates, Jobs, ProcessedEmails, IngestionLogs, EmailLogs, ResumeChunks are deleted
+- [ ] Users and Settings documents are preserved after the clear operation
+- [ ] The admin remains logged in after the clear operation
+
+### Login Expiry
+- [ ] After logging in, `loginTime` is present in localStorage
+- [ ] If `loginTime` is manually set to 25 hours ago in browser devtools and the page is refreshed, the popup message `"Please logout and log in to access "` is displayed
+- [ ] After logging out and logging back in, `loginTime` is reset to the current timestamp
+
+### No Regressions
+- [ ] The application starts without errors (`npm run dev` for both client and server)
+- [ ] Existing resume upload, parsing, scoring, search, pipeline, and settings features work exactly as before
+- [ ] No existing files are deleted or renamed
+- [ ] No existing functions are refactored or restructured
+
+## Follow-up — 2026-07-16T10:46:57Z
+
+Verify and correct the question generation implementation to ensure that normal candidate analysis questions (with 7 fixed screening questions prepended) and JD-tailored questions (which are generated on-demand and have no screening questions) are kept completely distinct and never combined.
+
+Working directory: c:\Users\sri charan\Documents\projects\hr recruter
+Integrity mode: development
+
+## Requirements
+
+### R1. Separate Normal Analyzing Questions and JD Match Questions
+- In `server/geminiParser.js`, ensure that regenerating normal candidate questions (when `jobDescription` is `null`) does NOT call `mapAnalysisToQuestions` with `isJdMatch = true`. Passing `true` skips the 7 standardized screening questions, causing them to be lost on regeneration. Ensure normal questions are always processed with `isJdMatch = false` so the 14-question standard (7 screening + 7 personalized) is preserved.
+- Verify that JD-tailored questions (generated on-demand when `jobDescription` is present) remain strictly separated in the database schema under `candidate.jdQuestions` and are displayed in their own section in the frontend drawer UI, completely distinct from the general candidate analysis questions.
+
+### R2. Test Infrastructure Self-Containment
+- Modify the E2E test setup (`tests/e2e/testServerEntry.js` and `tests/e2e/setup.js`) to run a local `mongodb-memory-server` instance on port 27018. This resolves connection issues (like `ECONNREFUSED` on port 27017) and makes the E2E test suite fully self-contained without requiring external database configuration.
+
+## Acceptance Criteria
+
+### Question Separation & Formats
+- [ ] Uploading a resume generates exactly 14 HR questions (7 standardized cold-calling questions + 7 personalized ones).
+- [ ] Clicking "Regenerate Questions" in the Tailored questions section updates the candidate's `hrQuestions` and retains exactly 14 questions, starting with the 7 fixed screening questions.
+- [ ] Custom JD-tailored questions are generated on-demand, saved under `candidate.jdQuestions`, and displayed in the UI under "JD-Relevant Questions" without any screening questions combined.
+
+### E2E Verification
+- [ ] Running `npm run test:run` (while the test server is running on port 5001) successfully runs and passes all 39 tests across the 6 test files on the in-memory test database.
