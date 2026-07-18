@@ -124,7 +124,8 @@ function runPythonOCR(buffer) {
     fs.writeFileSync(tempPdfPath, buffer);
 
     const scriptPath = path.join(__dirname, 'ocr_fallback.py');
-    const pythonProcess = spawn('python', [scriptPath, tempPdfPath]);
+    const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
+    const pythonProcess = spawn(pythonCmd, [scriptPath, tempPdfPath]);
 
     let output = '';
     let errorOutput = '';
@@ -152,7 +153,8 @@ function runPythonOCR(buffer) {
 function runPythonOCRDirect(filePath) {
   return new Promise((resolve, reject) => {
     const scriptPath = path.join(__dirname, 'ocr_fallback.py');
-    const pythonProcess = spawn('python', [scriptPath, filePath]);
+    const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
+    const pythonProcess = spawn(pythonCmd, [scriptPath, filePath]);
 
     let output = '';
     let errorOutput = '';
