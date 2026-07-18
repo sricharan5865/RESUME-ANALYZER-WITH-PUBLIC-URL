@@ -924,6 +924,7 @@ export default function App() {
               onJobCreated={(newJob) => setJobs(prev => [...prev, newJob])}
               onJobDeleted={(id) => setJobs(prev => prev.filter(j => j.id !== id))}
               onJobUpdated={(updatedJob) => setJobs(prev => prev.map(j => j.id === updatedJob.id ? updatedJob : j))}
+              onTemplatesUpdated={(newTpls) => setSettings(prev => ({ ...prev, emailTemplates: newTpls }))}
               onSettingsSaved={fetchData}
               backendUrl={BACKEND_URL}
               currentRole={mappedRole}

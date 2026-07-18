@@ -274,7 +274,9 @@ export default function SettingsView({ token, jobs, templates, onJobCreated, onJ
       });
 
       if (!res.ok) throw new Error('Failed to update templates');
-      onTemplatesUpdated(newTpls);
+      if (typeof onTemplatesUpdated === 'function') {
+        onTemplatesUpdated(newTpls);
+      }
       alert('Templates updated successfully!');
     } catch (e) {
       console.error(e);
