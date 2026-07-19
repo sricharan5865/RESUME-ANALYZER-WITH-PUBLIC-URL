@@ -34,8 +34,7 @@ export default function Referrals({ backendUrl, token, jobs }) {
 
   return (
     <div style={{ padding: '24px' }}>
-      <div className="page-head">
-        <h2>Employee Referrals</h2>
+      <div className="page-head" style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
         <button className="btn btn-primary" onClick={() => setShowForm(true)}>+ Refer a candidate</button>
       </div>
 

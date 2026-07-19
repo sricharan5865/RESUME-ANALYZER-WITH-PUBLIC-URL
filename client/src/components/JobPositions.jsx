@@ -163,10 +163,9 @@ export default function JobPositions({ token, jobs, onJobCreated, onJobDeleted, 
   };
 
   return (
-    <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      <header style={{ marginBottom: '24px', flexShrink: 0 }}>
-        <h2 style={{ fontSize: '20px', fontWeight: 'bold' }}>Job Positions</h2>
-        <p style={{ color: 'var(--text-secondary)' }}>Manage the job descriptions used by the AI engine to calculate candidate match scores.</p>
+    <div style={{ padding: '0px', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+      <header style={{ marginBottom: '12px', flexShrink: 0 }}>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '13px', margin: 0 }}>Manage the job descriptions used by the AI engine to calculate candidate match scores.</p>
       </header>
 
       <div style={{ flexGrow: 1, overflowY: 'auto' }}>
@@ -228,7 +227,11 @@ export default function JobPositions({ token, jobs, onJobCreated, onJobDeleted, 
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div>
                           <h4 style={{ fontSize: '15px', fontWeight: '600' }}>{job.title}</h4>
-                          <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{job.department} • {job.location}</p>
+                          { (job.department || job.location) && (
+                            <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                              {[job.department, job.location].filter(Boolean).join(' • ')}
+                            </p>
+                          )}
                         </div>
                         {currentRole !== 'Hiring Manager' && (
                           <div style={{ display: 'flex', gap: '8px' }}>
@@ -248,44 +251,7 @@ export default function JobPositions({ token, jobs, onJobCreated, onJobDeleted, 
                         )}
                       </div>
                       
-                      {/* Distribution Hub Switchers */}
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', borderTop: '1px dashed var(--glass-border)', paddingTop: '12px' }}>
-                        <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', width: '100%', textTransform: 'uppercase', marginBottom: '4px' }}>Simulated External Portal Distribution</span>
-                        
-                        {[
-                          { key: 'linkedIn', label: 'LinkedIn', color: '#0077b5' },
-                          { key: 'indeed', label: 'Indeed', color: '#003a9b' },
-                          { key: 'zipRecruiter', label: 'ZipRecruiter', color: '#00b388' },
-                          { key: 'internalCareer', label: 'Internal Career Site', color: 'var(--accent-primary)' }
-                        ].map(platform => {
-                          const isPosted = job.postings?.[platform.key] || false;
-                          return (
-                            <button
-                              key={platform.key}
-                              type="button"
-                              onClick={() => currentRole !== 'Hiring Manager' && handleTogglePosting(job, platform.key)}
-                              disabled={currentRole === 'Hiring Manager'}
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                padding: '4px 10px',
-                                borderRadius: '4px',
-                                fontSize: '11px',
-                                fontWeight: '600',
-                                cursor: currentRole === 'Hiring Manager' ? 'default' : 'pointer',
-                                border: `1px solid ${isPosted ? platform.color : 'var(--glass-border)'}`,
-                                background: isPosted ? 'rgba(16, 185, 129, 0.08)' : 'transparent',
-                                color: isPosted ? 'var(--status-offered)' : 'var(--text-secondary)',
-                                transition: 'all 0.2s'
-                              }}
-                            >
-                              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: isPosted ? 'var(--status-offered)' : 'var(--text-muted)' }}></span>
-                              {platform.label}
-                            </button>
-                          );
-                        })}
-                      </div>
+
                     </>
                   )}
                 </div>

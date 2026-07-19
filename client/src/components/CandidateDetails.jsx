@@ -74,12 +74,138 @@ const getQuestionStyles = (importance) => {
   }
 };
 
-export default function CandidateDetails({ candidate: propCandidate, job, onClose, onOpenEmailModal, onStageChanged, onCandidateDeleted, backendUrl, rankAccordingToJob, currentRole, token }) {
+export default function CandidateDetails({ candidate: propCandidate, job, onClose, onOpenEmailModal, onStageChanged, onCandidateDeleted, onCandidateUpdated, backendUrl, rankAccordingToJob, currentRole, token }) {
   const [candidate, setCandidate] = useState(() => {
     const cid = propCandidate?.id || propCandidate?.candidateId;
     return propCandidate ? { ...propCandidate, id: cid } : null;
   });
   const [loadingDetails, setLoadingDetails] = useState(false);
+
+  const [isEditingMetadata, setIsEditingMetadata] = useState(false);
+  const [editedAnswers, setEditedAnswers] = useState({});
+  const [savingMetadata, setSavingMetadata] = useState(false);
+
+  // Gather all submitted form answer labels & job custom fields
+  const submittedAnswers = candidate?.extractedData?.formAnswers || [];
+  const customFormFields = (job?.customFields || []).filter(f => 
+    !['Upload CV', 'CV Upload', 'Upload Resume', 'Resume'].includes(f.label)
+  );
+
+  const combinedLabels = new Set();
+  const fieldsToRender = [];
+
+  // 1. Add fields configured for the job
+  customFormFields.forEach(f => {
+    combinedLabels.add(f.label);
+    fieldsToRender.push({ id: f.id || f.label, label: f.label, fieldType: f.fieldType || 'ShortText' });
+  });
+
+  // 2. Add any submitted form answers that weren't in job customFields
+  submittedAnswers.forEach(ans => {
+    if (ans.label && !combinedLabels.has(ans.label) && !['Upload CV', 'CV Upload', 'Upload Resume', 'Resume'].includes(ans.label)) {
+      combinedLabels.add(ans.label);
+      fieldsToRender.push({ id: ans.label, label: ans.label, fieldType: 'ShortText' });
+    }
+  });
+
+  // 3. Fallback defaults if no custom fields or answers exist yet
+  if (fieldsToRender.length === 0) {
+    fieldsToRender.push(
+      { id: 'loc', label: 'Location', fieldType: 'ShortText' },
+      { id: 'exp', label: 'Experience', fieldType: 'ShortText' },
+      { id: 'not', label: 'Notice Period', fieldType: 'ShortText' }
+    );
+  }
+
+  useEffect(() => {
+    if (candidate) {
+      const initialAnswers = {};
+      
+      // 1. Gather any existing answers from candidate.extractedData.formAnswers
+      const existingAnswers = candidate.extractedData?.formAnswers || [];
+      existingAnswers.forEach(ans => {
+        initialAnswers[ans.label] = ans.value;
+      });
+
+      // 2. Fallbacks from top level fields
+      if (candidate.extractedData?.currentLocation) {
+        initialAnswers['Location'] = candidate.extractedData.currentLocation;
+        initialAnswers['Current Location'] = candidate.extractedData.currentLocation;
+      }
+      if (candidate.extractedData?.totalYearsExperience) {
+        initialAnswers['Experience'] = candidate.extractedData.totalYearsExperience;
+        initialAnswers['Total Experience (years)'] = candidate.extractedData.totalYearsExperience;
+        initialAnswers['Total Years of Experience'] = candidate.extractedData.totalYearsExperience;
+      }
+      if (candidate.extractedData?.noticePeriod) {
+        initialAnswers['Notice Period'] = candidate.extractedData.noticePeriod;
+      }
+
+      // 3. Dynamic match of job custom fields against parsed candidate properties
+      fieldsToRender.forEach(f => {
+        const label = f.label;
+        if (initialAnswers[label] === undefined || initialAnswers[label] === null || initialAnswers[label] === '') {
+          const lowerLabel = label.toLowerCase();
+          if (lowerLabel.includes('phone')) {
+            initialAnswers[label] = candidate.phone || '';
+          } else if (lowerLabel.includes('linkedin')) {
+            initialAnswers[label] = candidate.linkedinUrl || '';
+          } else if (lowerLabel.includes('skills')) {
+            initialAnswers[label] = (candidate.skills || []).join(', ');
+          } else if (lowerLabel.includes('location')) {
+            initialAnswers[label] = candidate.extractedData?.currentLocation || '';
+          } else if (lowerLabel.includes('experience')) {
+            initialAnswers[label] = candidate.extractedData?.totalYearsExperience || '';
+          } else if (lowerLabel.includes('notice')) {
+            initialAnswers[label] = candidate.extractedData?.noticePeriod || '';
+          } else {
+            initialAnswers[label] = '';
+          }
+        }
+      });
+
+      setEditedAnswers(initialAnswers);
+    }
+  }, [candidate?.id, candidate?.extractedData, job?.customFields]);
+
+  const handleSaveMetadata = async () => {
+    setSavingMetadata(true);
+    try {
+      const formAnswers = Object.entries(editedAnswers).map(([label, value]) => ({ label, value }));
+
+      const locationKey = Object.keys(editedAnswers).find(k => k.toLowerCase().includes('location')) || 'Current Location';
+      const experienceKey = Object.keys(editedAnswers).find(k => k.toLowerCase().includes('experience')) || 'Total Years of Experience';
+      const noticeKey = Object.keys(editedAnswers).find(k => k.toLowerCase().includes('notice')) || 'Notice Period';
+
+      const res = await fetch(`${backendUrl}/api/candidates/${candidate.id}/extracted-data`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          currentLocation: editedAnswers[locationKey] || '',
+          totalYearsExperience: editedAnswers[experienceKey] || '',
+          noticePeriod: editedAnswers[noticeKey] || '',
+          formAnswers: formAnswers
+        })
+      });
+
+      if (!res.ok) throw new Error('Failed to update candidate details');
+      const updatedCandidate = await res.json();
+      
+      setCandidate(updatedCandidate);
+      if (onCandidateUpdated) {
+        onCandidateUpdated(updatedCandidate);
+      }
+      setIsEditingMetadata(false);
+    } catch (e) {
+      console.error(e);
+      alert('Error updating details: ' + e.message);
+    } finally {
+      setSavingMetadata(false);
+    }
+  };
 
   useEffect(() => {
     if (!propCandidate) return;
@@ -122,24 +248,24 @@ export default function CandidateDetails({ candidate: propCandidate, job, onClos
     }
   }, [propCandidate, backendUrl, token]);
 
-  if (!candidate) return null;
-
-  const hasPdf = candidate.resumeUrl || (window.localResumeUrls && window.localResumeUrls[candidate.id]);
+  const hasPdf = candidate?.resumeUrl || (window.localResumeUrls && window.localResumeUrls[candidate?.id]);
   const [rightTab, setRightTab] = useState(hasPdf ? 'pdf' : 'text');
-  const [qaSubTab, setQaSubTab] = useState(candidate.hrQuestions && candidate.hrQuestions.length > 0 ? 'hr' : 'tech');
+  const [qaSubTab, setQaSubTab] = useState(candidate?.hrQuestions && candidate?.hrQuestions.length > 0 ? 'hr' : 'tech');
   const [managers, setManagers] = useState([]);
-  const [assignedManager, setAssignedManager] = useState(candidate.assignedTo || '');
+  const [assignedManager, setAssignedManager] = useState(candidate?.assignedTo || '');
   const [loadingJdQuestions, setLoadingJdQuestions] = useState(false);
   const reScoreLockRef = useRef(null);
 
   useEffect(() => {
+    if (!candidate) return;
     const hasPdfNow = candidate.resumeUrl || (window.localResumeUrls && window.localResumeUrls[candidate.id]);
     setRightTab(hasPdfNow ? 'pdf' : 'text');
     setQaSubTab(candidate.hrQuestions && candidate.hrQuestions.length > 0 ? 'hr' : 'tech');
-  }, [candidate.id, candidate.resumeUrl]);
+  }, [candidate?.id, candidate?.resumeUrl]);
 
   // Auto re-score on details open if details are empty
   useEffect(() => {
+    if (!candidate) return;
     if (reScoreLockRef.current === candidate.id) return;
     
     // Only re-score if we have loaded a non-sparse candidate profile
@@ -162,12 +288,12 @@ export default function CandidateDetails({ candidate: propCandidate, job, onClos
             const updatedCandidate = await res.json();
             setCandidate(prev => ({
               ...updatedCandidate,
-              jdQuestions: prev.jdQuestions,
-              jdTitle: prev.jdTitle,
-              matchScore: prev.matchScore,
-              matchExplanation: prev.matchExplanation,
-              matchingSkills: prev.matchingSkills,
-              missingSkills: prev.missingSkills
+              jdQuestions: prev?.jdQuestions,
+              jdTitle: prev?.jdTitle,
+              matchScore: prev?.matchScore,
+              matchExplanation: prev?.matchExplanation,
+              matchingSkills: prev?.matchingSkills,
+              missingSkills: prev?.missingSkills
             }));
             // Propagate stage or metadata changes if needed
             if (onStageChanged) {
@@ -180,7 +306,7 @@ export default function CandidateDetails({ candidate: propCandidate, job, onClos
       }
     };
     checkAndReScore();
-  }, [candidate.id, candidate.experience, candidate.resumeText]);
+  }, [candidate?.id, candidate?.experience, candidate?.resumeText]);
 
   useEffect(() => {
     if (currentRole !== 'Hiring Manager') {
@@ -201,6 +327,8 @@ export default function CandidateDetails({ candidate: propCandidate, job, onClos
       console.error('Failed to fetch managers:', e);
     }
   };
+
+  if (!candidate) return null;
 
   const handleGenerateJdQuestions = async () => {
     const activeJdTitle = job?.title || candidate.jdTitle || 'Role';
@@ -399,7 +527,7 @@ export default function CandidateDetails({ candidate: propCandidate, job, onClos
   // Dynamically select parameters based on active ranking mode
   // If the candidate is not assigned to a specific job (General Role), always show their profile competency analysis.
   const isGeneralRole = !candidate.jobId || !job;
-  const useJobMatch = (rankAccordingToJob && !isGeneralRole) || !!candidate.jdQuestions;
+  const useJobMatch = !isGeneralRole || !!candidate.jdQuestions;
 
   const score = useJobMatch 
     ? candidate.matchScore 
@@ -615,6 +743,63 @@ export default function CandidateDetails({ candidate: propCandidate, job, onClos
                       <CheckCircle2 size={12} />
                       <span>No significant employment gaps</span>
                     </span>
+                  )}
+                </div>
+
+                {/* Application metadata fields (Location, Experience, Notice) */}
+                <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--glass-border)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h4 style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>Application Form Details</h4>
+                    <button 
+                      className="btn btn-secondary" 
+                      style={{ padding: '2px 8px', fontSize: '11px', height: '22px' }}
+                      onClick={() => {
+                        if (isEditingMetadata) {
+                          setIsEditingMetadata(false);
+                        } else {
+                          setIsEditingMetadata(true);
+                        }
+                      }}
+                      disabled={savingMetadata}
+                    >
+                      {isEditingMetadata ? 'Cancel' : 'Edit Details'}
+                    </button>
+                  </div>
+
+                  {isEditingMetadata ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: 'rgba(255,255,255,0.02)', padding: '10px', borderRadius: '6px', border: '1px solid var(--glass-border)' }}>
+                      {fieldsToRender.map(f => (
+                        <div key={f.id || f.label}>
+                          <label style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', marginBottom: '3px' }}>{f.label}</label>
+                          <input 
+                            type="text" 
+                            value={editedAnswers[f.label] || ''} 
+                            onChange={e => setEditedAnswers(prev => ({ ...prev, [f.label]: e.target.value }))} 
+                            className="form-input" 
+                            style={{ height: '28px', padding: '4px 8px', fontSize: '12px', width: '100%' }}
+                          />
+                        </div>
+                      ))}
+                      <button 
+                        className="btn btn-primary" 
+                        style={{ height: '28px', fontSize: '12px', padding: '4px 12px', marginTop: '4px' }}
+                        onClick={handleSaveMetadata}
+                        disabled={savingMetadata}
+                      >
+                        {savingMetadata ? 'Saving...' : 'Save Changes'}
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '8px' }}>
+                      {fieldsToRender.map(f => (
+                        <div key={f.id || f.label} style={{ background: 'rgba(255,255,255,0.01)', padding: '6px 8px', borderRadius: '4px', border: '1px dashed var(--glass-border)', minWidth: '80px', overflow: 'hidden' }}>
+                          <span style={{ display: 'block', fontSize: '10px', color: 'var(--text-secondary)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }} title={f.label}>{f.label}</span>
+                          <strong style={{ fontSize: '12px', color: 'var(--text-primary)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }} title={editedAnswers[f.label]}>
+                            {editedAnswers[f.label] || '—'}
+                          </strong>
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
               </div>

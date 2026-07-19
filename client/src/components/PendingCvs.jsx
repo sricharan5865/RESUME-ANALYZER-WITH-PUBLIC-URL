@@ -21,10 +21,9 @@ export default function PendingCvs({ backendUrl, token }) {
   }, [backendUrl, token]);
 
   return (
-    <div style={{ padding: '24px' }}>
-      <header style={{ marginBottom: '24px' }}>
-        <h2 style={{ fontSize: '20px', fontWeight: 'bold' }}>Pending CVs Worklist</h2>
-        <p style={{ color: 'var(--text-secondary)' }}>Candidates in Inbox or AI Processed stages requiring review.</p>
+    <div style={{ padding: '0px' }}>
+      <header style={{ marginBottom: '12px' }}>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '13px', margin: 0 }}>Candidates in Inbox or AI Processed stages requiring review.</p>
       </header>
 
       <div className="glass" style={{ borderRadius: '12px', overflow: 'hidden' }}>

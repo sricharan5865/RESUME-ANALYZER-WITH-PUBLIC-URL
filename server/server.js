@@ -60,6 +60,15 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
 const escapeRegex = (str) => str.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
 
+const isGenericVal = (val, type) => {
+  if (!val || typeof val !== 'string') return true;
+  const clean = val.trim().toLowerCase();
+  if (!clean || clean === 'null' || clean === 'undefined' || clean === 'n/a' || clean === 'none' || clean === 'unknown') return true;
+  if (type === 'name' && (clean === 'candidate' || clean === 'unknown candidate')) return true;
+  if (type === 'email' && (clean === 'no-email' || clean === 'noemail')) return true;
+  return false;
+};
+
 
 async function getEmailConfig() {
   const settings = await Settings.findById('global');
@@ -619,10 +628,10 @@ async function processEmailAttachment(messageId, filename, buffer, emailConfig, 
     // Duplicate Check
     let duplicate = null;
     const queries = [];
-    if (parsedData.email) {
+    if (parsedData.email && !isGenericVal(parsedData.email, 'email')) {
       queries.push({ email: { $regex: new RegExp(`^${escapeRegex(parsedData.email.trim())}$`, 'i') } });
     }
-    if (parsedData.name) {
+    if (parsedData.name && !isGenericVal(parsedData.name, 'name')) {
       queries.push({ name: { $regex: new RegExp(`^${escapeRegex(parsedData.name.trim())}$`, 'i') } });
     }
     if (queries.length > 0) {
@@ -1054,10 +1063,10 @@ app.post('/api/candidates/extract-gmail', authenticateToken, requireRole(['admin
     // Duplicate Check
     let duplicate = null;
     const queries = [];
-    if (parsedData.email) {
+    if (parsedData.email && !isGenericVal(parsedData.email, 'email')) {
       queries.push({ email: { $regex: new RegExp(`^${escapeRegex(parsedData.email.trim())}$`, 'i') } });
     }
-    if (parsedData.name) {
+    if (parsedData.name && !isGenericVal(parsedData.name, 'name')) {
       queries.push({ name: { $regex: new RegExp(`^${escapeRegex(parsedData.name.trim())}$`, 'i') } });
     }
     if (queries.length > 0) {
@@ -1368,10 +1377,10 @@ app.post('/api/candidates/upload', authenticateToken, requireRole(['admin', 'rec
     // Duplicate Check
     let duplicate = null;
     const queries = [];
-    if (parsedData.email) {
+    if (parsedData.email && !isGenericVal(parsedData.email, 'email')) {
       queries.push({ email: { $regex: new RegExp(`^${escapeRegex(parsedData.email.trim())}$`, 'i') } });
     }
-    if (parsedData.name) {
+    if (parsedData.name && !isGenericVal(parsedData.name, 'name')) {
       queries.push({ name: { $regex: new RegExp(`^${escapeRegex(parsedData.name.trim())}$`, 'i') } });
     }
     if (queries.length > 0) {
@@ -1607,6 +1616,11 @@ app.post('/api/candidates/upload/resolve', authenticateToken, requireRole(['admi
       candidate.experience = data.experience || candidate.experience;
       candidate.education = data.education || candidate.education;
       candidate.resumeText = pdfText || candidate.resumeText;
+      candidate.hrQuestions = data.hrQuestions || candidate.hrQuestions;
+      candidate.technicalQuestions = data.technicalQuestions || candidate.technicalQuestions;
+      candidate.redFlags = data.red_flags || candidate.redFlags;
+      candidate.seniorityLevel = data.seniorityLevel || candidate.seniorityLevel;
+      candidate.projects = data.projects || candidate.projects;
       if (sanitizedTempFile) {
         candidate.resumeUrl = `/api/uploads/${sanitizedTempFile}`;
       }
@@ -1935,6 +1949,39 @@ app.patch('/api/candidates/:id/stage', async (req, res) => {
     res.json(candidate);
   } catch (error) {
     console.error('Failed to change candidate stage:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.patch('/api/candidates/:id/extracted-data', authenticateToken, async (req, res) => {
+  try {
+    const { currentLocation, totalYearsExperience, noticePeriod, formAnswers } = req.body;
+    const candidate = await Candidate.findOne({ id: req.params.id });
+    if (!candidate) return res.status(404).json({ error: 'Candidate not found.' });
+
+    if (!candidate.extractedData) {
+      candidate.extractedData = {};
+    }
+    
+    candidate.extractedData = {
+      ...candidate.extractedData,
+      currentLocation: currentLocation !== undefined ? currentLocation : candidate.extractedData.currentLocation,
+      totalYearsExperience: totalYearsExperience !== undefined ? totalYearsExperience : candidate.extractedData.totalYearsExperience,
+      noticePeriod: noticePeriod !== undefined ? noticePeriod : candidate.extractedData.noticePeriod,
+      formAnswers: formAnswers !== undefined ? formAnswers : candidate.extractedData.formAnswers
+    };
+    
+    candidate.markModified('extractedData');
+    candidate.history.push({
+      date: new Date().toISOString(),
+      type: 'Status',
+      text: `Manual update of profile: Location='${candidate.extractedData.currentLocation}', Experience='${candidate.extractedData.totalYearsExperience}', Notice='${candidate.extractedData.noticePeriod}'`
+    });
+
+    await candidate.save();
+    res.json(candidate);
+  } catch (error) {
+    console.error('Failed to update candidate details:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -2763,6 +2810,15 @@ app.post('/api/public/cv', upload.single('file'), (req, res) => {
   res.json({ fileRef: req.file.path, fileName: req.file.originalname });
 });
 
+// R4: Shared helper — extract a value from ansMap by exact keys or fuzzy substring match
+function getAnswerByKeywords(ansMap, exactKeys, fuzzyKeyword) {
+  for (const key of exactKeys) {
+    if (ansMap[key] && String(ansMap[key]).trim() !== '') return ansMap[key];
+  }
+  const fuzzyKey = Object.keys(ansMap).find(k => k.toLowerCase().includes(fuzzyKeyword));
+  return fuzzyKey ? (ansMap[fuzzyKey] || '') : '';
+}
+
 app.post('/api/public/apply', async (req, res) => {
   try {
     const { jobId, cvFileRef, cvFileName, answers } = req.body;
@@ -2773,8 +2829,6 @@ app.post('/api/public/apply', async (req, res) => {
       answers.forEach(a => ansMap[a.label] = a.value);
     }
     
-    const trackingId = generateTrackingId();
-    const candidateId = `cand_${Date.now()}`;
     const name = (ansMap['First Name'] || '') + ' ' + (ansMap['Last Name'] || '');
     const finalName = name.trim() || 'Unknown Candidate';
     const finalEmail = ansMap['Email'] || ansMap['Email Address'] || '';
@@ -2785,30 +2839,76 @@ app.post('/api/public/apply', async (req, res) => {
       formSkills = ansMap['Key Skills'].split(',').map(s => s.trim()).filter(Boolean);
     }
 
-    // 1. Create candidate immediately in 'processing' state
-    const newCandidate = new Candidate({
-      id: candidateId,
-      trackingId,
-      source: 'direct_apply',
-      jobId: jobId,
-      name: finalName,
-      email: finalEmail,
-      phone: finalPhone,
-      skills: formSkills,
-      resumeUrl: cvFileRef ? `/api/uploads/${path.basename(cvFileRef)}` : '',
-      isProcessing: true,
-      stage: 'Inbox',
-      history: [{ date: new Date().toISOString(), type: 'Status', text: 'Application submitted. AI Analysis in progress...' }]
-    });
-    
-    await newCandidate.save();
+    // R1: Normalized label matching using shared helper
+    const initialLocation = getAnswerByKeywords(ansMap, ['Current Location', 'Location'], 'location');
+    const initialExp = getAnswerByKeywords(ansMap, ['Total Years of Experience', 'Total Experience (years)', 'Experience', 'Total Experience'], 'experience');
+    const initialNotice = getAnswerByKeywords(ansMap, ['Notice Period'], 'notice');
+
+    // R3: Duplicate candidate detection — check if same email already applied to same job
+    let existingCandidate = null;
+    if (finalEmail && !isGenericVal(finalEmail, 'email') && jobId) {
+      existingCandidate = await Candidate.findOne({ email: { $regex: new RegExp(`^${escapeRegex(finalEmail.trim())}$`, 'i') }, jobId: jobId });
+    }
+
+    let candidateId, trackingId;
+
+    if (existingCandidate) {
+      // Update existing candidate instead of creating a duplicate
+      candidateId = existingCandidate.id;
+      trackingId = existingCandidate.trackingId || generateTrackingId();
+
+      existingCandidate.name = finalName !== 'Unknown Candidate' ? finalName : existingCandidate.name;
+      existingCandidate.phone = finalPhone || existingCandidate.phone;
+      existingCandidate.skills = formSkills.length > 0 ? formSkills : existingCandidate.skills;
+      existingCandidate.resumeUrl = cvFileRef ? `/api/uploads/${path.basename(cvFileRef)}` : existingCandidate.resumeUrl;
+      existingCandidate.isProcessing = cvFileRef ? true : false;
+      existingCandidate.trackingId = trackingId;
+      existingCandidate.extractedData = {
+        ...(existingCandidate.extractedData || {}),
+        currentLocation: initialLocation || existingCandidate.extractedData?.currentLocation || '',
+        totalYearsExperience: initialExp || existingCandidate.extractedData?.totalYearsExperience || '',
+        noticePeriod: initialNotice || existingCandidate.extractedData?.noticePeriod || '',
+        formAnswers: answers || []
+      };
+      existingCandidate.markModified('extractedData');
+      existingCandidate.history.push({ date: new Date().toISOString(), type: 'Status', text: 'Application re-submitted. Previous data updated.' });
+      await existingCandidate.save();
+      console.log(`[Public Apply] Duplicate detected for ${finalEmail} on job ${jobId}. Updated existing candidate ${candidateId}.`);
+    } else {
+      trackingId = generateTrackingId();
+      candidateId = `cand_${Date.now()}`;
+
+      // 1. Create candidate immediately in 'processing' state
+      const newCandidate = new Candidate({
+        id: candidateId,
+        trackingId,
+        source: 'direct_apply',
+        jobId: jobId,
+        name: finalName,
+        email: finalEmail,
+        phone: finalPhone,
+        skills: formSkills,
+        resumeUrl: cvFileRef ? `/api/uploads/${path.basename(cvFileRef)}` : '',
+        isProcessing: cvFileRef ? true : false,
+        stage: 'Inbox',
+        extractedData: {
+          currentLocation: initialLocation,
+          totalYearsExperience: initialExp,
+          noticePeriod: initialNotice,
+          formAnswers: answers || []
+        },
+        history: [{ date: new Date().toISOString(), type: 'Status', text: 'Application submitted. AI Analysis in progress...' }]
+      });
+      
+      await newCandidate.save();
+    } // end of else (new candidate)
 
     // 2. Create Ingestion Log immediately
     const logId = `log-${Date.now()}`;
     const ingestionLog = new IngestionLog({
       id: logId,
       fileName: cvFileName || (cvFileRef ? path.basename(cvFileRef) : 'Resume.pdf'),
-      source: 'manual', // or mapped to manual
+      source: 'direct_apply', // Public portal apply
       status: 'processing',
       candidateId: candidateId,
       candidateName: finalName
@@ -2913,9 +3013,10 @@ app.post('/api/public/apply', async (req, res) => {
               projects: parsedData.projects || [],
               redFlags: jdQuestions?.red_flags || parsedData.red_flags || [],
               extractedData: {
-                currentLocation: ansMap['Current Location'] || parsedData.currentLocation || '',
-                totalYearsExperience: ansMap['Total Years of Experience'] || ansMap['Experience'] || parsedData.totalYearsExperience || '',
-                noticePeriod: ansMap['Notice Period'] || parsedData.noticePeriod || ''
+                currentLocation: getAnswerByKeywords(ansMap, ['Current Location', 'Location'], 'location') || parsedData.currentLocation || '',
+                totalYearsExperience: getAnswerByKeywords(ansMap, ['Total Years of Experience', 'Total Experience (years)', 'Experience', 'Total Experience'], 'experience') || parsedData.totalYearsExperience || '',
+                noticePeriod: getAnswerByKeywords(ansMap, ['Notice Period'], 'notice') || parsedData.noticePeriod || '',
+                formAnswers: answers || []
               },
               checklist: checklistResult.checklist || [],
               checklistScore: checklistResult.score || 0,

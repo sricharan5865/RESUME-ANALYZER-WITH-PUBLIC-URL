@@ -256,7 +256,7 @@ const emailLogSchema = new mongoose.Schema({
 const ingestionLogSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
   fileName: { type: String, required: true },
-  source: { type: String, enum: ['manual', 'gmail', 'outlook'], default: 'manual' },
+  source: { type: String, enum: ['manual', 'gmail', 'outlook', 'direct_apply'], default: 'manual' },
   status: { type: String, enum: ['processing', 'success', 'failed', 'duplicate', 'cancelled'], default: 'processing' },
   error: { type: String, default: '' },
   candidateId: { type: String, default: '' },

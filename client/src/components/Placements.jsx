@@ -27,9 +27,7 @@ export default function Placements({ backendUrl, token }) {
 
   return (
     <div style={{ padding: '24px' }}>
-      <div className="page-head">
-        <h2>Placements</h2>
-      </div>
+
 
       <div className="kpi-grid">
         <div className="kpi-card"><div className="kpi-value">{a?.totalPlacements ?? 0}</div><div className="kpi-label">Total Placements</div></div>
@@ -48,7 +46,7 @@ export default function Placements({ backendUrl, token }) {
                 <span className="bar-count">{m.count}</span>
               </div>
             ))}
-            {(!a || a.byMonth.length === 0) && <p className="muted empty">No placements yet.</p>}
+            {(a?.byMonth?.length ?? 0) === 0 && <p className="muted empty">No placements yet.</p>}
           </div>
         </div>
 
@@ -64,7 +62,7 @@ export default function Placements({ backendUrl, token }) {
                   <td className="num">${money(c.avgIncrease)}</td>
                 </tr>
               ))}
-              {(!a || a.byChannel.length === 0) && <tr><td colSpan={3} className="muted empty">No data.</td></tr>}
+              {(a?.byChannel?.length ?? 0) === 0 && <tr><td colSpan={3} className="muted empty">No data.</td></tr>}
             </tbody>
           </table>
           <h3 style={{ marginTop: '24px', marginBottom: '16px' }}>By Department</h3>

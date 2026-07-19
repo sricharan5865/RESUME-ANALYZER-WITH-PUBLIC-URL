@@ -464,7 +464,7 @@ async function fetchOpenRouterWithRetry(url, requestBody, apiKey) {
     if (shouldRetryWithLowerTokens && requestBody.max_tokens > 4500 && affordableTokens >= 4500) {
       console.warn(`OpenRouter token limit hit. Retrying with affordable tokens: ${affordableTokens}`);
       requestBody.max_tokens = affordableTokens;
-      response = await fetchWithTimeout(url, {
+      const retryResponse = await fetchWithTimeout(url, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${apiKey}`,
@@ -472,15 +472,15 @@ async function fetchOpenRouterWithRetry(url, requestBody, apiKey) {
         },
         body: JSON.stringify(requestBody)
       }, 300000);
+
+      if (!retryResponse.ok) {
+        const finalErrorText = await retryResponse.text().catch(e => e.message);
+        throw new Error(`OpenRouter API error: ${retryResponse.status} - ${finalErrorText}`);
+      }
+      return retryResponse;
     }
 
-    if (!response.ok) {
-      let finalErrorText = errorText;
-      if (shouldRetryWithLowerTokens) {
-        finalErrorText = await response.text().catch(e => e.message);
-      }
-      throw new Error(`OpenRouter API error: ${response.status} - ${finalErrorText}`);
-    }
+    throw new Error(`OpenRouter API error: ${response.status} - ${errorText}`);
   }
 
   return response;
@@ -1023,12 +1023,13 @@ function mapAnalysisToQuestions(parsedData, isJdMatch = false) {
 function getRecruiterSystemInstruction(aiProvider) {
   const todayDateString = new Date().toDateString();
   const baseInstruction = `Senior recruiter bot. Date: ${todayDateString}. Analyze resume facts. Output structured JSON. Ground all claims/dates strictly in resume text. Fix OCR typos in links (e.g. iinkedin->linkedin).
+CRITICAL: All generated interview questions must be extremely short, direct, and punchy (MAXIMUM 15 words). All generated sample/model answers/templates must be very brief and concise (MAXIMUM 30 words). Do not write long paragraphs or multiple sentences.
 Sections:
-1. Gaps: Flag gaps >= 2 months. Include date range, duration, probing question, and sample answer.
-2. Technical Audit: List all skills. Judge if backed by specifics (versions, scale, outcomes) or name-dropped. Write probe questions + answer templates for shallow skills.
-3. Domain Bank: EXACTLY 7 domain/tech questions calibrated to seniority with model answers (2-4 sentences).
-4. Project Deep-Dive: Write 1-2 probe questions on claims/achievements with model answers. Identify and highlight specific projects matching their skills.
-5. HR/Behavioral: EXACTLY 7 candidate-specific personalized questions based on history (exclude generic CTC, notice, relocation questions) with model answers.
+1. Gaps: Flag gaps >= 2 months. Include date range, duration, probing question (max 15 words), and sample answer (max 30 words).
+2. Technical Audit: List all skills. Judge if backed by specifics (versions, scale, outcomes) or name-dropped. Write probe questions (max 15 words) + answer templates (max 30 words) for shallow skills.
+3. Domain Bank: EXACTLY 7 domain/tech questions calibrated to seniority (max 15 words) with model answers (max 30 words).
+4. Project Deep-Dive: Write 1-2 probe questions (max 15 words) on claims/achievements with model answers (max 30 words). Identify and highlight specific projects matching their skills.
+5. HR/Behavioral: EXACTLY 7 candidate-specific personalized questions based on history (exclude generic CTC, notice, relocation questions) (max 15 words) with model answers (max 30 words).
 6. Red Flags: List quality issues (severity, fix suggestion).
 7. Prep & Fit: List 6-10 must-prepare topics and 2-3 sentence "why hire" pitch.
 8. Projects Mapping: List projects (name, description, skills used).`;
@@ -1698,7 +1699,7 @@ If the Candidate Profile has a 'formAnswers' field (array of manually submitted 
 3. If they claim a competency in the form answers but have ZERO actual experience, projects, or verified skill references in their resume, you MUST add a high-severity entry in the 'red_flags' array detailing this discrepancy (e.g. "Candidate claimed ArcGIS Pro in form but lacks ArcGIS experience in resume").
 
 CRITICAL INTERVIEW QUESTION LOGIC:
-1. Keep all questions and sample answers HIGHLY CONCISE (1-2 sentences maximum). Do not generate long paragraphs.
+1. Keep all questions extremely short, direct, and punchy (MAXIMUM 15 words). Keep all sample/model answers extremely brief and concise (MAXIMUM 30 words). Do not generate long paragraphs or multiple sentences.
 2. Every question MUST be strictly tailored to the specific Job Description provided above. Do not ask generic questions.
 3. For key project concepts/tools required in the Job Description:
    - If candidate HAS matching experience: Write a claim referencing it and generate a short follow-up probing their technical depth.

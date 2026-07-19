@@ -66,6 +66,7 @@ export default function IngestionTracker({ backendUrl, isActive, token }) {
     if (src === 'manual') return 'Manual Upload';
     if (src === 'gmail') return 'Gmail Sourcing';
     if (src === 'outlook') return 'Outlook Sourcing';
+    if (src === 'direct_apply') return 'Public Portal';
     return src;
   };
 

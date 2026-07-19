@@ -118,10 +118,9 @@ export default function FormBuilder() {
   }
 
   return (
-    <div style={{ padding: '24px', maxWidth: '800px' }}>
-      <header style={{ marginBottom: '24px' }}>
-        <h2 style={{ fontSize: '20px', fontWeight: 'bold' }}>Job Form Builder</h2>
-        <p style={{ color: 'var(--text-secondary)' }}>Design custom application forms for specific job roles.</p>
+    <div style={{ padding: '0px', maxWidth: '800px' }}>
+      <header style={{ marginBottom: '12px' }}>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '13px', margin: 0 }}>Design custom application forms for specific job roles.</p>
       </header>
       
       <div className="glass" style={{ padding: '24px', borderRadius: '12px', marginBottom: '24px' }}>

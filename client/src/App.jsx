@@ -242,6 +242,13 @@ export default function App() {
     }
   };
 
+  const handleCandidateUpdated = (updatedCandidate) => {
+    setCandidates(prev => prev.map(c => c.id === updatedCandidate.id ? updatedCandidate : c));
+    if (selectedCandidate && (selectedCandidate.id === updatedCandidate.id || selectedCandidate.candidateId === updatedCandidate.id)) {
+      setSelectedCandidate(updatedCandidate);
+    }
+  };
+
   const handleEmailSent = (candidateId) => {
     // Refresh database candidate logs
     fetchData(true);
@@ -381,6 +388,7 @@ export default function App() {
 
         {/* Navigation items */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flexGrow: 1, overflowY: 'auto', overflowX: 'hidden', paddingRight: '4px' }}>
+          {/* 1. Dashboard */}
           <button 
             className="btn" 
             style={{ 
@@ -397,6 +405,7 @@ export default function App() {
             <LayoutDashboard size={16} /> Dashboard
           </button>
 
+          {/* 2. Job Positions */}
           <button 
             className="btn" 
             style={{ 
@@ -412,7 +421,59 @@ export default function App() {
           >
             <Briefcase size={16} /> Job Positions
           </button>
-          
+
+          {/* 3. Applicants */}
+          <button 
+            className="btn" 
+            style={{ 
+              justifyContent: 'flex-start',
+              background: activeTab === 'applicants' ? 'rgba(99, 102, 241, 0.1)' : 'transparent',
+              color: activeTab === 'applicants' ? 'var(--text-primary)' : 'var(--text-secondary)',
+              borderLeft: activeTab === 'applicants' ? '3px solid var(--accent-primary)' : '3px solid transparent',
+              borderRadius: '0 var(--radius-md) var(--radius-md) 0',
+              marginLeft: '-16px',
+              paddingLeft: '28px'
+            }}
+            onClick={() => setActiveTab('applicants')}
+          >
+            <Users size={16} /> Applicants
+          </button>
+
+          {/* 4. Form Builder */}
+          <button 
+            className="btn" 
+            style={{ 
+              justifyContent: 'flex-start',
+              background: activeTab === 'forms' ? 'rgba(99, 102, 241, 0.1)' : 'transparent',
+              color: activeTab === 'forms' ? 'var(--text-primary)' : 'var(--text-secondary)',
+              borderLeft: activeTab === 'forms' ? '3px solid var(--accent-primary)' : '3px solid transparent',
+              borderRadius: '0 var(--radius-md) var(--radius-md) 0',
+              marginLeft: '-16px',
+              paddingLeft: '28px'
+            }}
+            onClick={() => setActiveTab('forms')}
+          >
+            <LayoutTemplate size={16} /> Form Builder
+          </button>
+
+          {/* 5. Pipeline Board */}
+          <button 
+            className="btn" 
+            style={{ 
+              justifyContent: 'flex-start',
+              background: activeTab === 'pipeline' ? 'rgba(99, 102, 241, 0.1)' : 'transparent',
+              color: activeTab === 'pipeline' ? 'var(--text-primary)' : 'var(--text-secondary)',
+              borderLeft: activeTab === 'pipeline' ? '3px solid var(--accent-primary)' : '3px solid transparent',
+              borderRadius: '0 var(--radius-md) var(--radius-md) 0',
+              marginLeft: '-16px',
+              paddingLeft: '28px'
+            }}
+            onClick={() => setActiveTab('pipeline')}
+          >
+            <GitCommit size={16} /> Pipeline Board
+          </button>
+
+          {/* 6. Sourcing (Outlook / Gmail) */}
           {user?.role !== 'manager' && (
             <button 
               className="btn" 
@@ -437,38 +498,7 @@ export default function App() {
             </button>
           )}
 
-          <button 
-            className="btn" 
-            style={{ 
-              justifyContent: 'flex-start',
-              background: activeTab === 'pipeline' ? 'rgba(99, 102, 241, 0.1)' : 'transparent',
-              color: activeTab === 'pipeline' ? 'var(--text-primary)' : 'var(--text-secondary)',
-              borderLeft: activeTab === 'pipeline' ? '3px solid var(--accent-primary)' : '3px solid transparent',
-              borderRadius: '0 var(--radius-md) var(--radius-md) 0',
-              marginLeft: '-16px',
-              paddingLeft: '28px'
-            }}
-            onClick={() => setActiveTab('pipeline')}
-          >
-            <GitCommit size={16} /> Pipeline Board
-          </button>
-
-          <button 
-            className="btn" 
-            style={{ 
-              justifyContent: 'flex-start',
-              background: activeTab === 'applicants' ? 'rgba(99, 102, 241, 0.1)' : 'transparent',
-              color: activeTab === 'applicants' ? 'var(--text-primary)' : 'var(--text-secondary)',
-              borderLeft: activeTab === 'applicants' ? '3px solid var(--accent-primary)' : '3px solid transparent',
-              borderRadius: '0 var(--radius-md) var(--radius-md) 0',
-              marginLeft: '-16px',
-              paddingLeft: '28px'
-            }}
-            onClick={() => setActiveTab('applicants')}
-          >
-            <Users size={16} /> Applicants
-          </button>
-
+          {/* 7. Placements */}
           <button 
             className="btn" 
             style={{ 
@@ -485,6 +515,7 @@ export default function App() {
             <DollarSign size={16} /> Placements
           </button>
 
+          {/* 8. Referrals */}
           <button 
             className="btn" 
             style={{ 
@@ -501,6 +532,7 @@ export default function App() {
             <UserPlus size={16} /> Referrals
           </button>
 
+          {/* 9. Pending CVs */}
           <button 
             className="btn" 
             style={{ 
@@ -517,6 +549,7 @@ export default function App() {
             <FileText size={16} /> Pending CVs
           </button>
 
+          {/* 10. Compare Candidates */}
           <button 
             className="btn" 
             style={{ 
@@ -533,22 +566,7 @@ export default function App() {
             <GitCompare size={16} /> Compare Candidates
           </button>
 
-          <button 
-            className="btn" 
-            style={{ 
-              justifyContent: 'flex-start',
-              background: activeTab === 'forms' ? 'rgba(99, 102, 241, 0.1)' : 'transparent',
-              color: activeTab === 'forms' ? 'var(--text-primary)' : 'var(--text-secondary)',
-              borderLeft: activeTab === 'forms' ? '3px solid var(--accent-primary)' : '3px solid transparent',
-              borderRadius: '0 var(--radius-md) var(--radius-md) 0',
-              marginLeft: '-16px',
-              paddingLeft: '28px'
-            }}
-            onClick={() => setActiveTab('forms')}
-          >
-            <LayoutTemplate size={16} /> Form Builder
-          </button>
-
+          {/* 11. AI Search */}
           <button 
             className="btn" 
             style={{ 
@@ -565,6 +583,7 @@ export default function App() {
             <Sparkles size={16} /> AI Search
           </button>
 
+          {/* 12. Ingestion Tracker */}
           {user?.role !== 'manager' && (
             <button 
               className="btn" 
@@ -583,6 +602,7 @@ export default function App() {
             </button>
           )}
 
+          {/* 13. Reporting & Analytics */}
           <button 
             className="btn" 
             style={{ 
@@ -599,6 +619,7 @@ export default function App() {
             <BarChart3 size={16} /> Reporting & Analytics
           </button>
 
+          {/* 14. Settings */}
           {user?.role === 'admin' && (
             <button 
               className="btn" 
@@ -617,6 +638,7 @@ export default function App() {
             </button>
           )}
 
+          {/* 15. User Control */}
           {user?.role === 'admin' && (
             <button 
               className="btn" 
@@ -952,6 +974,7 @@ export default function App() {
           }}
           onStageChanged={handleStageChanged}
           onCandidateDeleted={handleCandidateDeleted}
+          onCandidateUpdated={handleCandidateUpdated}
           backendUrl={BACKEND_URL}
           currentRole={mappedRole}
           token={token}

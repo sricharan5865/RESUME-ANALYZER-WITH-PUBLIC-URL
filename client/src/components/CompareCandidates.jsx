@@ -1,4 +1,5 @@
 import React from 'react';
+import { getCandidateLocation, getCandidateExperience, getCandidateNoticePeriod } from '../utils/candidateHelpers';
 
 export default function CompareCandidates({ candidates, compareIds, onBack }) {
   if (!compareIds || compareIds.length === 0) {
@@ -22,9 +23,9 @@ export default function CompareCandidates({ candidates, compareIds, onBack }) {
     { label: "Job Match Score", render: c => <span style={{ fontWeight: 'bold', color: c.matchScore >= 80 ? 'var(--status-offered)' : 'inherit' }}>{c.matchScore}%</span>, highlight: true },
     { label: "Competency Score", render: c => `${c.ownCategoryScore || 0}%` },
     { label: "Current Stage", render: c => <span style={{ background: 'var(--bg-tertiary)', padding: '2px 8px', borderRadius: '12px', fontSize: '12px' }}>{c.stage}</span> },
-    { label: "Location", render: c => c.extractedData?.currentLocation || "—" },
-    { label: "Notice Period", render: c => c.extractedData?.noticePeriod || "—" },
-    { label: "Total Experience", render: c => c.extractedData?.totalYearsExperience != null ? `${c.extractedData.totalYearsExperience} yrs` : "—" },
+    { label: "Location", render: c => getCandidateLocation(c) },
+    { label: "Notice Period", render: c => getCandidateNoticePeriod(c) },
+    { label: "Total Experience", render: c => getCandidateExperience(c) },
     { label: "Education", render: c => c.education?.length ? c.education.map(e => e.degree).join(', ') : "—" },
     { label: "Key Skills", render: c => c.skills?.join(', ') || "—" },
     { label: "Matching Skills", render: c => <ul style={{ margin: 0, paddingLeft: '16px', color: 'var(--status-offered)' }}>{(c.matchingSkills || []).map((s, i) => <li key={i}>{s}</li>)}</ul> },
@@ -33,10 +34,9 @@ export default function CompareCandidates({ candidates, compareIds, onBack }) {
   ];
 
   return (
-    <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      <header style={{ marginBottom: '24px', flexShrink: 0 }}>
-        <h2 style={{ fontSize: '20px', fontWeight: 'bold' }}>Compare Candidates ({cands.length})</h2>
-        <button onClick={onBack} style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-primary)', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', marginTop: '12px' }}>← Back to Pipeline</button>
+    <div style={{ padding: '0px', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+      <header style={{ marginBottom: '12px', flexShrink: 0 }}>
+        <button onClick={onBack} style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-primary)', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', margin: 0 }}>← Back to Pipeline</button>
       </header>
 
       <div className="glass" style={{ flexGrow: 1, overflowX: 'auto', overflowY: 'auto', borderRadius: '12px' }}>

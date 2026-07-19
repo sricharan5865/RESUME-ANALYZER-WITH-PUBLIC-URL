@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Download, Eye, FileSpreadsheet, Sparkles, Filter, Trash2, Calendar, GitCompare, Loader } from 'lucide-react';
 import { exportToCSV } from '../utils/export';
+import { getCandidateLocation, getCandidateExperience, getCandidateNoticePeriod } from '../utils/candidateHelpers';
 
 const NOTICE_PERIODS = ["Immediate", "15 days", "30 days", "45 days", "60 days", "90 days", "More than 90 days"];
 const STAGES = ["Inbox", "Shortlist", "Interview", "Offered", "Rejected"];
@@ -49,7 +50,7 @@ export default function Applicants({
 
     // 3. Location
     if (locationFilter) {
-      const loc = (c.extractedData?.currentLocation || '').toLowerCase();
+      const loc = getCandidateLocation(c).toLowerCase();
       if (!loc.includes(locationFilter.toLowerCase())) return false;
     }
 
@@ -62,7 +63,7 @@ export default function Applicants({
     }
 
     // 5. Notice Period
-    if (noticeFilter && c.extractedData?.noticePeriod !== noticeFilter) return false;
+    if (noticeFilter && getCandidateNoticePeriod(c).toLowerCase() !== noticeFilter.toLowerCase()) return false;
 
     // 6. Stage / Status
     if (stageFilter && c.stage?.toLowerCase() !== stageFilter.toLowerCase()) return false;
@@ -186,7 +187,25 @@ export default function Applicants({
       createdAt: 'Applied Date'
     };
 
-    exportToCSV(dataToExport, `applicants_${new Date().toISOString().slice(0, 10)}`, headers);
+    const dynamicHeaders = {};
+    const clonedData = dataToExport.map(c => {
+      const clone = { ...c };
+      if (c.extractedData && Array.isArray(c.extractedData.formAnswers)) {
+        c.extractedData.formAnswers.forEach(ans => {
+          if (ans.label && !['Upload CV', 'CV Upload', 'Upload Resume', 'Resume'].includes(ans.label)) {
+            const safeKey = `custom_${ans.label.replace(/\s+/g, '_')}`;
+            if (!dynamicHeaders[safeKey]) {
+              dynamicHeaders[safeKey] = ans.label;
+            }
+            clone[safeKey] = ans.value || '—';
+          }
+        });
+      }
+      return clone;
+    });
+
+    const finalHeaders = { ...headers, ...dynamicHeaders };
+    exportToCSV(clonedData, `applicants_${new Date().toISOString().slice(0, 10)}`, finalHeaders);
   };
 
   const handleCompare = () => {
@@ -212,15 +231,14 @@ export default function Applicants({
   const hasActiveFilters = searchTerm || selectedJobId || locationFilter || skillsFilter || noticeFilter || stageFilter || minScore || fromDate || toDate;
 
   return (
-    <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      <header style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+    <div style={{ padding: '0px', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+      <header style={{ marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
         <div>
-          <h2 style={{ fontSize: '20px', fontWeight: 'bold' }}>Applicants Database</h2>
-          <p style={{ color: 'var(--text-secondary)' }}>View, search, filter, and bulk action all applicants in one place.</p>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '13px', margin: 0 }}>View, search, filter, and bulk action all applicants in one place.</p>
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
-          <button className="btn btn-secondary" onClick={handleExport}>
-            <FileSpreadsheet size={16} /> Export to CSV
+          <button className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '13px' }} onClick={handleExport}>
+            <FileSpreadsheet size={14} /> Export to CSV
           </button>
         </div>
       </header>
@@ -433,7 +451,15 @@ export default function Applicants({
               sortedCandidates.map((c) => {
                 const job = jobs.find(j => j.id === c.jobId);
                 const isSelected = selectedCandidates.includes(c.id);
-                const score = c.matchScore || 0;
+                const isGeneralRole = !c.jobId || !job;
+                const useJobMatch = !isGeneralRole || !!c.jdQuestions;
+                
+                const score = useJobMatch 
+                  ? (c.matchScore || 0)
+                  : (c.ownCategoryScore > 0 
+                      ? c.ownCategoryScore 
+                      : (c.matchScore || 0));
+                
                 const scoreColorClass = score >= 80 ? 'score-high' : score >= 50 ? 'score-medium' : 'score-low';
 
                 return (
@@ -456,9 +482,9 @@ export default function Applicants({
                       <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 'normal', marginTop: '2px' }}>{c.email}</div>
                     </td>
                     <td style={{ padding: '16px' }}>{job ? job.title : 'General'}</td>
-                    <td style={{ padding: '16px' }}>{c.isProcessing ? <span style={{ color: 'var(--text-muted)', fontSize: '12px', fontStyle: 'italic' }}>Processing...</span> : (c.extractedData?.currentLocation || '—')}</td>
-                    <td style={{ padding: '16px' }}>{c.isProcessing ? <span style={{ color: 'var(--text-muted)', fontSize: '12px', fontStyle: 'italic' }}>Processing...</span> : (c.extractedData?.totalYearsExperience != null ? `${c.extractedData.totalYearsExperience} yrs` : '—')}</td>
-                    <td style={{ padding: '16px' }}>{c.isProcessing ? <span style={{ color: 'var(--text-muted)', fontSize: '12px', fontStyle: 'italic' }}>Processing...</span> : (c.extractedData?.noticePeriod || '—')}</td>
+                    <td style={{ padding: '16px' }}>{getCandidateLocation(c)}</td>
+                    <td style={{ padding: '16px' }}>{getCandidateExperience(c)}</td>
+                    <td style={{ padding: '16px' }}>{getCandidateNoticePeriod(c)}</td>
                     <td style={{ padding: '16px' }}>
                       {c.isProcessing ? (
                         <span className="score-badge" style={{ width: '28px', height: '28px', fontSize: '11px', display: 'inline-flex', background: 'transparent', border: '1px dashed var(--glass-border)', color: 'var(--text-muted)' }} title="AI parsing in progress...">
