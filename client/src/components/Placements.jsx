@@ -12,7 +12,7 @@ export default function Placements({ backendUrl, token }) {
       headers: { 'Authorization': `Bearer ${token}` }
     })
       .then(r => r.json())
-      .then(setRows)
+      .then(data => setRows(Array.isArray(data) ? data : []))
       .catch(console.error);
 
     fetch(`${backendUrl}/api/placements/analytics`, {

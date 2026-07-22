@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Briefcase, Mail, Phone, GraduationCap, Building2, Calendar, Sparkles, Check, CheckCircle2, XCircle, AlertCircle, Send, ArrowRight, Tag, Trash2, Eye } from 'lucide-react';
+import { X, Briefcase, Mail, Phone, GraduationCap, Building2, Calendar, Sparkles, Check, CheckCircle2, XCircle, AlertCircle, Send, ArrowRight, Tag, Trash2, Eye, FileText, DollarSign, Clock, UserCheck, Download } from 'lucide-react';
 
 const getQuestionStyles = (importance) => {
   const imp = (importance || '').toUpperCase();
@@ -74,16 +74,64 @@ const getQuestionStyles = (importance) => {
   }
 };
 
-export default function CandidateDetails({ candidate: propCandidate, job, onClose, onOpenEmailModal, onStageChanged, onCandidateDeleted, onCandidateUpdated, backendUrl, rankAccordingToJob, currentRole, token }) {
+export default function CandidateDetails({ candidate: propCandidate, job, jobs = [], onClose, onOpenEmailModal, onOpenOfferModal, onStageChanged, onCandidateDeleted, onCandidateUpdated, backendUrl, rankAccordingToJob, currentRole, token }) {
   const [candidate, setCandidate] = useState(() => {
     const cid = propCandidate?.id || propCandidate?.candidateId;
     return propCandidate ? { ...propCandidate, id: cid } : null;
   });
   const [loadingDetails, setLoadingDetails] = useState(false);
+  const [similarCandidates, setSimilarCandidates] = useState([]);
 
   const [isEditingMetadata, setIsEditingMetadata] = useState(false);
   const [editedAnswers, setEditedAnswers] = useState({});
   const [savingMetadata, setSavingMetadata] = useState(false);
+
+  const [changingPosition, setChangingPosition] = useState(false);
+  const [positionSuccessMsg, setPositionSuccessMsg] = useState('');
+
+  const handlePositionChange = async (e) => {
+    const newJobId = e.target.value;
+    const oldJobId = candidate.jobId;
+    if ((!oldJobId && !newJobId) || oldJobId === newJobId) return;
+
+    setChangingPosition(true);
+    setPositionSuccessMsg('');
+    try {
+      const res = await fetch(`${backendUrl}/api/candidates/${candidate.id}/position`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ jobId: newJobId || null })
+      });
+
+      if (!res.ok) {
+        throw new Error('Server rejected position change');
+      }
+
+      const data = await res.json();
+      setCandidate(data.candidate);
+      if (typeof onCandidateUpdated === 'function') {
+        onCandidateUpdated(data.candidate);
+      }
+
+      const selectedJob = jobs.find(j => j.id === newJobId);
+      const title = selectedJob ? selectedJob.title : 'General Role';
+      if (data.emailSent) {
+        setPositionSuccessMsg(`Position updated to "${title}" (Automatic email sent to ${data.candidate?.email || 'candidate'})`);
+      } else {
+        const reason = data.emailReason || 'Check email configuration in Settings';
+        setPositionSuccessMsg(`Position updated to "${title}". Warning: Email not sent (${reason})`);
+      }
+      setTimeout(() => setPositionSuccessMsg(''), 7000);
+    } catch (err) {
+      console.error('Failed to change candidate position:', err);
+      alert(err.message || 'Failed to update candidate position');
+    } finally {
+      setChangingPosition(false);
+    }
+  };
 
   // Gather all submitted form answer labels & job custom fields
   const submittedAnswers = candidate?.extractedData?.formAnswers || [];
@@ -264,6 +312,19 @@ export default function CandidateDetails({ candidate: propCandidate, job, onClos
   }, [candidate?.id, candidate?.resumeUrl]);
 
   // Auto re-score on details open if details are empty
+  useEffect(() => {
+    if (candidate?.id) {
+      fetch(`${backendUrl}/api/candidates/${candidate.id}/similar?limit=3`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      .then(r => r.json())
+      .then(data => {
+         if (Array.isArray(data)) setSimilarCandidates(data);
+      })
+      .catch(err => console.error("Failed to load similar candidates", err));
+    }
+  }, [candidate?.id, backendUrl, token]);
+
   useEffect(() => {
     if (!candidate) return;
     if (reScoreLockRef.current === candidate.id) return;
@@ -555,10 +616,64 @@ export default function CandidateDetails({ candidate: propCandidate, job, onClos
 
   const scoreColorClass = score >= 80 ? 'score-high' : score >= 50 ? 'score-medium' : 'score-low';
 
+  // Comprehensive aggregation of ALL skills belonging to the candidate
+  const allCandidateSkills = (() => {
+    const skillSet = new Set();
+    const addSkill = (s) => {
+      if (!s || typeof s !== 'string') return;
+      const clean = s.includes(':') ? s.split(':')[1] : s;
+      clean.split(/[,;\n•·|]/).forEach(item => {
+        const trimmed = item.trim();
+        if (trimmed && trimmed.length > 1) {
+          const formatted = (trimmed.length > 2 && trimmed === trimmed.toLowerCase())
+            ? trimmed.charAt(0).toUpperCase() + trimmed.slice(1)
+            : trimmed;
+          skillSet.add(formatted);
+        }
+      });
+    };
+
+    if (Array.isArray(candidate?.skills)) candidate.skills.forEach(addSkill);
+    else if (typeof candidate?.skills === 'string') addSkill(candidate.skills);
+
+    if (Array.isArray(candidate?.extractedData?.skills)) {
+      candidate.extractedData.skills.forEach(addSkill);
+    } else if (typeof candidate?.extractedData?.skills === 'string') {
+      addSkill(candidate.extractedData.skills);
+    }
+
+    if (Array.isArray(candidate?.extractedData?.technical_depth_audit)) {
+      candidate.extractedData.technical_depth_audit.forEach(item => {
+        if (item?.skill) addSkill(item.skill);
+        if (item?.topic) addSkill(item.topic);
+      });
+    }
+
+    (candidate?.matchingSkills || []).forEach(addSkill);
+    (candidate?.ownCategoryMatchingSkills || []).forEach(addSkill);
+
+    if (Array.isArray(candidate?.tags)) {
+      candidate.tags.forEach(t => { if (t?.value) addSkill(t.value); });
+    }
+
+    if (Array.isArray(candidate?.projects)) {
+      candidate.projects.forEach(p => {
+        (p.matchingSkills || []).forEach(addSkill);
+        (p.skills || []).forEach(addSkill);
+      });
+    }
+
+    return Array.from(skillSet);
+  })();
+
   const handleStageSelect = async (e) => {
     const newStage = e.target.value;
     const oldStage = candidate.stage;
     if (oldStage && oldStage.toLowerCase() === newStage.toLowerCase()) {
+      return;
+    }
+    if (newStage.toLowerCase() === 'offered' && onOpenOfferModal) {
+      onOpenOfferModal(candidate);
       return;
     }
     try {
@@ -674,6 +789,16 @@ export default function CandidateDetails({ candidate: propCandidate, job, onClos
             <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
               Assigned to: <strong style={{ color: 'var(--text-primary)' }}>{job ? job.title : 'General Role'}</strong>
             </span>
+            {positionSuccessMsg && (
+              <div style={{ 
+                marginTop: '6px', 
+                fontSize: '12px', 
+                color: positionSuccessMsg.includes('Warning') || positionSuccessMsg.includes('not sent') ? '#f59e0b' : '#10b981', 
+                fontWeight: '600' 
+              }}>
+                {positionSuccessMsg.includes('Warning') ? '⚠️ ' : '✓ '}{positionSuccessMsg}
+              </div>
+            )}
           </div>
           <button className="btn btn-secondary" style={{ padding: '8px' }} onClick={onClose}>
             <X size={16} />
@@ -721,30 +846,44 @@ export default function CandidateDetails({ candidate: propCandidate, job, onClos
                 )}
 
                 {/* Total Experience and Employment Gaps */}
-                <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px dashed var(--glass-border)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
-                    <Briefcase size={12} style={{ color: 'var(--accent-primary)' }} />
-                    <span>Total Experience: <strong style={{ color: 'var(--text-primary)' }}>{totalExpString}</strong></span>
-                  </span>
-                  {gaps.length > 0 ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '2px' }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#f59e0b', fontSize: '12px', fontWeight: '600' }}>
-                        <AlertCircle size={12} />
-                        <span>Employment Gaps Found:</span>
+                {(() => {
+                  const formAnswersArr = Array.isArray(candidate?.extractedData?.formAnswers) ? candidate.extractedData.formAnswers : [];
+                  const formExpVal = candidate?.extractedData?.totalYearsExperience || formAnswersArr.find(a => a?.label?.toLowerCase().includes('experience'))?.value;
+                  const formExpNum = parseFloat(formExpVal);
+                  const isExpMismatch = !isNaN(formExpNum) && expYears > 0 && Math.abs(formExpNum - expYears) >= 2;
+
+                  return (
+                    <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px dashed var(--glass-border)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', flexWrap: 'wrap' }}>
+                        <Briefcase size={12} style={{ color: 'var(--accent-primary)' }} />
+                        <span>Total Experience (CV): <strong style={{ color: 'var(--text-primary)' }}>{totalExpString}</strong></span>
+                        {formExpVal && (
+                          <span style={{ fontSize: '11px', fontWeight: '600', color: isExpMismatch ? '#f87171' : 'var(--text-muted)', background: isExpMismatch ? 'rgba(239, 68, 68, 0.12)' : 'rgba(255, 255, 255, 0.05)', padding: '2px 8px', borderRadius: '4px', border: isExpMismatch ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid var(--glass-border)' }}>
+                            {isExpMismatch ? '⚠️ Form Stated: ' : 'Form: '}{formExpVal} yrs{isExpMismatch ? ' (Discrepancy)' : ''}
+                          </span>
+                        )}
                       </span>
-                      <ul style={{ margin: '0 0 0 16px', padding: 0, fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        {gaps.map((gap, i) => (
-                          <li key={i} style={{ lineHeight: '1.4' }}>{gap}</li>
-                        ))}
-                      </ul>
+                      {gaps.length > 0 ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '2px' }}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#f59e0b', fontSize: '12px', fontWeight: '600' }}>
+                            <AlertCircle size={12} />
+                            <span>Employment Gaps Found:</span>
+                          </span>
+                          <ul style={{ margin: '0 0 0 16px', padding: 0, fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            {gaps.map((gap, i) => (
+                              <li key={i} style={{ lineHeight: '1.4' }}>{gap}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#10b981', fontSize: '12px', fontWeight: '500' }}>
+                          <CheckCircle2 size={12} />
+                          <span>No significant employment gaps</span>
+                        </span>
+                      )}
                     </div>
-                  ) : (
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#10b981', fontSize: '12px', fontWeight: '500' }}>
-                      <CheckCircle2 size={12} />
-                      <span>No significant employment gaps</span>
-                    </span>
-                  )}
-                </div>
+                  );
+                })()}
 
                 {/* Application metadata fields (Location, Experience, Notice) */}
                 <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--glass-border)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -821,6 +960,22 @@ export default function CandidateDetails({ candidate: propCandidate, job, onClos
           <div className="glass" style={{ padding: '16px', borderRadius: 'var(--radius-md)', display: 'flex', gap: '16px', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Position:</span>
+                <select 
+                  className="form-input" 
+                  style={{ width: '180px', padding: '6px 12px', fontSize: '12px' }}
+                  value={candidate.jobId || ''}
+                  onChange={handlePositionChange}
+                  disabled={changingPosition || currentRole === 'Hiring Manager'}
+                >
+                  <option value="">General Role (Unassigned)</option>
+                  {jobs.map(j => (
+                    <option key={j.id} value={j.id}>{j.title}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Current Stage:</span>
                 <select 
                   className="form-input" 
@@ -868,10 +1023,20 @@ export default function CandidateDetails({ candidate: propCandidate, job, onClos
               {currentRole !== 'Hiring Manager' && (
                 <button 
                   className="btn btn-primary" 
+                  style={{ padding: '8px 14px', fontSize: '12px', background: '#10b981', borderColor: '#10b981', fontWeight: '600' }}
+                  onClick={() => onOpenOfferModal ? onOpenOfferModal(candidate) : onOpenEmailModal(candidate)}
+                  title="Generate and Send Employment Offer Letter"
+                >
+                  <FileText size={14} /> Send Offer Letter
+                </button>
+              )}
+              {currentRole !== 'Hiring Manager' && (
+                <button 
+                  className="btn btn-secondary" 
                   style={{ padding: '8px 14px', fontSize: '12px' }}
                   onClick={() => onOpenEmailModal(candidate)}
                 >
-                  <Send size={12} /> Send Letter
+                  <Send size={12} /> Send Email
                 </button>
               )}
               {currentRole !== 'Hiring Manager' && (
@@ -886,14 +1051,102 @@ export default function CandidateDetails({ candidate: propCandidate, job, onClos
             </div>
           </div>
 
+          {/* Offer Details Card if Extended */}
+          {candidate.offerDetails && (
+            <div className="glass" style={{ padding: '20px', borderRadius: 'var(--radius-md)', background: candidate.offerDetails.emailStatus === 'Sent' ? 'rgba(16, 185, 129, 0.05)' : 'rgba(245, 158, 11, 0.05)', border: candidate.offerDetails.emailStatus === 'Sent' ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(245, 158, 11, 0.3)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h3 style={{ fontSize: '15px', fontWeight: '700', color: candidate.offerDetails.emailStatus === 'Sent' ? '#10b981' : '#f59e0b', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <FileText size={18} /> Official Offer Record
+                </h3>
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <a 
+                    href={`${backendUrl}/api/candidates/${candidate.id}/offer-letter-pdf`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-secondary"
+                    style={{ padding: '4px 10px', fontSize: '11px', color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.3)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                    title="Download / View official offer letter PDF"
+                  >
+                    <Download size={12} /> Download PDF
+                  </a>
+
+                  {/* Email Delivery Status Badge */}
+                  {candidate.offerDetails.emailStatus === 'Sent' ? (
+                    <span className="tag-badge" style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#10b981', fontWeight: '600', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      <CheckCircle2 size={12} /> Email Delivered ({candidate.offerDetails.sentAt ? new Date(candidate.offerDetails.sentAt).toLocaleDateString() : 'Recently'})
+                    </span>
+                  ) : candidate.offerDetails.emailStatus === 'Failed' ? (
+                    <span className="tag-badge" style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', fontWeight: '600', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      <XCircle size={12} /> Email Delivery Failed
+                    </span>
+                  ) : (
+                    <span className="tag-badge" style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b', fontWeight: '600', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      <Clock size={12} /> Email Not Sent Yet (Saved for Later)
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', fontSize: '13px' }}>
+                <div>
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '11px', display: 'block' }}>Joining Date</span>
+                  <strong style={{ color: '#10b981' }}>{candidate.offerDetails.joiningDate || 'TBD'}</strong>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '11px', display: 'block' }}>Offered Salary / CTC</span>
+                  <strong style={{ color: 'var(--text-primary)' }}>{candidate.offerDetails.offeredSalary || 'As agreed'}</strong>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '11px', display: 'block' }}>Work Mode</span>
+                  <span>{candidate.offerDetails.workMode || 'Hybrid'} ({candidate.offerDetails.location || 'Main Office'})</span>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '11px', display: 'block' }}>Probation Period</span>
+                  <span>{candidate.offerDetails.probationPeriod || '3 Months'}</span>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '11px', display: 'block' }}>Offer Expiration</span>
+                  <span>{candidate.offerDetails.offerDeadline || 'N/A'}</span>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '11px', display: 'block' }}>Reporting Manager</span>
+                  <span>{candidate.offerDetails.reportingManager || 'Unassigned'}</span>
+                </div>
+              </div>
+
+              {candidate.offerDetails.specialNotes && (
+                <div style={{ fontSize: '12px', color: 'var(--text-secondary)', background: 'rgba(0,0,0,0.1)', padding: '8px 12px', borderRadius: '4px', marginTop: '4px' }}>
+                  <strong>Special Terms:</strong> {candidate.offerDetails.specialNotes}
+                </div>
+              )}
+
+              {/* Action if email not sent yet */}
+              {candidate.offerDetails.emailStatus !== 'Sent' && currentRole !== 'Hiring Manager' && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(245, 158, 11, 0.1)', padding: '10px 14px', borderRadius: '6px', marginTop: '4px' }}>
+                  <span style={{ fontSize: '12px', color: '#f59e0b', fontWeight: '500' }}>
+                    ⚠️ Offer details are saved on candidate profile. Click button to send offer email now.
+                  </span>
+                  <button 
+                    className="btn btn-primary"
+                    style={{ padding: '6px 14px', fontSize: '12px', background: '#10b981', borderColor: '#10b981', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    onClick={() => onOpenOfferModal && onOpenOfferModal(candidate)}
+                  >
+                    <Send size={12} /> Send Email Now
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Key Skills */}
-          {candidate.skills && candidate.skills.length > 0 && (
+          {allCandidateSkills.length > 0 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <h3 style={{ fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-primary)' }}>
-                <CheckCircle2 size={16} style={{ color: 'var(--accent-primary)' }} /> Key Skills
+                <CheckCircle2 size={16} style={{ color: 'var(--accent-primary)' }} /> Key Skills ({allCandidateSkills.length})
               </h3>
               <div className="glass" style={{ padding: '16px', borderRadius: 'var(--radius-md)', display: 'flex', flexWrap: 'wrap', gap: '8px', background: 'rgba(99, 102, 241, 0.02)' }}>
-                {candidate.skills.flatMap(s => (s.includes(':') ? s.split(':')[1] : s).split(',').map(x => x.trim()).filter(x => x)).map((skill, idx) => (
+                {allCandidateSkills.map((skill, idx) => (
                   <span 
                     key={idx} 
                     className="tag-badge tag-tech"
@@ -1037,72 +1290,53 @@ export default function CandidateDetails({ candidate: propCandidate, job, onClos
                   <h4 style={{ fontSize: '12px', color: 'var(--status-rejected)', display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     <AlertCircle size={14} /> Red Flags / Discrepancies Detected
                   </h4>
-                  {candidate.redFlags.map((flag, idx) => (
-                    <div key={idx} style={{ background: 'rgba(239, 68, 68, 0.05)', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#f87171' }}>{flag.issue}</span>
-                        <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}><strong>Severity:</strong> {flag.severity}</span>
-                        <span style={{ fontSize: '12px', color: 'var(--text-primary)' }}><strong>Suggestion:</strong> {flag.fix_suggestion}</span>
+                  {candidate.redFlags.map((flag, idx) => {
+                    const sevColor = flag.severity?.toLowerCase() === 'high' ? '#f87171' : flag.severity?.toLowerCase() === 'medium' ? '#fb923c' : '#fbbf24';
+                    const sevBg = flag.severity?.toLowerCase() === 'high' ? 'rgba(239, 68, 68, 0.05)' : flag.severity?.toLowerCase() === 'medium' ? 'rgba(249, 115, 22, 0.05)' : 'rgba(245, 158, 11, 0.05)';
+                    const sevBorder = flag.severity?.toLowerCase() === 'high' ? 'rgba(239, 68, 68, 0.2)' : flag.severity?.toLowerCase() === 'medium' ? 'rgba(249, 115, 22, 0.2)' : 'rgba(245, 158, 11, 0.2)';
+
+                    return (
+                      <div key={idx} style={{ background: sevBg, padding: '12px', borderRadius: 'var(--radius-sm)', border: `1px solid ${sevBorder}` }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <span style={{ fontSize: '13px', fontWeight: 'bold', color: sevColor }}>{flag.flag || flag.issue}</span>
+                          <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}><strong>Severity:</strong> {flag.severity}</span>
+                          <span style={{ fontSize: '12px', color: 'var(--text-primary)' }}><strong>Explanation:</strong> {flag.explanation || flag.fix_suggestion}</span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
+                </div>
+              )}
+
+              {similarCandidates && similarCandidates.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingTop: '16px', borderTop: '1px solid var(--glass-border)', marginTop: '16px' }}>
+                  <h4 style={{ fontSize: '12px', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    <Briefcase size={14} /> Similar Candidates (RAG Match)
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {similarCandidates.map((sim, idx) => (
+                      <div key={idx} style={{ background: 'var(--glass-bg)', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--glass-border)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-primary)' }}>{sim.name}</span>
+                            <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{sim.seniorityLevel}</span>
+                          </div>
+                          <span style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--accent-primary)', background: 'var(--accent-primary-alpha)', padding: '2px 6px', borderRadius: '4px' }}>
+                            {Math.round(sim.similarityScore * 100)}% Match
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '6px' }}>
+                          Matched on: {sim.matchedOn?.join(', ')}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
           </div>
 
-          {/* JD-Specific Interview Questions (from JD Match) */}
-          {(job || candidate.jdRequirements) && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <h3 style={{ fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: '#818cf8' }}>
-                📋 JD-Relevant Questions {(job?.title || candidate.jdTitle) ? `— ${job?.title || candidate.jdTitle}` : ''}
-              </h3>
 
-              {candidate.jdQuestions ? (
-                <>
-                  {/* HR Questions for JD */}
-                  {candidate.jdQuestions.hrQuestions && candidate.jdQuestions.hrQuestions.length > 0 && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <h4 style={{ fontSize: '13px', fontWeight: '700', color: '#a78bfa', margin: 0 }}>HR & Screening Questions</h4>
-                      {candidate.jdQuestions.hrQuestions.map((q, qi) => (
-                        <div key={qi} style={{ fontSize: '13px', padding: '10px 14px', borderRadius: 'var(--radius-md)', background: 'rgba(99, 102, 241, 0.04)', border: '1px solid rgba(99, 102, 241, 0.12)' }}>
-                          <p style={{ margin: '0 0 6px 0', fontWeight: '600', color: 'var(--text-primary)' }}>Q{qi+1}: {q.question}</p>
-                          <p style={{ margin: 0, color: 'var(--text-secondary)', fontStyle: 'italic', fontSize: '12px' }}>Expected: {q.answer}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Technical Questions for JD */}
-                  {candidate.jdQuestions.technicalQuestions && candidate.jdQuestions.technicalQuestions.length > 0 && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <h4 style={{ fontSize: '13px', fontWeight: '700', color: '#34d399', margin: 0 }}>Technical & Domain Questions</h4>
-                      {candidate.jdQuestions.technicalQuestions.map((q, qi) => (
-                        <div key={qi} style={{ fontSize: '13px', padding: '10px 14px', borderRadius: 'var(--radius-md)', background: 'rgba(52, 211, 153, 0.04)', border: '1px solid rgba(52, 211, 153, 0.12)' }}>
-                          <p style={{ margin: '0 0 6px 0', fontWeight: '600', color: 'var(--text-primary)' }}>Q{qi+1}: {q.question}</p>
-                          <p style={{ margin: 0, color: 'var(--text-secondary)', fontStyle: 'italic', fontSize: '12px' }}>Expected: {q.answer}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="glass" style={{ padding: '20px', borderRadius: 'var(--radius-md)', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', background: 'rgba(129, 140, 248, 0.02)', border: '1px dashed rgba(129, 140, 248, 0.2)' }}>
-                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
-                    JD-specific interview questions have not been generated for this candidate yet.
-                  </p>
-                  <button 
-                    className="btn btn-primary"
-                    style={{ padding: '8px 16px', fontSize: '12px', background: 'var(--accent-primary)', border: '1px solid rgba(99, 102, 241, 0.2)' }}
-                    onClick={handleGenerateJdQuestions}
-                    disabled={loadingJdQuestions}
-                  >
-                    {loadingJdQuestions ? 'Generating Questions...' : 'Generate JD-Relevant Questions'}
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
 
           {/* HR & Technical Interview Questions */}
           {((candidate.hrQuestions && candidate.hrQuestions.length > 0) || 
@@ -1134,7 +1368,7 @@ export default function CandidateDetails({ candidate: propCandidate, job, onClos
                   }}
                   onClick={() => setQaSubTab('hr')}
                 >
-                  Behavioral & HR ({candidate.hrQuestions?.length || 0})
+                  HR & Screening ({candidate.hrQuestions?.length || 0})
                 </button>
                 <button
                   className="btn"

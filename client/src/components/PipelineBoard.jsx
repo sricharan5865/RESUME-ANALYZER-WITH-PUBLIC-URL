@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Briefcase, MapPin, Sparkles, Eye, Mail, Upload, FileText, Plus, Loader, Filter, Trash2, Search, AlertCircle, X, FileSpreadsheet, Calendar } from 'lucide-react';
-import { exportToCSV } from '../utils/export';
+import { Briefcase, MapPin, Sparkles, Eye, Mail, Upload, FileText, Plus, Loader, Filter, Trash2, Search, AlertCircle, X, FileSpreadsheet, Calendar, Download } from 'lucide-react';
+import { exportToCSV, exportToExcel, prepareCandidateExportData } from '../utils/export';
 import { getCandidateDate, matchDateRangeHelper } from '../utils/dateFilters';
 
 
@@ -12,6 +12,7 @@ export default function PipelineBoard({
   onStageChanged, 
   onSelectCandidate, 
   onOpenEmailModal,
+  onOpenOfferModal,
   onManualUpload,
   onCandidateDeleted,
   backendUrl,
@@ -56,13 +57,13 @@ export default function PipelineBoard({
   const handleExport = () => {
     setShowExportModal(true);
   };
-  const confirmExport = () => {
+  const confirmExport = (format = 'excel') => {
     const selectedStagesList = Object.keys(exportStages).filter(stage => exportStages[stage]);
     if (selectedStagesList.length === 0) {
       alert("Please select at least one stage to export.");
       return;
     }
-    const headers = {
+    const baseHeaders = {
       name: 'Name',
       email: 'Email',
       phone: 'Phone',
@@ -79,19 +80,22 @@ export default function PipelineBoard({
     const candidatesToExport = sortedCandidates.filter(c => 
       selectedStagesList.some(s => s.toLowerCase() === c.stage.toLowerCase())
     );
-    const dataToExport = candidatesToExport.map(c => {
+    const dataWithJobNames = candidatesToExport.map(c => {
       const job = jobs.find(j => j.id === c.jobId);
       return {
         ...c,
         jobId: job ? job.title : 'General Role'
       };
     });
+
+    const { data: cleanedData, headers: finalHeaders } = prepareCandidateExportData(dataWithJobNames, baseHeaders);
+
     const job = jobs.find(j => j.id === selectedFilterJobId);
     let fileName = job ? `candidates_${job.title.replace(/\s+/g, '_').toLowerCase()}` : 'all_candidates_pipeline';
     if (!allSelected) {
       fileName += `_${selectedStagesList.map(s => s.toLowerCase()).join('_')}`;
     }
-    exportToCSV(dataToExport, fileName, headers);
+    exportToExcel(cleanedData, fileName, finalHeaders);
     setShowExportModal(false);
   };
 
@@ -853,6 +857,17 @@ export default function PipelineBoard({
                                 <Mail size={12} /> Contact
                               </button>
 
+                              {onOpenOfferModal && (
+                                <button 
+                                  className="btn btn-secondary" 
+                                  style={{ padding: '4px 8px', fontSize: '10px', color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.3)' }}
+                                  onClick={() => onOpenOfferModal(candidate)}
+                                  title="Generate & Send Offer Letter"
+                                >
+                                  <FileText size={12} /> Offer
+                                </button>
+                              )}
+
                               <button 
                                 className="btn btn-danger" 
                                 style={{ padding: '4px 8px', fontSize: '10px' }}
@@ -995,10 +1010,10 @@ export default function PipelineBoard({
               <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
                 <button 
                   className="btn btn-primary" 
-                  style={{ flex: 1, justifyContent: 'center', padding: '10px', fontWeight: '600' }} 
+                  style={{ flex: 1, justifyContent: 'center', padding: '10px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }} 
                   onClick={confirmExport}
                 >
-                  Export
+                  <FileSpreadsheet size={16} /> Export to Excel (.xls)
                 </button>
                 <button 
                   className="btn btn-secondary" 

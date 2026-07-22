@@ -1,16 +1,31 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Download, Eye, FileSpreadsheet, Sparkles, Filter, Trash2, Calendar, GitCompare, Loader } from 'lucide-react';
-import { exportToCSV } from '../utils/export';
+import { Search, Download, Eye, FileSpreadsheet, Sparkles, Filter, Trash2, Calendar, GitCompare, Loader, FileText, SlidersHorizontal, X, Check } from 'lucide-react';
+import { exportToCSV, exportToExcel, prepareCandidateExportData } from '../utils/export';
 import { getCandidateLocation, getCandidateExperience, getCandidateNoticePeriod } from '../utils/candidateHelpers';
 
 const NOTICE_PERIODS = ["Immediate", "15 days", "30 days", "45 days", "60 days", "90 days", "More than 90 days"];
 const STAGES = ["Inbox", "Shortlist", "Interview", "Offered", "Rejected"];
+
+const ALL_COLUMNS = [
+  { id: 'name', label: 'Name & Email', defaultVisible: true, required: true },
+  { id: 'jobRole', label: 'Job Role', defaultVisible: true },
+  { id: 'location', label: 'Location', defaultVisible: true },
+  { id: 'experience', label: 'Total Experience', defaultVisible: true },
+  { id: 'noticePeriod', label: 'Notice Period', defaultVisible: true },
+  { id: 'matchScore', label: 'ATS Match Score', defaultVisible: true },
+  { id: 'stage', label: 'Stage', defaultVisible: true },
+  { id: 'appliedDate', label: 'Applied Date', defaultVisible: true },
+  { id: 'skills', label: 'Key Skills', defaultVisible: false },
+  { id: 'phone', label: 'Phone', defaultVisible: false },
+  { id: 'actions', label: 'Actions', defaultVisible: true, required: true }
+];
 
 export default function Applicants({ 
   candidates, 
   jobs, 
   onStageChanged, 
   onSelectCandidate, 
+  onOpenOfferModal,
   onCompare, 
   backendUrl, 
   token 
@@ -28,6 +43,20 @@ export default function Applicants({
   const [selectedCandidates, setSelectedCandidates] = useState([]);
   const [bulkStatus, setBulkStatus] = useState('');
   const [updatingBulk, setUpdatingBulk] = useState(false);
+
+  // Column visibility state
+  const [visibleColumns, setVisibleColumns] = useState(() => {
+    try {
+      const saved = localStorage.getItem('applicants_visible_columns');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return ['name', 'jobRole', 'location', 'experience', 'noticePeriod', 'matchScore', 'stage', 'appliedDate', 'actions'];
+  });
+
+  const [showColumnCustomizer, setShowColumnCustomizer] = useState(false);
 
   // Sorting
   const [sortBy, setSortBy] = useState('createdAt');
@@ -166,16 +195,16 @@ export default function Applicants({
   };
 
   const handleExport = () => {
-    const dataToExport = selectedCandidates.length > 0 
+    const rawDataToExport = selectedCandidates.length > 0 
       ? candidates.filter(c => selectedCandidates.includes(c.id))
       : sortedCandidates;
 
-    if (dataToExport.length === 0) {
+    if (rawDataToExport.length === 0) {
       alert("No candidates to export.");
       return;
     }
 
-    const headers = {
+    const baseHeaders = {
       name: 'Name',
       email: 'Email',
       phone: 'Phone',
@@ -187,25 +216,9 @@ export default function Applicants({
       createdAt: 'Applied Date'
     };
 
-    const dynamicHeaders = {};
-    const clonedData = dataToExport.map(c => {
-      const clone = { ...c };
-      if (c.extractedData && Array.isArray(c.extractedData.formAnswers)) {
-        c.extractedData.formAnswers.forEach(ans => {
-          if (ans.label && !['Upload CV', 'CV Upload', 'Upload Resume', 'Resume'].includes(ans.label)) {
-            const safeKey = `custom_${ans.label.replace(/\s+/g, '_')}`;
-            if (!dynamicHeaders[safeKey]) {
-              dynamicHeaders[safeKey] = ans.label;
-            }
-            clone[safeKey] = ans.value || '—';
-          }
-        });
-      }
-      return clone;
-    });
-
-    const finalHeaders = { ...headers, ...dynamicHeaders };
-    exportToCSV(clonedData, `applicants_${new Date().toISOString().slice(0, 10)}`, finalHeaders);
+    const { data: cleanedData, headers: finalHeaders } = prepareCandidateExportData(rawDataToExport, baseHeaders);
+    const fileName = `applicants_${new Date().toISOString().slice(0, 10)}`;
+    exportToExcel(cleanedData, fileName, finalHeaders);
   };
 
   const handleCompare = () => {
@@ -236,10 +249,89 @@ export default function Applicants({
         <div>
           <p style={{ color: 'var(--text-secondary)', fontSize: '13px', margin: 0 }}>View, search, filter, and bulk action all applicants in one place.</p>
         </div>
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <button className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '13px' }} onClick={handleExport}>
-            <FileSpreadsheet size={14} /> Export to CSV
+        <div style={{ display: 'flex', gap: '12px', position: 'relative' }}>
+          <button className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }} onClick={() => setShowColumnCustomizer(!showColumnCustomizer)}>
+            <SlidersHorizontal size={14} /> Customize Columns
           </button>
+
+          <button className="btn btn-primary" style={{ padding: '6px 14px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '600' }} onClick={handleExport}>
+            <FileSpreadsheet size={14} /> Export to Excel (.xls)
+          </button>
+
+          {/* Column Customizer Popover Modal */}
+          {showColumnCustomizer && (
+            <div 
+              className="glass" 
+              style={{ 
+                position: 'absolute', 
+                top: '42px', 
+                right: '0', 
+                zIndex: 100, 
+                padding: '16px 20px', 
+                borderRadius: 'var(--radius-md)', 
+                width: '260px', 
+                background: 'var(--bg-secondary)', 
+                border: '1px solid var(--glass-border)', 
+                boxShadow: '0 15px 30px rgba(0, 0, 0, 0.5)' 
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', borderBottom: '1px solid var(--glass-border)', paddingBottom: '8px' }}>
+                <h4 style={{ fontSize: '14px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-primary)' }}>
+                  <SlidersHorizontal size={14} style={{ color: 'var(--accent-primary)' }} /> Select Columns
+                </h4>
+                <button 
+                  style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '2px' }}
+                  onClick={() => setShowColumnCustomizer(false)}
+                >
+                  <X size={14} />
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '280px', overflowY: 'auto' }}>
+                {ALL_COLUMNS.map(col => (
+                  <label key={col.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: col.required ? 'not-allowed' : 'pointer', opacity: col.required ? 0.7 : 1, color: 'var(--text-primary)' }}>
+                    <input
+                      type="checkbox"
+                      checked={visibleColumns.includes(col.id)}
+                      disabled={col.required}
+                      onChange={(e) => {
+                        let updated;
+                        if (e.target.checked) {
+                          updated = [...visibleColumns, col.id];
+                        } else {
+                          updated = visibleColumns.filter(id => id !== col.id);
+                        }
+                        setVisibleColumns(updated);
+                        localStorage.setItem('applicants_visible_columns', JSON.stringify(updated));
+                      }}
+                    />
+                    <span>{col.label} {col.required && <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>(Required)</span>}</span>
+                  </label>
+                ))}
+              </div>
+
+              <div style={{ marginTop: '14px', borderTop: '1px solid var(--glass-border)', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <button
+                  className="btn btn-secondary"
+                  style={{ fontSize: '11px', padding: '4px 8px' }}
+                  onClick={() => {
+                    const defaults = ['name', 'jobRole', 'location', 'experience', 'noticePeriod', 'matchScore', 'stage', 'appliedDate', 'actions'];
+                    setVisibleColumns(defaults);
+                    localStorage.setItem('applicants_visible_columns', JSON.stringify(defaults));
+                  }}
+                >
+                  Reset Defaults
+                </button>
+                <button
+                  className="btn btn-primary"
+                  style={{ fontSize: '11px', padding: '4px 12px' }}
+                  onClick={() => setShowColumnCustomizer(false)}
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </header>
 
@@ -423,21 +515,45 @@ export default function Applicants({
                   onChange={handleToggleSelectAll}
                 />
               </th>
-              <th style={{ padding: '16px', cursor: 'pointer', fontWeight: 'bold' }} onClick={() => handleSort('name')}>
-                Name {sortBy === 'name' ? (sortDir === 'asc' ? '▲' : '▼') : '↕'}
-              </th>
-              <th style={{ padding: '16px', fontWeight: 'bold' }}>Job Role</th>
-              <th style={{ padding: '16px', fontWeight: 'bold' }}>Location</th>
-              <th style={{ padding: '16px', fontWeight: 'bold' }}>Total Experience</th>
-              <th style={{ padding: '16px', fontWeight: 'bold' }}>Notice Period</th>
-              <th style={{ padding: '16px', cursor: 'pointer', fontWeight: 'bold' }} onClick={() => handleSort('matchScore')}>
-                ATS Match Score {sortBy === 'matchScore' ? (sortDir === 'asc' ? '▲' : '▼') : '↕'}
-              </th>
-              <th style={{ padding: '16px', fontWeight: 'bold' }}>Stage</th>
-              <th style={{ padding: '16px', cursor: 'pointer', fontWeight: 'bold' }} onClick={() => handleSort('createdAt')}>
-                Applied Date {sortBy === 'createdAt' ? (sortDir === 'asc' ? '▲' : '▼') : '↕'}
-              </th>
-              <th style={{ padding: '16px', fontWeight: 'bold', textAlign: 'center' }}>Actions</th>
+              {visibleColumns.includes('name') && (
+                <th style={{ padding: '16px', cursor: 'pointer', fontWeight: 'bold' }} onClick={() => handleSort('name')}>
+                  Name {sortBy === 'name' ? (sortDir === 'asc' ? '▲' : '▼') : '↕'}
+                </th>
+              )}
+              {visibleColumns.includes('jobRole') && (
+                <th style={{ padding: '16px', fontWeight: 'bold' }}>Job Role</th>
+              )}
+              {visibleColumns.includes('location') && (
+                <th style={{ padding: '16px', fontWeight: 'bold' }}>Location</th>
+              )}
+              {visibleColumns.includes('experience') && (
+                <th style={{ padding: '16px', fontWeight: 'bold' }}>Total Experience</th>
+              )}
+              {visibleColumns.includes('noticePeriod') && (
+                <th style={{ padding: '16px', fontWeight: 'bold' }}>Notice Period</th>
+              )}
+              {visibleColumns.includes('matchScore') && (
+                <th style={{ padding: '16px', cursor: 'pointer', fontWeight: 'bold' }} onClick={() => handleSort('matchScore')}>
+                  ATS Match Score {sortBy === 'matchScore' ? (sortDir === 'asc' ? '▲' : '▼') : '↕'}
+                </th>
+              )}
+              {visibleColumns.includes('stage') && (
+                <th style={{ padding: '16px', fontWeight: 'bold' }}>Stage</th>
+              )}
+              {visibleColumns.includes('appliedDate') && (
+                <th style={{ padding: '16px', cursor: 'pointer', fontWeight: 'bold' }} onClick={() => handleSort('createdAt')}>
+                  Applied Date {sortBy === 'createdAt' ? (sortDir === 'asc' ? '▲' : '▼') : '↕'}
+                </th>
+              )}
+              {visibleColumns.includes('skills') && (
+                <th style={{ padding: '16px', fontWeight: 'bold' }}>Key Skills</th>
+              )}
+              {visibleColumns.includes('phone') && (
+                <th style={{ padding: '16px', fontWeight: 'bold' }}>Phone</th>
+              )}
+              {visibleColumns.includes('actions') && (
+                <th style={{ padding: '16px', fontWeight: 'bold', textAlign: 'center' }}>Actions</th>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -471,71 +587,127 @@ export default function Applicants({
                         onChange={() => handleToggleSelectCandidate(c.id)}
                       />
                     </td>
-                    <td style={{ padding: '16px', fontWeight: '600' }}>
-                      <span 
-                        onClick={() => onSelectCandidate(c)}
-                        style={{ cursor: 'pointer', color: 'var(--accent-primary)', textDecoration: 'underline' }}
-                        title="Click to view candidate details"
-                      >
-                        {c.name}
-                      </span>
-                      <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 'normal', marginTop: '2px' }}>{c.email}</div>
-                    </td>
-                    <td style={{ padding: '16px' }}>{job ? job.title : 'General'}</td>
-                    <td style={{ padding: '16px' }}>{getCandidateLocation(c)}</td>
-                    <td style={{ padding: '16px' }}>{getCandidateExperience(c)}</td>
-                    <td style={{ padding: '16px' }}>{getCandidateNoticePeriod(c)}</td>
-                    <td style={{ padding: '16px' }}>
-                      {c.isProcessing ? (
-                        <span className="score-badge" style={{ width: '28px', height: '28px', fontSize: '11px', display: 'inline-flex', background: 'transparent', border: '1px dashed var(--glass-border)', color: 'var(--text-muted)' }} title="AI parsing in progress...">
-                          <Loader size={12} className="animate-spin" style={{ animation: 'spin 1.5s linear infinite' }} />
-                        </span>
-                      ) : (
-                        <span className={`score-badge ${scoreColorClass}`} style={{ width: '28px', height: '28px', fontSize: '11px', display: 'inline-flex' }}>
-                          {score}
-                        </span>
-                      )}
-                    </td>
-                    <td style={{ padding: '16px' }}>
-                      <span style={{
-                        padding: '3px 8px',
-                        borderRadius: '12px',
-                        fontSize: '11px',
-                        fontWeight: '500',
-                        background: c.stage === 'Offered' ? 'rgba(16, 185, 129, 0.1)' : c.stage === 'Rejected' ? 'rgba(244, 63, 94, 0.1)' : 'rgba(255,255,255,0.05)',
-                        color: c.stage === 'Offered' ? 'var(--status-offered)' : c.stage === 'Rejected' ? 'var(--status-rejected)' : 'var(--text-primary)'
-                      }}>
-                        {c.stage}
-                      </span>
-                    </td>
-                    <td style={{ padding: '16px', fontSize: '12px', color: 'var(--text-secondary)' }}>
-                      {c.createdAt ? new Date(c.createdAt).toLocaleDateString() : '—'}
-                    </td>
-                    <td style={{ padding: '16px', textAlign: 'center' }}>
-                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                        <button 
-                          onClick={() => onSelectCandidate(c)} 
-                          className="btn btn-secondary" 
-                          style={{ padding: '6px', borderRadius: '4px' }}
-                          title="View Details"
+
+                    {visibleColumns.includes('name') && (
+                      <td style={{ padding: '16px', fontWeight: '600' }}>
+                        <span 
+                          onClick={() => onSelectCandidate(c)}
+                          style={{ cursor: 'pointer', color: 'var(--accent-primary)', textDecoration: 'underline' }}
+                          title="Click to view candidate details"
                         >
-                          <Eye size={14} />
-                        </button>
-                        {c.resumeUrl && (
-                          <a 
-                            href={`${backendUrl}${c.resumeUrl}`} 
-                            download 
-                            className="btn btn-secondary" 
-                            style={{ padding: '6px', borderRadius: '4px', display: 'inline-flex' }}
-                            title="Download CV"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            <Download size={14} />
-                          </a>
+                          {c.name}
+                        </span>
+                        <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 'normal', marginTop: '2px' }}>{c.email}</div>
+                      </td>
+                    )}
+
+                    {visibleColumns.includes('jobRole') && (
+                      <td style={{ padding: '16px' }}>
+                        <span className="tag-badge" style={{ fontSize: '12px', padding: '4px 10px', background: 'rgba(99, 102, 241, 0.08)', color: 'var(--accent-primary)', border: '1px solid rgba(99, 102, 241, 0.2)', fontWeight: '500' }}>
+                          {job ? job.title : 'General Role'}
+                        </span>
+                      </td>
+                    )}
+
+                    {visibleColumns.includes('location') && (
+                      <td style={{ padding: '16px' }}>{getCandidateLocation(c)}</td>
+                    )}
+
+                    {visibleColumns.includes('experience') && (
+                      <td style={{ padding: '16px' }}>{getCandidateExperience(c)}</td>
+                    )}
+
+                    {visibleColumns.includes('noticePeriod') && (
+                      <td style={{ padding: '16px' }}>{getCandidateNoticePeriod(c)}</td>
+                    )}
+
+                    {visibleColumns.includes('matchScore') && (
+                      <td style={{ padding: '16px' }}>
+                        {c.isProcessing ? (
+                          <span className="score-badge" style={{ width: '28px', height: '28px', fontSize: '11px', display: 'inline-flex', background: 'transparent', border: '1px dashed var(--glass-border)', color: 'var(--text-muted)' }} title="AI parsing in progress...">
+                            <Loader size={12} className="animate-spin" style={{ animation: 'spin 1.5s linear infinite' }} />
+                          </span>
+                        ) : (
+                          <span className={`score-badge ${scoreColorClass}`} style={{ width: '28px', height: '28px', fontSize: '11px', display: 'inline-flex' }}>
+                            {score}
+                          </span>
                         )}
-                      </div>
-                    </td>
+                      </td>
+                    )}
+
+                    {visibleColumns.includes('stage') && (
+                      <td style={{ padding: '16px' }}>
+                        <span style={{
+                          padding: '3px 8px',
+                          borderRadius: '12px',
+                          fontSize: '11px',
+                          fontWeight: '500',
+                          background: c.stage === 'Offered' ? 'rgba(16, 185, 129, 0.1)' : c.stage === 'Rejected' ? 'rgba(244, 63, 94, 0.1)' : 'rgba(255,255,255,0.05)',
+                          color: c.stage === 'Offered' ? 'var(--status-offered)' : c.stage === 'Rejected' ? 'var(--status-rejected)' : 'var(--text-primary)'
+                        }}>
+                          {c.stage}
+                        </span>
+                      </td>
+                    )}
+
+                    {visibleColumns.includes('appliedDate') && (
+                      <td style={{ padding: '16px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                        {c.createdAt ? new Date(c.createdAt).toLocaleDateString() : '—'}
+                      </td>
+                    )}
+
+                    {visibleColumns.includes('skills') && (
+                      <td style={{ padding: '16px', maxWidth: '200px' }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                          {(c.skills || []).slice(0, 3).map((s, i) => (
+                            <span key={i} style={{ fontSize: '10px', background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '4px', color: 'var(--text-secondary)' }}>{s}</span>
+                          ))}
+                          {(c.skills || []).length > 3 && <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>+{(c.skills || []).length - 3}</span>}
+                        </div>
+                      </td>
+                    )}
+
+                    {visibleColumns.includes('phone') && (
+                      <td style={{ padding: '16px', fontSize: '12px' }}>{c.phone || '—'}</td>
+                    )}
+
+                    {visibleColumns.includes('actions') && (
+                      <td style={{ padding: '16px', textAlign: 'center' }}>
+                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                          <button 
+                            onClick={() => onSelectCandidate(c)} 
+                            className="btn btn-secondary" 
+                            style={{ padding: '6px', borderRadius: '4px' }}
+                            title="View Details"
+                          >
+                            <Eye size={14} />
+                          </button>
+                          {onOpenOfferModal && (
+                            <button 
+                              onClick={() => onOpenOfferModal(c)} 
+                              className="btn btn-secondary" 
+                              style={{ padding: '6px', borderRadius: '4px', color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.3)' }}
+                              title="Generate & Send Offer Letter"
+                            >
+                              <FileText size={14} />
+                            </button>
+                          )}
+                          {c.resumeUrl && (
+                            <a 
+                              href={`${backendUrl}${c.resumeUrl}`} 
+                              download 
+                              className="btn btn-secondary" 
+                              style={{ padding: '6px', borderRadius: '4px', display: 'inline-flex' }}
+                              title="Download CV"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <Download size={14} />
+                            </a>
+                          )}
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 );
               })

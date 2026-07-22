@@ -18,7 +18,7 @@ export default function Referrals({ backendUrl, token, jobs }) {
       headers: { 'Authorization': `Bearer ${token}` }
     })
       .then(r => r.json())
-      .then(setRows)
+      .then(data => setRows(Array.isArray(data) ? data : []))
       .catch(console.error);
 
     fetch(`${backendUrl}/api/referrals/dashboard`, {
@@ -204,7 +204,12 @@ function ReferModal({ backendUrl, token, jobs, onClose, onSaved }) {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <label style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Candidate phone</label>
-            <input className="form-input" type="tel" value={candPhone} onChange={(e) => setCandPhone(e.target.value)} />
+            <input 
+              className="form-input" 
+              type="tel" 
+              value={candPhone} 
+              onChange={(e) => setCandPhone(e.target.value.replace(/[^0-9+\-\s()]/g, ''))} 
+            />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <label style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Position *</label>

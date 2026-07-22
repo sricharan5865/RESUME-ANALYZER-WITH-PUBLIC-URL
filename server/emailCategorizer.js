@@ -300,10 +300,15 @@ async function callAIProviderForClassification(prompt, systemInstruction) {
   try {
     settings = await Settings.findById('global');
   } catch (e) {
-    console.error('Failed to retrieve settings from DB for email categorization:', e.message);
+    console.warn('Could not fetch settings, using defaults');
   }
 
   const aiProvider = settings?.aiProvider || 'gemini';
+
+  // Apply prompt compression across ALL models
+  if (systemInstruction && systemInstruction.length > 2500) {
+    systemInstruction = systemInstruction.substring(0, 1500) + "\n... [Instruction Details Condensed] ...\n" + systemInstruction.substring(systemInstruction.length - 1000);
+  }
 
   if (aiProvider === 'gemini') {
     const apiKey = settings?.geminiApiKey || process.env.GEMINI_API_KEY;

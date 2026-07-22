@@ -13,6 +13,7 @@ export default function SettingsView({ token, jobs, templates, onJobCreated, onJ
 
   // Email Template Form State
   const [tplApplicationReceived, setTplApplicationReceived] = useState('');
+  const [tplPositionChange, setTplPositionChange] = useState('');
   const [tplInterview, setTplInterview] = useState('');
   const [tplOffer, setTplOffer] = useState('');
   const [tplReject, setTplReject] = useState('');
@@ -69,6 +70,7 @@ export default function SettingsView({ token, jobs, templates, onJobCreated, onJ
   useEffect(() => {
     if (templates) {
       setTplApplicationReceived(templates.applicationReceived || 'Subject: Application Received - {job_title}\n\nHi {candidate_name},\n\nThank you for applying for the {job_title} role at {company_name}. We have received your application and our team will review it shortly.\n\nBest regards,\nTalent Acquisition Team');
+      setTplPositionChange(templates.positionChange || 'Subject: Position Update: {job_title}\n\nHi {candidate_name},\n\nYour application position at {company_name} has been updated to {job_title}.\n\nBest regards,\nTalent Acquisition Team');
       setTplInterview(templates.interview || 'Subject: Interview Invitation: {job_title} at {company_name}\n\nHi {candidate_name},\n\nWe were impressed by your background and would like to invite you to an interview for the {job_title} position.\n\nPlease let us know your availability for next week.\n\nBest regards,\nTalent Acquisition Team');
       setTplOffer(templates.offer || 'Subject: Job Offer: {job_title} at {company_name}\n\nHi {candidate_name},\n\nWe are thrilled to offer you the position of {job_title} at {company_name}!\n\nPlease review the attached offer letter and let us know if you have any questions.\n\nBest regards,\nTalent Acquisition Team');
       setTplReject(templates.reject || 'Subject: Update on your application for {job_title}\n\nHi {candidate_name},\n\nThank you for taking the time to apply for the {job_title} role. \n\nWhile your background is impressive, we have decided to move forward with other candidates who more closely fit our current needs.\n\nWe wish you the best in your job search.\n\nBest regards,\nTalent Acquisition Team');
@@ -182,7 +184,7 @@ export default function SettingsView({ token, jobs, templates, onJobCreated, onJ
   };
 
   const handleDeleteJob = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this job posting? Candidates will remain in database but won\'t have job associations.')) return;
+    if (!window.confirm('Are you sure you want to delete this job posting? All candidates associated with this job will also be deleted.')) return;
     if (!window.confirm('Are you absolutely sure you want to delete this job posting? This cannot be undone.')) return;
     try {
       await fetch(`${backendUrl}/api/jobs/${id}`, { 
@@ -259,6 +261,7 @@ export default function SettingsView({ token, jobs, templates, onJobCreated, onJ
     try {
       const newTpls = {
         applicationReceived: tplApplicationReceived,
+        positionChange: tplPositionChange,
         interview: tplInterview,
         offer: tplOffer,
         reject: tplReject
@@ -513,6 +516,11 @@ export default function SettingsView({ token, jobs, templates, onJobCreated, onJ
             <div className="form-group">
               <label className="form-label">Application Received (Auto-Reply) Template</label>
               <textarea className="form-input" rows={6} value={tplApplicationReceived} onChange={(e) => setTplApplicationReceived(e.target.value)} style={{ fontFamily: 'monospace', fontSize: '13px' }} placeholder="Subject: Application Received&#10;&#10;Hi {candidate_name},&#10;&#10;Thank you for applying for the {job_title} role at {company_name}. We have received your application." />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Position Change / Reassignment Template</label>
+              <textarea className="form-input" rows={6} value={tplPositionChange} onChange={(e) => setTplPositionChange(e.target.value)} style={{ fontFamily: 'monospace', fontSize: '13px' }} placeholder="Subject: Position Update: {job_title}&#10;&#10;Hi {candidate_name},&#10;&#10;Your application position at {company_name} has been updated to {job_title}." />
             </div>
 
             <div className="form-group">

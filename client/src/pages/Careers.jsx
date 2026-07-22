@@ -56,6 +56,12 @@ export default function Careers({ backendUrl }) {
             />
           </div>
           <button 
+            onClick={() => navigate('/apply')}
+            className="btn-brand"
+          >
+            Job Application Form
+          </button>
+          <button 
             onClick={() => navigate('/status')}
             className="btn-secondary-brand"
           >

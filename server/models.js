@@ -94,6 +94,7 @@ const candidateSchema = new mongoose.Schema({
     newSalary: Number,
     placementDate: Date
   },
+  offerDetails: mongoose.Schema.Types.Mixed,
   history: [
     {
       date: String,

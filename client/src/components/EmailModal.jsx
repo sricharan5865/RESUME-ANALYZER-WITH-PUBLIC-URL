@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { X, Send, CheckCircle2, AlertCircle, Loader, Mail } from 'lucide-react';
+import { X, Send, CheckCircle2, AlertCircle, Loader, Mail, Paperclip, FileText } from 'lucide-react';
 
 export default function EmailModal({ candidate, job, templates, onClose, onEmailSent, backendUrl, token }) {
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
+  const [attachOfferPdf, setAttachOfferPdf] = useState(true);
   const [sending, setSending] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
@@ -12,8 +13,11 @@ export default function EmailModal({ candidate, job, templates, onClose, onEmail
     if (candidate && job) {
       // Determine template key based on current stage
       let templateKey = 'interview';
-      if (candidate.stage.toLowerCase() === 'offered') templateKey = 'offer';
-      if (candidate.stage.toLowerCase() === 'rejected') templateKey = 'reject';
+      const isOffered = candidate.stage && candidate.stage.toLowerCase() === 'offered';
+      if (isOffered) templateKey = 'offer';
+      if (candidate.stage && candidate.stage.toLowerCase() === 'rejected') templateKey = 'reject';
+
+      setAttachOfferPdf(isOffered);
 
       const rawTemplate = templates?.[templateKey] || '';
       
@@ -40,6 +44,8 @@ export default function EmailModal({ candidate, job, templates, onClose, onEmail
     }
   }, [candidate, job, templates]);
 
+  const isOfferLetterType = (candidate?.stage && candidate.stage.toLowerCase() === 'offered') || (subject && /offer/i.test(subject));
+
   const handleSend = async () => {
     if (!subject.trim() || !body.trim()) {
       alert('Email subject and body cannot be empty.');
@@ -56,7 +62,11 @@ export default function EmailModal({ candidate, job, templates, onClose, onEmail
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ subject, body })
+        body: JSON.stringify({ 
+          subject, 
+          body,
+          attachOfferPdf: isOfferLetterType ? attachOfferPdf : false
+        })
       });
 
       if (!res.ok) {
@@ -71,7 +81,7 @@ export default function EmailModal({ candidate, job, templates, onClose, onEmail
       }, 1500);
     } catch (e) {
       console.error('Email send error:', e);
-      setError(e.message || 'Gmail API failed to send the email.');
+      setError(e.message || 'Failed to send the email.');
     } finally {
       setSending(false);
     }
@@ -99,7 +109,7 @@ export default function EmailModal({ candidate, job, templates, onClose, onEmail
             <CheckCircle2 size={48} style={{ color: 'var(--status-offered)' }} />
             <h3 style={{ fontSize: '20px' }}>Email Sent Successfully</h3>
             <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
-              The email has been queued and sent using your authorized Gmail account.
+              The email and official offer attachments have been dispatched to {candidate.email}.
             </p>
           </div>
         ) : (
@@ -134,13 +144,40 @@ export default function EmailModal({ candidate, job, templates, onClose, onEmail
               <label className="form-label">Email Body (Plain Text)</label>
               <textarea 
                 className="form-input" 
-                rows={10} 
-                style={{ resize: 'vertical', minHeight: '180px', lineHeight: '1.6' }}
+                rows={8} 
+                style={{ resize: 'vertical', minHeight: '160px', lineHeight: '1.6' }}
                 value={body} 
                 onChange={(e) => setBody(e.target.value)} 
                 disabled={sending}
               />
             </div>
+
+            {/* Offer Letter PDF Attachment Checkbox */}
+            {isOfferLetterType && (
+              <div style={{ padding: '12px 16px', background: 'rgba(59, 130, 246, 0.08)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(59, 130, 246, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <FileText size={18} style={{ color: 'var(--accent-primary)' }} />
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)' }}>
+                      Attach Official Offer Letter (PDF)
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                      Offer_Letter_{candidate.name.replace(/[^a-zA-Z0-9]/g, '_')}.pdf
+                    </div>
+                  </div>
+                </div>
+                <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', gap: '6px', fontSize: '13px' }}>
+                  <input 
+                    type="checkbox" 
+                    checked={attachOfferPdf} 
+                    onChange={(e) => setAttachOfferPdf(e.target.checked)}
+                    disabled={sending}
+                    style={{ width: '16px', height: '16px', accentColor: 'var(--accent-primary)' }}
+                  />
+                  <span>Attach PDF</span>
+                </label>
+              </div>
+            )}
             
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '8px' }}>
               <button className="btn btn-secondary" onClick={onClose} disabled={sending}>
@@ -153,7 +190,7 @@ export default function EmailModal({ candidate, job, templates, onClose, onEmail
                   </>
                 ) : (
                   <>
-                    <Send size={14} /> Send Letter
+                    <Send size={14} /> Send Email
                   </>
                 )}
               </button>

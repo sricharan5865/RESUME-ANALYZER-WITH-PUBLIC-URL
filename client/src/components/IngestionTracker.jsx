@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { RefreshCw, ClipboardList, CheckCircle2, AlertCircle, Loader, Eye, X, FileSpreadsheet, ExternalLink } from 'lucide-react';
-import { exportToCSV } from '../utils/export';
+import { exportToExcel } from '../utils/export';
 import { matchDateRangeHelper } from '../utils/dateFilters';
 
 export default function IngestionTracker({ backendUrl, isActive, token }) {
@@ -59,7 +59,7 @@ export default function IngestionTracker({ backendUrl, isActive, token }) {
       candidateName: l.candidateName || 'N/A'
     }));
 
-    exportToCSV(dataToExport, 'resume_ingestion_log', headers);
+    exportToExcel(dataToExport, 'resume_ingestion_log', headers);
   };
 
   const formatSource = (src) => {

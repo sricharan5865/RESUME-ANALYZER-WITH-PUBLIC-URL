@@ -461,7 +461,7 @@ async function fetchOpenRouterWithRetry(url, requestBody, apiKey) {
         affordableTokens = 4000;
       }
     }
-    if (shouldRetryWithLowerTokens && requestBody.max_tokens > 4500 && affordableTokens >= 4500) {
+    if (shouldRetryWithLowerTokens && requestBody.max_tokens > 2000 && affordableTokens >= 1500) {
       console.warn(`OpenRouter token limit hit. Retrying with affordable tokens: ${affordableTokens}`);
       requestBody.max_tokens = affordableTokens;
       const retryResponse = await fetchWithTimeout(url, {
@@ -499,6 +499,11 @@ async function callAIProvider(prompt, systemInstruction = '', schema = null, pdf
 
   const aiProvider = settings?.aiProvider || 'gemini';
   
+  // Apply prompt compression across ALL models
+  if (systemInstruction && systemInstruction.length > 2500) {
+    systemInstruction = systemInstruction.substring(0, 1500) + "\n... [Instruction Details Condensed] ...\n" + systemInstruction.substring(systemInstruction.length - 1000);
+  }
+
   if (aiProvider === 'gemini') {
     const apiKey = settings?.geminiApiKey || process.env.GEMINI_API_KEY;
     if (!apiKey) {
@@ -522,7 +527,7 @@ async function callAIProvider(prompt, systemInstruction = '', schema = null, pdf
         requestBody.response_format = { type: 'json_object' };
         requestBody.messages.push({
           role: 'user',
-          content: `Output MUST match JSON schema: ${JSON.stringify(schema)}`
+          content: `Output MUST match JSON structure: ${getCompactSchemaInstructions(schema)}`
         });
       }
 
@@ -593,9 +598,8 @@ async function callAIProvider(prompt, systemInstruction = '', schema = null, pdf
     const isOpenRouter = apiKey.startsWith('sk-or-');
     const url = isOpenRouter ? 'https://openrouter.ai/api/v1/chat/completions' : 'https://api.openai.com/v1/chat/completions';
     
-    const standardSchema = schema ? convertSchemaToStandard(schema) : null;
-    const userContent = standardSchema 
-      ? `${prompt}\n\nOutput MUST be valid JSON matching the schema: ${JSON.stringify(standardSchema)}\nDo not include any chat prefix or suffix. Return ONLY the raw JSON object.` 
+    const userContent = schema 
+      ? `${prompt}\n\nOutput MUST be valid JSON matching the structure: ${getCompactSchemaInstructions(schema)}\nDo not include any chat prefix or suffix. Return ONLY the raw JSON object.` 
       : prompt;
 
     const requestBody = {
@@ -608,14 +612,8 @@ async function callAIProvider(prompt, systemInstruction = '', schema = null, pdf
       max_tokens: 8192
     };
 
-    if (standardSchema) {
+    if (schema) {
       requestBody.response_format = { type: 'json_object' };
-      if (isOpenRouter) {
-        requestBody.messages.push({
-          role: 'user',
-          content: `Output MUST match JSON schema: ${JSON.stringify(standardSchema)}`
-        });
-      }
     }
 
     let response;
@@ -652,9 +650,8 @@ async function callAIProvider(prompt, systemInstruction = '', schema = null, pdf
 
     const isOpenRouter = apiKey.startsWith('sk-or-');
     const url = isOpenRouter ? 'https://openrouter.ai/api/v1/chat/completions' : 'https://api.anthropic.com/v1/messages';
-    const standardSchema = schema ? convertSchemaToStandard(schema) : null;
-    const userContent = standardSchema 
-      ? `${prompt}\n\nOutput MUST be valid JSON matching the schema: ${JSON.stringify(standardSchema)}\nDo not include any chat prefix or suffix. Return ONLY the raw JSON object.` 
+    const userContent = schema 
+      ? `${prompt}\n\nOutput MUST be valid JSON matching the structure: ${getCompactSchemaInstructions(schema)}\nDo not include any chat prefix or suffix. Return ONLY the raw JSON object.` 
       : prompt;
 
     let response;
@@ -669,12 +666,8 @@ async function callAIProvider(prompt, systemInstruction = '', schema = null, pdf
         max_tokens: 8192
       };
 
-      if (standardSchema) {
+      if (schema) {
         requestBody.response_format = { type: 'json_object' };
-        requestBody.messages.push({
-          role: 'user',
-          content: `Output MUST match JSON schema: ${JSON.stringify(standardSchema)}`
-        });
       }
 
       response = await fetchOpenRouterWithRetry(url, requestBody, apiKey);
@@ -761,27 +754,19 @@ async function callAIProvider(prompt, systemInstruction = '', schema = null, pdf
       { role: 'user', content: userContent }
     ];
 
-    const estimatedTokens = Math.ceil(((finalSystem ? finalSystem.length : 0) + userContent.length) / 3.7);
-    
-    // Determine the required prediction limit (completion size) based on task complexity
-    let numPredict = 2048; // default for complex generation (e.g., resume parsing)
+    // Explicit Parameter Tuning based on task complexity
+    let numPredict = 2048; // Complex generation (e.g., resume parsing)
+    let dynamicNumCtx = 8192; 
+
     if (schema) {
       const isSimpleSchema = schema.properties && Object.keys(schema.properties).length <= 5;
       if (isSimpleSchema) {
-        numPredict = 512; // Simple classification / score estimation
+        numPredict = 256; // Simple classification/indexing
+        dynamicNumCtx = 2048;
       }
     } else {
-      numPredict = 512;
-    }
-
-    const requiredContext = estimatedTokens + numPredict;
-    let dynamicNumCtx = 2048;
-    if (requiredContext > 8192) {
-      dynamicNumCtx = 16384;
-    } else if (requiredContext > 4096) {
-      dynamicNumCtx = 8192;
-    } else if (requiredContext > 2048) {
-      dynamicNumCtx = 4096;
+      numPredict = 256;
+      dynamicNumCtx = 2048;
     }
 
     const requestBody = {
@@ -965,13 +950,13 @@ function mapAnalysisToQuestions(parsedData, isJdMatch = false) {
   } else {
     slicedPersonalized = [...personalizedHrQuestions];
     const defaultHr = [
-      { question: "Tell me about your background and how it prepares you for this role?", answer: "I have a solid foundation in my field, have successfully delivered key projects in my previous roles, and quickly adapt to new stacks.", importance: "OPTIONAL" },
-      { question: "Why are you interested in joining our company?", answer: "I admire your company's innovation, culture, and project scale, and believe my skills align perfectly with your team's goals.", importance: "OPTIONAL" },
-      { question: "Describe a challenging situation at work and how you resolved it.", answer: "I faced a critical bug/blocker, analyzed the root cause, collaborated with the team, and deployed a resolution under pressure.", importance: "OPTIONAL" },
-      { question: "Where do you see yourself in five years?", answer: "I aim to grow technically, take on architectural ownership, and mentor junior colleagues while contributing to core business goals.", importance: "OPTIONAL" },
-      { question: "How do you handle disagreement within a technical team?", answer: "I present data, listen to other viewpoints objectively, and focus on the best solution for the project rather than personal opinion.", importance: "OPTIONAL" },
-      { question: "What are your salary expectations?", answer: "I am open to a competitive offer based on the role's responsibilities, my experience, and market standards.", importance: "OPTIONAL" },
-      { question: "Do you have any questions for us?", answer: "What are the biggest challenges the team is currently facing, and what does success look like in this role?", importance: "OPTIONAL" }
+      { question: "What is your official notice period and earliest joining date?", answer: "Verify candidate's current contractual notice period and availability.", importance: "CRITICAL" },
+      { question: "What are your salary expectations (Current CTC vs Expected CTC)?", answer: "Confirm current compensation and expected package.", importance: "CRITICAL" },
+      { question: "Are you comfortable with the job location and work mode (Onsite/Hybrid/Remote)?", answer: "Confirm location preference or willingness to relocate.", importance: "IMPORTANT" },
+      { question: "Tell me about your background and how it prepares you for this role?", answer: "I have a solid foundation in my field and have delivered key projects in my previous roles.", importance: "OPTIONAL" },
+      { question: "Why are you interested in joining our company?", answer: "I admire your company's scale and culture, and my skills align with your goals.", importance: "OPTIONAL" },
+      { question: "Describe a challenging situation at work and how you resolved it.", answer: "I analyzed the root cause, collaborated with the team, and deployed a resolution under pressure.", importance: "OPTIONAL" },
+      { question: "Do you have any questions for us?", answer: "What are the biggest challenges the team is facing, and what does success look like?", importance: "OPTIONAL" }
     ];
     let idx = 0;
     while (slicedPersonalized.length < 7 && idx < defaultHr.length) {
@@ -1023,7 +1008,7 @@ function mapAnalysisToQuestions(parsedData, isJdMatch = false) {
 function getRecruiterSystemInstruction(aiProvider) {
   const todayDateString = new Date().toDateString();
   const baseInstruction = `Senior recruiter bot. Date: ${todayDateString}. Analyze resume facts. Output structured JSON. Ground all claims/dates strictly in resume text. Fix OCR typos in links (e.g. iinkedin->linkedin).
-CRITICAL: All generated interview questions must be extremely short, direct, and punchy (MAXIMUM 15 words). All generated sample/model answers/templates must be very brief and concise (MAXIMUM 30 words). Do not write long paragraphs or multiple sentences.
+CRITICAL: All generated interview questions must be extremely short, direct, and punchy (MAXIMUM 15 words). They MUST be written in plain English so that a non-technical HR recruiter can easily read and ask them out loud without stumbling over complex technical jargon. All generated sample/model answers/templates must be very brief and concise (MAXIMUM 30 words). Do not write long paragraphs or multiple sentences.
 Sections:
 1. Gaps: Flag gaps >= 2 months. Include date range, duration, probing question (max 15 words), and sample answer (max 30 words).
 2. Technical Audit: List all skills. Judge if backed by specifics (versions, scale, outcomes) or name-dropped. Write probe questions (max 15 words) + answer templates (max 30 words) for shallow skills.
@@ -1181,12 +1166,13 @@ export async function parseResume(resumeText, pdfBase64 = null) {
         items: {
           type: 'OBJECT',
           properties: {
-            issue: { type: 'STRING' },
-            severity: { type: 'STRING' },
-            fix_suggestion: { type: 'STRING' }
+            flag: { type: 'STRING', description: 'Brief title of the red flag' },
+            severity: { type: 'STRING', description: 'Severity level: High, Medium, or Low' },
+            explanation: { type: 'STRING', description: 'Detailed explanation of the discrepancy or issue' }
           },
-          required: ['issue', 'severity', 'fix_suggestion']
-        }
+          required: ['flag', 'severity', 'explanation']
+        },
+        description: 'Critical analysis of resume/form inconsistencies. Specifically look for: 1. Skills claimed without experience proof. 2. Inflated titles (e.g., Senior with < 2 years exp). 3. Overlapping employment dates. 4. Impossible education timelines.'
       },
       must_prepare_topics: {
         type: 'ARRAY',
@@ -1363,7 +1349,7 @@ export function calculateTotalExperience(experience) {
 /**
  * Scores and ranks a candidate against a job description.
  */
-export async function scoreCandidate(candidateProfile, jobDescription) {
+export async function scoreCandidate(candidateProfile, jobDescription, ragChunks = null) {
   const totalExperience = calculateTotalExperience(candidateProfile.experience);
   
   const systemInstruction = `You are a professional HR screener and hiring manager. Evaluate the candidate against the job description. Extract and compare the required job qualifications and skills exactly. DO NOT hallucinate or assume the candidate has skills, degrees, or experience not explicitly stated in their resume. Ground all matching and missing qualifications strictly in the provided text inputs.
@@ -1395,16 +1381,22 @@ Today's date is ${new Date().toDateString()}. Use the pre-calculated "totalExper
     required: ['score', 'matchingSkills', 'missingSkills', 'reasoning']
   };
 
-  // Strip out large/irrelevant fields to keep prompt size manageable
   const { resumeText, interviewQuestions, _id, __v, createdAt, updatedAt, resumePath, tags, redFlags, careerGaps, ...cleanProfile } = candidateProfile;
   const profileToEval = {
     ...cleanProfile,
     totalExperience
   };
 
+  let candidateContext = '';
+  if (ragChunks && ragChunks.length > 0) {
+    candidateContext = `Retrieved RAG Context (Most relevant experience & skills):\n` + 
+      ragChunks.map(c => `[${c.section.toUpperCase()}] ${c.text}`).join('\n');
+  } else {
+    candidateContext = `Candidate Profile:\n${JSON.stringify(profileToEval, null, 2)}`;
+  }
+
   const prompt = `
-Candidate Profile:
-${JSON.stringify(profileToEval, null, 2)}
+${candidateContext}
 
 Job Description:
 Title: ${jobDescription.title}
@@ -1520,6 +1512,19 @@ Today's date is ${new Date().toDateString()}. Use the pre-calculated "totalExper
         type: 'ARRAY', 
         items: { type: 'STRING' },
         description: 'Core strengths and key technologies/skills identified in their profile'
+      },
+      red_flags: {
+        type: 'ARRAY',
+        items: {
+          type: 'OBJECT',
+          properties: {
+            flag: { type: 'STRING', description: 'Brief title of the red flag' },
+            severity: { type: 'STRING', description: 'Severity level: High, Medium, or Low' },
+            explanation: { type: 'STRING', description: 'Detailed explanation of the discrepancy or issue' }
+          },
+          required: ['flag', 'severity', 'explanation']
+        },
+        description: 'Critical analysis of resume/form inconsistencies. Specifically look for: 1. Skills claimed without experience proof. 2. Inflated titles (e.g., Senior with < 2 years exp). 3. Overlapping employment dates. 4. Impossible education timelines.'
       },
       missingSkills: { 
         type: 'ARRAY', 
@@ -1668,12 +1673,13 @@ export async function generateQuestionsForCandidate(candidateProfile, jobDescrip
         items: {
           type: 'OBJECT',
           properties: {
-            issue: { type: 'STRING' },
-            severity: { type: 'STRING' },
-            fix_suggestion: { type: 'STRING' }
+            flag: { type: 'STRING', description: 'Brief title of the red flag' },
+            severity: { type: 'STRING', description: 'Severity level: High, Medium, or Low' },
+            explanation: { type: 'STRING', description: 'Detailed explanation of the discrepancy or issue' }
           },
-          required: ['issue', 'severity', 'fix_suggestion']
-        }
+          required: ['flag', 'severity', 'explanation']
+        },
+        description: 'Critical analysis of resume/form inconsistencies. Specifically look for: 1. Skills claimed without experience proof. 2. Inflated titles (e.g., Senior with < 2 years exp). 3. Overlapping employment dates. 4. Impossible education timelines.'
       },
       must_prepare_topics: {
         type: 'ARRAY',
@@ -1694,9 +1700,12 @@ Perform the technical recruiter seven-part analysis on this candidate.
 
 CRITICAL DISCREPANCY / RED FLAG CHECK:
 If the Candidate Profile has a 'formAnswers' field (array of manually submitted answers):
-1. Locate any form answers claiming key skills or technical software competencies (such as "ArcGIS Pro", "ArcGIS", or "ArcJS").
-2. Cross-check these claims against the parsed resume profile details (skills, experience, projects).
+1. Identify specific technical areas where the candidate claims experience but lacks depth or proof.
+2. Flag any "Senior" or "Lead" titles if the total relevant experience is under 2 years (High severity).
 3. If they claim a competency in the form answers but have ZERO actual experience, projects, or verified skill references in their resume, you MUST add a high-severity entry in the 'red_flags' array detailing this discrepancy (e.g. "Candidate claimed ArcGIS Pro in form but lacks ArcGIS experience in resume").
+4. Flag overlapping employment dates across multiple full-time roles (Medium/High severity).
+5. Flag any suspicious education timelines, like graduating before a plausible age (Medium severity).
+6. Create tailored interview questions to probe these specific gaps and weaknesses.
 
 CRITICAL INTERVIEW QUESTION LOGIC:
 1. Keep all questions extremely short, direct, and punchy (MAXIMUM 15 words). Keep all sample/model answers extremely brief and concise (MAXIMUM 30 words). Do not generate long paragraphs or multiple sentences.

@@ -99,20 +99,34 @@ export function chunkCandidate(candidate) {
     });
   }
 
-  // Experience chunks (one per entry)
+  // Experience chunks (one per entry) with injected skills
   if (candidate.experience && candidate.experience.length > 0) {
     candidate.experience.forEach((exp, idx) => {
       if (!exp.role && !exp.company) return; // Skip empty entries
       const parts = [];
-      if (exp.role) parts.push(exp.role);
+      if (exp.role) parts.push(`Role: ${exp.role}`);
       if (exp.company) parts.push(`at ${exp.company}`);
       if (exp.duration) parts.push(`(${exp.duration})`);
       if (exp.description) parts.push(`- ${exp.description}`);
+      
+      // Smarter Chunking: Cross-reference candidate skills that appear in this description
+      const matchedSkills = [];
+      if (candidate.skills && exp.description) {
+        const descLower = exp.description.toLowerCase();
+        candidate.skills.forEach(skill => {
+          if (skill.length > 2 && descLower.includes(skill.toLowerCase())) {
+            matchedSkills.push(skill);
+          }
+        });
+      }
+      if (matchedSkills.length > 0) {
+        parts.push(`(Applied Skills: ${matchedSkills.join(', ')})`);
+      }
 
       chunks.push({
         chunkId: `${id}::experience::${idx}`,
         section: 'experience',
-        text: `Candidate: ${name} | Experience: ${parts.join(' ')}`,
+        text: `Candidate: ${name} | Experience Context: ${parts.join(' ')}`,
         metadata: {
           name,
           company: exp.company || '',
@@ -158,8 +172,19 @@ export function chunkCandidate(candidate) {
       const parts = [];
       if (proj.name) parts.push(proj.name);
       if (proj.description) parts.push(`- ${proj.description}`);
-      if (proj.matchingSkills && proj.matchingSkills.length > 0) {
-        parts.push(`(Skills: ${proj.matchingSkills.join(', ')})`);
+      
+      const matchedSkills = proj.matchingSkills ? [...proj.matchingSkills] : [];
+      if (candidate.skills && proj.description) {
+         const descLower = proj.description.toLowerCase();
+         candidate.skills.forEach(s => {
+           if (s.length > 2 && descLower.includes(s.toLowerCase()) && !matchedSkills.includes(s)) {
+             matchedSkills.push(s);
+           }
+         });
+      }
+
+      if (matchedSkills.length > 0) {
+        parts.push(`(Skills: ${matchedSkills.join(', ')})`);
       }
 
       chunks.push({
@@ -173,7 +198,7 @@ export function chunkCandidate(candidate) {
 
   // Tags chunk
   if (candidate.tags && candidate.tags.length > 0) {
-    const tagValues = candidate.tags.map(t => t.value).filter(Boolean);
+    const tagValues = candidate.tags.map(t => typeof t === 'string' ? t : t.value).filter(Boolean);
     if (tagValues.length > 0) {
       chunks.push({
         chunkId: `${id}::tags`,
@@ -492,4 +517,102 @@ export async function getRAGStatus() {
     lastIndexedAt,
     lastReindexError
   };
+}
+
+/**
+ * Finds similar candidates in the vector index for a given candidate.
+ * It uses the 'summary' or 'experience' chunks of the target candidate to search.
+ * 
+ * @param {string} candidateId - The ID of the target candidate
+ * @param {number} topK - How many similar candidates to return
+ */
+export async function findSimilarCandidates(candidateId, topK = 5) {
+  // Get the target candidate's chunks
+  const targetChunks = vectorIndex.filter(v => v.candidateId === candidateId);
+  if (targetChunks.length === 0) return [];
+
+  // Try to use summary chunk first, fallback to experience or skills
+  let sourceChunk = targetChunks.find(c => c.section === 'summary');
+  if (!sourceChunk) sourceChunk = targetChunks.find(c => c.section === 'experience');
+  if (!sourceChunk) sourceChunk = targetChunks[0];
+
+  if (!sourceChunk.embedding) return [];
+
+  // Compute similarity against all vectors EXCEPT the target candidate
+  const scoredChunks = vectorIndex
+    .filter(entry => entry.candidateId !== candidateId)
+    .map(entry => ({
+      ...entry,
+      score: cosineSimilarity(sourceChunk.embedding, entry.embedding)
+    }))
+    .filter(chunk => chunk.score > 0.4); // Threshold for similarity
+
+  // Group by candidateId
+  const candidateMap = new Map();
+  for (const chunk of scoredChunks) {
+    if (!candidateMap.has(chunk.candidateId)) {
+      candidateMap.set(chunk.candidateId, {
+        candidateId: chunk.candidateId,
+        bestScore: chunk.score,
+        matchedSections: []
+      });
+    }
+    const entry = candidateMap.get(chunk.candidateId);
+    if (chunk.score > entry.bestScore) {
+      entry.bestScore = chunk.score;
+    }
+    entry.matchedSections.push({ section: chunk.section, score: chunk.score });
+  }
+
+  const topCandidates = Array.from(candidateMap.values())
+    .sort((a, b) => b.bestScore - a.bestScore)
+    .slice(0, topK);
+
+  // Enrich
+  const candidateIds = topCandidates.map(c => c.candidateId);
+  const docs = await Candidate.find({ id: { $in: candidateIds } }, { id: 1, name: 1, email: 1, seniorityLevel: 1, skills: 1 }).lean();
+  const docMap = new Map(docs.map(c => [c.id, c]));
+
+  return topCandidates.map(tc => {
+    const doc = docMap.get(tc.candidateId);
+    return {
+      candidateId: tc.candidateId,
+      name: doc?.name || 'Unknown',
+      email: doc?.email || '',
+      seniorityLevel: doc?.seniorityLevel || '',
+      skills: doc?.skills || [],
+      similarityScore: Math.round(tc.bestScore * 1000) / 1000,
+      matchedOn: tc.matchedSections.map(s => s.section)
+    };
+  }).filter(c => c.name !== 'Unknown');
+}
+
+/**
+ * Retrieves the most relevant chunks from a candidate's profile for a specific job description.
+ * This is used to accelerate AI analysis by reducing the LLM prompt payload.
+ * 
+ * @param {string} candidateId - The ID of the candidate
+ * @param {string} jobDescription - The job description text
+ * @param {number} topK - Maximum number of chunks to return
+ */
+export async function getRelevantChunksForJob(candidateId, jobDescription, topK = 5) {
+  const targetChunks = vectorIndex.filter(v => v.candidateId === candidateId);
+  if (targetChunks.length === 0) return []; // Fallback to full profile downstream if needed
+
+  let queryEmbedding;
+  try {
+    // Only embed the first 1000 chars of JD to avoid token limit on embedding
+    const query = jobDescription.substring(0, 1000); 
+    queryEmbedding = await embedQuery(query);
+  } catch (err) {
+    console.error('getRelevantChunksForJob: Embedding failed, using fallback', err);
+    return targetChunks.slice(0, topK);
+  }
+
+  const scoredChunks = targetChunks.map(entry => ({
+    ...entry,
+    score: cosineSimilarity(queryEmbedding, entry.embedding)
+  })).sort((a, b) => b.score - a.score);
+
+  return scoredChunks.slice(0, topK);
 }

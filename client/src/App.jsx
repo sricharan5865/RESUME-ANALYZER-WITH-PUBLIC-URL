@@ -7,6 +7,7 @@ import Inbox from './components/Inbox';
 import PipelineBoard from './components/PipelineBoard';
 import CandidateDetails from './components/CandidateDetails';
 import EmailModal from './components/EmailModal';
+import OfferLetterModal from './components/OfferLetterModal';
 import SettingsView from './components/Settings';
 import IngestionTracker from './components/IngestionTracker';
 import Reporting from './components/Reporting';
@@ -44,7 +45,7 @@ export default function App() {
   const [token, setToken] = useState(() => localStorage.getItem('token') || null);
   const [user, setUser] = useState(() => safeLocalStorageGet('user', null));
 
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState(() => localStorage.getItem('activeTab') || 'dashboard');
   const [candidates, setCandidates] = useState([]);
   const [jobs, setJobs] = useState([]);
   const [settings, setSettings] = useState({ emailTemplates: {} });
@@ -60,6 +61,7 @@ export default function App() {
   // Dialog/modal overlay state
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [emailCandidate, setEmailCandidate] = useState(null);
+  const [offerCandidate, setOfferCandidate] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
   const [toastType, setToastType] = useState('success');
 
@@ -77,6 +79,64 @@ export default function App() {
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
 
+  // Session Expired Modal state
+  const [showSessionExpiredModal, setShowSessionExpiredModal] = useState(false);
+
+  const handleSessionExpired = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setToken(null);
+    setUser(null);
+    setShowSessionExpiredModal(true);
+  };
+
+  // JWT Token Expiration check
+  useEffect(() => {
+    if (!token) return;
+    try {
+      const parts = token.split('.');
+      if (parts.length === 3) {
+        const payload = JSON.parse(atob(parts[1]));
+        if (payload.exp && payload.exp * 1000 < Date.now()) {
+          handleSessionExpired();
+        }
+      }
+    } catch (e) {
+      // Ignore parse error
+    }
+  }, [token]);
+
+  // Global fetch interceptor for 401 / expired tokens
+  useEffect(() => {
+    const originalFetch = window.fetch;
+    window.fetch = async (...args) => {
+      const response = await originalFetch(...args);
+      if (response.status === 401) {
+        try {
+          const clone = response.clone();
+          const body = await clone.json().catch(() => ({}));
+          if (body?.isTokenExpired || (body?.error && (
+            body.error.toLowerCase().includes('token') || 
+            body.error.toLowerCase().includes('jwt') || 
+            body.error.toLowerCase().includes('invalid') || 
+            body.error.toLowerCase().includes('expired')
+          ))) {
+            handleSessionExpired();
+          } else if (response.url.includes('/api/auth/status') || response.url.includes('/api/candidates') || response.url.includes('/api/jobs') || response.url.includes('/api/settings')) {
+            handleSessionExpired();
+          }
+        } catch (e) {
+          handleSessionExpired();
+        }
+      }
+      return response;
+    };
+
+    return () => {
+      window.fetch = originalFetch;
+    };
+  }, []);
+
   useEffect(() => {
     if (theme === 'light') {
       document.body.classList.add('light-theme');
@@ -87,6 +147,10 @@ export default function App() {
     }
     localStorage.setItem('theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    localStorage.setItem('activeTab', activeTab);
+  }, [activeTab]);
 
   useEffect(() => {
     if (!token) return;
@@ -131,11 +195,7 @@ export default function App() {
       });
       
       if (authRes.status === 401 || authRes.status === 403) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        setToken(null);
-        setUser(null);
-        setActiveTab('dashboard');
+        handleSessionExpired();
         return;
       }
       
@@ -320,6 +380,7 @@ export default function App() {
       <div className="public-app">
         <Routes>
           <Route path="/careers" element={<Careers backendUrl={BACKEND_URL} />} />
+          <Route path="/apply" element={<PublicApply backendUrl={BACKEND_URL} />} />
           <Route path="/apply/:jobId" element={<PublicApply backendUrl={BACKEND_URL} />} />
           <Route path="/status/:trackingId?" element={<StatusTracker backendUrl={BACKEND_URL} />} />
           <Route path="/status" element={<StatusTracker backendUrl={BACKEND_URL} />} />
@@ -879,6 +940,7 @@ export default function App() {
               onStageChanged={handleStageChanged}
               onSelectCandidate={setSelectedCandidate}
               onOpenEmailModal={setEmailCandidate}
+              onOpenOfferModal={(c) => setOfferCandidate(c)}
               onManualUpload={handleCandidateImported}
               onCandidateDeleted={handleCandidateDeleted}
               onCompare={(ids) => { setCompareIds(ids); setActiveTab('compare'); }}
@@ -893,6 +955,7 @@ export default function App() {
               jobs={jobs}
               onStageChanged={handleStageChanged}
               onSelectCandidate={setSelectedCandidate}
+              onOpenOfferModal={(c) => setOfferCandidate(c)}
               onCompare={(ids) => { setCompareIds(ids); setActiveTab('compare'); }}
               backendUrl={BACKEND_URL}
               token={token}
@@ -967,10 +1030,15 @@ export default function App() {
         <CandidateDetails 
           candidate={selectedCandidate}
           job={jobs.find(j => j.id === selectedCandidate.jobId)}
+          jobs={jobs}
           onClose={() => setSelectedCandidate(null)}
           onOpenEmailModal={(c) => {
             setSelectedCandidate(null);
             setEmailCandidate(c);
+          }}
+          onOpenOfferModal={(c) => {
+            setSelectedCandidate(null);
+            setOfferCandidate(c);
           }}
           onStageChanged={handleStageChanged}
           onCandidateDeleted={handleCandidateDeleted}
@@ -989,6 +1057,22 @@ export default function App() {
           templates={settings.emailTemplates}
           onClose={() => setEmailCandidate(null)}
           onEmailSent={handleEmailSent}
+          backendUrl={BACKEND_URL}
+          token={token}
+        />
+      )}
+
+      {/* Modal Overlay: Offer Letter Form */}
+      {offerCandidate && (
+        <OfferLetterModal 
+          candidate={offerCandidate}
+          job={jobs.find(j => j.id === offerCandidate.jobId)}
+          onClose={() => setOfferCandidate(null)}
+          onOfferSent={(updatedCandidate, msg) => {
+            handleCandidateUpdated(updatedCandidate);
+            showToast(msg || `Offer Letter sent to ${updatedCandidate.name}!`, 'success');
+            setOfferCandidate(null);
+          }}
           backendUrl={BACKEND_URL}
           token={token}
         />
@@ -1080,6 +1164,73 @@ export default function App() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Session Expired / Invalid Token Modal Popup */}
+      {showSessionExpiredModal && (
+        <div className="drawer-backdrop" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999 }}>
+          <div className="glass" style={{
+            width: '90%',
+            maxWidth: '440px',
+            padding: '32px',
+            borderRadius: 'var(--radius-lg)',
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--glass-border)',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4)',
+            textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '16px'
+          }}>
+            <div style={{
+              width: '60px',
+              height: '60px',
+              borderRadius: '50%',
+              background: 'rgba(239, 68, 68, 0.15)',
+              color: '#ef4444',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: '4px'
+            }}>
+              <AlertCircle size={32} />
+            </div>
+            
+            <h3 style={{ fontSize: '20px', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>
+              Session Expired
+            </h3>
+            
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.6', margin: 0 }}>
+              Your authentication session has expired or your security token is invalid. Please log in again to continue working safely.
+            </p>
+            
+            <button
+              className="btn btn-primary"
+              style={{
+                width: '100%',
+                padding: '12px',
+                fontSize: '14px',
+                fontWeight: '600',
+                marginTop: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px'
+              }}
+              onClick={() => {
+                setShowSessionExpiredModal(false);
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                setToken(null);
+                setUser(null);
+                setActiveTab('dashboard');
+              }}
+            >
+              <KeyRound size={16} /> Please Relogin
+            </button>
           </div>
         </div>
       )}

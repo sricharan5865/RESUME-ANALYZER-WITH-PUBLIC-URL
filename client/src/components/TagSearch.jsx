@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Tag, X, ChevronRight, Briefcase, Mail, Calendar, FileSpreadsheet } from 'lucide-react';
-import { exportToCSV } from '../utils/export';
+import { exportToExcel, prepareCandidateExportData } from '../utils/export';
 import { getCandidateDate, matchDateRangeHelper } from '../utils/dateFilters';
 
 
@@ -21,7 +21,7 @@ export default function TagSearch({ candidates, jobs, backendUrl, onSelectCandid
   const searchInputRef = useRef(null);
 
   const handleExport = () => {
-    const headers = {
+    const baseHeaders = {
       name: 'Name',
       email: 'Email',
       phone: 'Phone',
@@ -36,15 +36,16 @@ export default function TagSearch({ candidates, jobs, backendUrl, onSelectCandid
       createdAt: 'Import Date'
     };
     
-    const dataToExport = filteredResults.map(c => {
+    const dataWithJobNames = filteredResults.map(c => {
       const job = jobs.find(j => j.id === c.jobId);
       return {
         ...c,
         jobId: job ? job.title : 'General Role'
       };
     });
-    
-    exportToCSV(dataToExport, 'candidate_search_results', headers);
+
+    const { data: cleanedData, headers: finalHeaders } = prepareCandidateExportData(dataWithJobNames, baseHeaders);
+    exportToExcel(cleanedData, 'candidate_search_results', finalHeaders);
   };
 
   // Fetch tag cloud on load

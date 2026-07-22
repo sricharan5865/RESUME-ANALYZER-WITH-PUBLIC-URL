@@ -33,3 +33,10 @@ __pycache__/
 *.njsproj
 *.sln
 *.sw?
+
+# Temporary test PDF and PNG renders
+server/*.pdf
+!server/template_offer_letter.pdf
+server/*.png
+server/test_*.js
+

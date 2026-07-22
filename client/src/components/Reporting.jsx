@@ -36,8 +36,9 @@ export default function Reporting({ candidates, jobs }) {
     else scoreBands['Poor (<50)']++;
   });
 
-  // 3. Sourcing Channels
   const channels = {
+    'Public Application': 0,
+    'Employee Referral': 0,
     'Manual Upload': 0,
     'Gmail Integration': 0,
     'Outlook Integration': 0
@@ -45,11 +46,17 @@ export default function Reporting({ candidates, jobs }) {
 
   // We can infer source from candidate history or tags/emails
   candidates.forEach(c => {
-    const importHistory = c.history?.find(h => h.type === 'Imported')?.text || '';
-    if (importHistory.toLowerCase().includes('gmail') || importHistory.toLowerCase().includes('imap')) {
+    // Check all history entries, but prioritize the earliest one (usually creation)
+    const historyText = c.history?.map(h => h.text.toLowerCase()).join(' ') || '';
+    
+    if (historyText.includes('gmail') || historyText.includes('imap')) {
       channels['Gmail Integration']++;
-    } else if (importHistory.toLowerCase().includes('outlook') || importHistory.toLowerCase().includes('microsoft')) {
+    } else if (historyText.includes('outlook') || historyText.includes('microsoft')) {
       channels['Outlook Integration']++;
+    } else if (historyText.includes('application submitted') || historyText.includes('re-submitted')) {
+      channels['Public Application']++;
+    } else if (historyText.includes('referred by')) {
+      channels['Employee Referral']++;
     } else {
       channels['Manual Upload']++;
     }
@@ -177,6 +184,8 @@ export default function Reporting({ candidates, jobs }) {
               let channelIconColor = 'var(--accent-primary)';
               if (channel.includes('Gmail')) channelIconColor = '#ea4335';
               else if (channel.includes('Outlook')) channelIconColor = '#0078d4';
+              else if (channel.includes('Public')) channelIconColor = '#10b981';
+              else if (channel.includes('Referral')) channelIconColor = '#f59e0b';
 
               return (
                 <div key={channel} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--glass-border)' }}>

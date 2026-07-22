@@ -11,7 +11,7 @@ export default function PendingCvs({ backendUrl, token }) {
     })
       .then(r => r.json())
       .then(data => {
-        setPending(data);
+        setPending(Array.isArray(data) ? data : []);
         setLoading(false);
       })
       .catch(err => {

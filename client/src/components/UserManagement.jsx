@@ -24,15 +24,37 @@ export default function UserManagement({ backendUrl, token }) {
     fetchUsers();
   }, []);
 
+  const safeParseJson = async (response) => {
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      return await response.json();
+    }
+    const text = await response.text();
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error('API endpoint not found (404). Please ensure backend server is running.');
+      }
+      if (response.status === 500) {
+        throw new Error('Backend server error (500). Please check backend logs.');
+      }
+      throw new Error(`Server returned HTML response (${response.status}). Backend service might be offline or starting.`);
+    }
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      throw new Error('Received non-JSON response from server.');
+    }
+  };
+
   const fetchUsers = async () => {
     setLoading(true);
     try {
       const response = await fetch(`${host}/api/admin/users`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      const data = await response.json();
+      const data = await safeParseJson(response);
       if (!response.ok) throw new Error(data.error || 'Failed to fetch users');
-      setUsers(data);
+      setUsers(Array.isArray(data) ? data : []);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -65,7 +87,7 @@ export default function UserManagement({ backendUrl, token }) {
         })
       });
 
-      const data = await response.json();
+      const data = await safeParseJson(response);
       if (!response.ok) throw new Error(data.error || 'Failed to create user');
 
       setSuccess('User created successfully');
@@ -90,7 +112,7 @@ export default function UserManagement({ backendUrl, token }) {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
-      const data = await response.json();
+      const data = await safeParseJson(response);
       if (!response.ok) throw new Error(data.error || 'Failed to delete user');
 
       setSuccess('User deleted successfully');
@@ -123,7 +145,7 @@ export default function UserManagement({ backendUrl, token }) {
         })
       });
 
-      const data = await response.json();
+      const data = await safeParseJson(response);
       if (!response.ok) throw new Error(data.error || 'Failed to reset password');
 
       setSuccess('Password reset successfully');

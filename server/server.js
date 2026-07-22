@@ -23,9 +23,10 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { fetchIMAPEmails, markIMAPEmailAsRead, getIMAPAttachmentData } from './imapSourcing.js';
 import { parseResume, scoreCandidate, scoreCandidateByOwnCategory, generateTags, generateJobDescription, generateQuestionsForCandidate, scoreCandidateAgainstChecklist, extractChecklistFromJob } from './geminiParser.js';
+import { generateOfferLetterPDFBuffer } from './offerPdfGenerator.js';
 import { extractTextFromPDF, extractTextFromFile, convertDocxToHtml } from './parser.js';
 import { searchIndex } from './searchIndex.js';
-import { Candidate, Job, Settings, ProcessedEmail, IngestionLog, User } from './models.js';
+import { Candidate, Job, Settings, ProcessedEmail, IngestionLog, User, ResumeChunk, CandidateProfile, JobMatch } from './models.js';
 import {
   getOutlookAccessToken,
   listOutlookMessages,
@@ -37,7 +38,7 @@ import {
 } from './outlookApi.js';
 import { categorizeEmail } from './emailCategorizer.js';
 import { EmailLog } from './models.js';
-import { loadVectorIndex, indexCandidate, removeCandidate, indexAllCandidates, searchResumes, ragAnswer, getRAGStatus } from './ragService.js';
+import { loadVectorIndex, indexCandidate, removeCandidate, indexAllCandidates, searchResumes, ragAnswer, getRAGStatus, findSimilarCandidates, getRelevantChunksForJob } from './ragService.js';
 
 dotenv.config();
 
@@ -220,7 +221,7 @@ function authenticateToken(req, res, next) {
   if (!token) return res.status(401).json({ error: 'Access denied: No token provided' });
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) return res.status(403).json({ error: 'Access denied: Invalid token' });
+    if (err) return res.status(401).json({ error: 'Access denied: Invalid or expired token', isTokenExpired: true });
     req.user = user;
     next();
   });
@@ -297,9 +298,72 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://admin:password@localhost:27
   })
   .catch(err => console.error('MongoDB connection error:', err));
 
-// Google OAuth token helpers deleted
+// Discrepancy detector between submitted form details and parsed CV data
+function detectFormCvDiscrepancies(formInfo, parsedData) {
+  const discrepancies = [];
+  if (!formInfo || !parsedData) return discrepancies;
 
-async function sendSMTPMessage({ to, subject, body }) {
+  // 1. Candidate Name Check
+  const formName = (formInfo.name || '').trim().toLowerCase();
+  const cvName = (parsedData.name || '').trim().toLowerCase();
+  if (formName && cvName && formName !== 'unknown' && cvName !== 'unknown') {
+    const formTokens = formName.split(/\s+/).filter(t => t.length > 2);
+    const cvTokens = cvName.split(/\s+/).filter(t => t.length > 2);
+    
+    // Check if any significant token overlaps
+    const hasOverlap = formTokens.some(ft => cvTokens.some(ct => ct.includes(ft) || ft.includes(ct)));
+    
+    if (!hasOverlap && formTokens.length > 0 && cvTokens.length > 0) {
+      discrepancies.push({
+        issue: `Candidate Name Discrepancy: Form submitted under "${formInfo.name}", but uploaded CV belongs to "${parsedData.name}".`,
+        severity: 'HIGH',
+        fix_suggestion: 'Verify candidate identity to ensure the wrong resume file was not uploaded.'
+      });
+    }
+  }
+
+  // 2. Email Address Check
+  const formEmail = (formInfo.email || '').trim().toLowerCase();
+  const cvEmail = (parsedData.email || '').trim().toLowerCase();
+  if (formEmail && cvEmail && formEmail !== cvEmail) {
+    discrepancies.push({
+      issue: `Email Address Mismatch: Form email (${formInfo.email}) does not match email on CV (${parsedData.email}).`,
+      severity: 'MEDIUM',
+      fix_suggestion: 'Confirm primary email address with the candidate during initial contact.'
+    });
+  }
+
+  // 3. Phone Number Check
+  const cleanFormPhone = (formInfo.phone || '').replace(/\D/g, '');
+  const cleanCvPhone = (parsedData.phone || '').replace(/\D/g, '');
+  if (cleanFormPhone && cleanCvPhone && cleanFormPhone.length >= 7 && cleanCvPhone.length >= 7) {
+    if (!cleanFormPhone.includes(cleanCvPhone) && !cleanCvPhone.includes(cleanFormPhone)) {
+      discrepancies.push({
+        issue: `Phone Number Mismatch: Form phone (${formInfo.phone}) differs from phone on CV (${parsedData.phone}).`,
+        severity: 'LOW',
+        fix_suggestion: 'Confirm phone number with candidate.'
+      });
+    }
+  }
+
+  // 4. Experience Discrepancy Check
+  const formExp = parseFloat(formInfo.totalYearsExperience);
+  let cvExp = parseFloat(parsedData.totalYearsExperience);
+  if (isNaN(cvExp) && parsedData.experience && Array.isArray(parsedData.experience)) {
+    cvExp = parsedData.experience.length * 1.5;
+  }
+  if (!isNaN(formExp) && !isNaN(cvExp) && Math.abs(formExp - cvExp) >= 2) {
+    discrepancies.push({
+      issue: `Experience Discrepancy: Candidate stated ${formExp} years in application form, but CV reflects ~${Math.round(cvExp)} years of experience.`,
+      severity: 'MEDIUM',
+      fix_suggestion: 'Cross-check timeline of employment during interview.'
+    });
+  }
+
+  return discrepancies;
+}
+
+async function sendSMTPMessage({ to, subject, body, attachments = [] }) {
   const config = await getEmailConfig();
   if (!config.user || !config.pass) {
     throw new Error('Email credentials are not configured.');
@@ -330,7 +394,135 @@ async function sendSMTPMessage({ to, subject, body }) {
   } else {
     mailOptions.text = body;
   }
+  if (attachments && Array.isArray(attachments) && attachments.length > 0) {
+    mailOptions.attachments = attachments;
+  }
   return await transporter.sendMail(mailOptions);
+}
+
+async function sendAutomaticEmail(candidate, triggerType, extraParams = {}) {
+  if (!candidate || !candidate.email) {
+    return { success: false, reason: 'No candidate email available' };
+  }
+
+  try {
+    const settings = await Settings.findById('global');
+    const emailTemplates = settings?.emailTemplates || {};
+
+    let template = emailTemplates[triggerType];
+
+    // Fallback default templates if not specified in settings
+    if (!template) {
+      if (triggerType === 'positionChange') {
+        template = "Subject: Position Update: {job_title}\n\nHi {candidate_name},\n\nYour application position at {company_name} has been updated to {job_title}.\n\nBest regards,\nRecruitment Team";
+      } else if (triggerType === 'applicationReceived') {
+        template = "Subject: Application Received: {job_title}\n\nHi {candidate_name},\n\nThank you for applying for the {job_title} role at {company_name}. We have received your application.\n\nBest regards,\nRecruitment Team";
+      } else if (triggerType === 'interview') {
+        template = "Subject: Interview Invitation: {job_title}\n\nHi {candidate_name},\n\nWe would like to invite you for an interview for the {job_title} position at {company_name}.\n\nBest regards,\nRecruitment Team";
+      } else if (triggerType === 'offer') {
+        template = "Subject: Job Offer: {job_title}\n\nHi {candidate_name},\n\nWe are pleased to extend an offer of employment for the {job_title} position at {company_name}.\n\nBest regards,\nRecruitment Team";
+      } else if (triggerType === 'reject') {
+        template = "Subject: Application Update: {job_title}\n\nHi {candidate_name},\n\nThank you for your interest in the {job_title} position at {company_name}. After careful consideration, we will not be moving forward with your application at this time.\n\nBest regards,\nRecruitment Team";
+      } else {
+        return { success: false, reason: `No template for trigger type ${triggerType}` };
+      }
+    }
+
+    let jobTitle = extraParams.jobTitle || 'General Role';
+    if (!extraParams.jobTitle && candidate.jobId) {
+      const job = await Job.findOne({ id: candidate.jobId });
+      if (job) jobTitle = job.title;
+    }
+
+    let oldJobTitle = extraParams.oldJobTitle || 'Previous Position';
+
+    // Replace dynamic placeholders (supports curly braces and bracket notation)
+    template = template.replace(/{{CandidateName}}/g, candidate.name || 'Candidate');
+    template = template.replace(/{candidate_name}/g, candidate.name || 'Candidate');
+
+    template = template.replace(/{{JobTitle}}/g, jobTitle);
+    template = template.replace(/{job_title}/g, jobTitle);
+
+    template = template.replace(/{{OldJobTitle}}/g, oldJobTitle);
+    template = template.replace(/{old_job_title}/g, oldJobTitle);
+
+    template = template.replace(/{{CandidateID}}/g, candidate.id || 'N/A');
+    template = template.replace(/{candidate_id}/g, candidate.id || 'N/A');
+
+    template = template.replace(/{{Stage}}/g, candidate.stage || 'Inbox');
+    template = template.replace(/{stage}/g, candidate.stage || 'Inbox');
+
+    template = template.replace(/{company_name}/g, 'iSpatial Techno Solutions (IST)');
+
+    let subject = `${triggerType === 'positionChange' ? 'Position Update' : 'Application Update'}: ${jobTitle}`;
+    let body = template;
+
+    const lines = template.split('\n');
+    if (lines[0].toLowerCase().startsWith('subject:')) {
+      subject = lines[0].substring(8).trim();
+      body = lines.slice(1).join('\n').trim();
+    }
+
+    let attachments = extraParams.attachments || [];
+    if ((triggerType === 'offer' || (candidate.stage || '').toLowerCase().includes('offer')) && attachments.length === 0) {
+      try {
+        console.log(`[AutoEmail] Generating official Offer Letter PDF attachment for ${candidate.name}...`);
+        const pdfBuffer = await generateOfferLetterPDFBuffer(candidate, extraParams);
+        const safeName = (candidate.name || 'Candidate').replace(/[^a-zA-Z0-9_\-]/g, '_');
+        attachments.push({
+          filename: `Offer_Letter_${safeName}.pdf`,
+          content: pdfBuffer,
+          contentType: 'application/pdf'
+        });
+      } catch (pdfErr) {
+        console.error('[AutoEmail] Failed to generate offer letter PDF attachment:', pdfErr.message);
+      }
+    }
+
+    const emailConfig = await getEmailConfig();
+    if (emailConfig.provider === 'outlook' && emailConfig.outlookClientId && emailConfig.outlookClientSecret && emailConfig.outlookUserEmail) {
+      const accessToken = await getOutlookAccessToken();
+      await sendOutlookEmail(accessToken, emailConfig.outlookUserEmail, { to: candidate.email, subject, body, attachments });
+    } else if (emailConfig.user && emailConfig.pass) {
+      await sendSMTPMessage({ to: candidate.email, subject, body, attachments });
+    } else {
+      const reasonMsg = 'Email credentials not configured in Settings. Please configure Email User & Password or Outlook credentials under Settings.';
+      console.warn(`[AutoEmail] ${reasonMsg} Skipped sending '${triggerType}' email to ${candidate.email}`);
+      await EmailLog.create({
+        source: 'auto-email',
+        level: 'warn',
+        message: `Skipped sending ${triggerType} email to ${candidate.email}: credentials not configured.`,
+        emailId: candidate.email
+      }).catch(() => {});
+      return { success: false, reason: reasonMsg };
+    }
+
+    candidate.history.push({
+      date: new Date().toISOString(),
+      type: 'EmailSent',
+      text: `Sent automatic email (${triggerType}): "${subject}"`
+    });
+    await candidate.save();
+
+    await EmailLog.create({
+      source: 'auto-email',
+      level: 'info',
+      message: `Sent automatic email (${triggerType}) to ${candidate.email}`,
+      emailId: candidate.email
+    }).catch(() => {});
+
+    return { success: true, subject };
+  } catch (err) {
+    console.error(`[AutoEmail] Failed to send ${triggerType} email to ${candidate.email}:`, err);
+    await EmailLog.create({
+      source: 'auto-email',
+      level: 'error',
+      message: `Failed to send ${triggerType} email to ${candidate.email}`,
+      details: err.message,
+      emailId: candidate.email
+    }).catch(() => {});
+    return { success: false, error: err.message };
+  }
 }
 
 /* ==========================================================================
@@ -729,6 +921,16 @@ async function processEmailAttachment(messageId, filename, buffer, emailConfig, 
     });
 
     await newCandidate.save();
+
+    // Automatically send application received confirmation email to candidate
+    if (newCandidate.email && !isGenericVal(newCandidate.email, 'email')) {
+      try {
+        console.log(`[InboxImport] Sending application confirmation email to ${newCandidate.email}...`);
+        await sendAutomaticEmail(newCandidate, 'applicationReceived');
+      } catch (autoEmailErr) {
+        console.error('[InboxImport] Auto-acknowledgement email failed:', autoEmailErr.message);
+      }
+    }
 
     // Update IngestionLog on success
     await IngestionLog.updateOne(
@@ -1497,6 +1699,16 @@ app.post('/api/candidates/upload', authenticateToken, requireRole(['admin', 'rec
 
     await newCandidate.save();
 
+    // Automatically send application received confirmation email to candidate
+    if (newCandidate.email && !isGenericVal(newCandidate.email, 'email')) {
+      try {
+        console.log(`[Upload] Sending application confirmation email to ${newCandidate.email}...`);
+        await sendAutomaticEmail(newCandidate, 'applicationReceived');
+      } catch (autoEmailErr) {
+        console.error('[Upload] Auto-acknowledgement email failed:', autoEmailErr.message);
+      }
+    }
+
     // Re-calculate ranks for all candidates of the same job
     if (jobId) {
       const candidatesForJob = await Candidate.find({ jobId }).sort({ matchScore: -1 });
@@ -1699,6 +1911,12 @@ app.post('/api/candidates/upload/resolve', authenticateToken, requireRole(['admi
           }
         }
         await Candidate.deleteOne({ id: candidateId });
+
+        // Cascade delete related records
+        await CandidateProfile.deleteMany({ candidateId: candidateId }).catch(() => {});
+        await JobMatch.deleteMany({ candidateId: candidateId }).catch(() => {});
+        await ResumeChunk.deleteMany({ candidateId: candidateId }).catch(() => {});
+
         removeCandidate(candidateId).catch(err => console.error('RAG removal failed:', err.message));
       }
 
@@ -1734,6 +1952,12 @@ app.post('/api/candidates/upload/resolve', authenticateToken, requireRole(['admi
           }
         }
         await Candidate.deleteOne({ id: candidateId });
+
+        // Cascade delete related records
+        await CandidateProfile.deleteMany({ candidateId: candidateId }).catch(() => {});
+        await JobMatch.deleteMany({ candidateId: candidateId }).catch(() => {});
+        await ResumeChunk.deleteMany({ candidateId: candidateId }).catch(() => {});
+
         removeCandidate(candidateId).catch(err => console.error('RAG removal failed:', err.message));
       }
 
@@ -1895,6 +2119,18 @@ app.get('/api/candidates/:id', authenticateToken, async (req, res) => {
   }
 });
 
+app.get('/api/candidates/:id/similar', authenticateToken, async (req, res) => {
+  try {
+    const candidateId = req.params.id;
+    const topK = parseInt(req.query.limit) || 5;
+    const similar = await findSimilarCandidates(candidateId, topK);
+    res.json(similar);
+  } catch (error) {
+    console.error('Failed to find similar candidates:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.delete('/api/candidates/:id', authenticateToken, requireRole(['admin', 'recruiter']), async (req, res) => {
   try {
     const candidate = await Candidate.findOne({ id: req.params.id });
@@ -1909,6 +2145,11 @@ app.delete('/api/candidates/:id', authenticateToken, requireRole(['admin', 'recr
     }
 
     await Candidate.deleteOne({ id: req.params.id });
+
+    // Cascade delete related records
+    await CandidateProfile.deleteMany({ candidateId: req.params.id }).catch(() => {});
+    await JobMatch.deleteMany({ candidateId: req.params.id }).catch(() => {});
+    await ResumeChunk.deleteMany({ candidateId: req.params.id }).catch(() => {});
 
     const candidates = await Candidate.find();
     searchIndex.buildIndex(candidates);
@@ -1946,9 +2187,96 @@ app.patch('/api/candidates/:id/stage', async (req, res) => {
     candidate.history.push({ date: new Date().toISOString(), type: 'StageChanged', text: `Moved from "${oldStage}" to "${stage}"` });
     
     await candidate.save();
+
+    // Trigger automatic stage email if applicable
+    let triggerType = null;
+    const lowerStage = (stage || '').toLowerCase();
+    if (lowerStage.includes('interview')) {
+      triggerType = 'interview';
+    } else if (lowerStage.includes('offer')) {
+      triggerType = 'offer';
+    } else if (lowerStage.includes('reject')) {
+      triggerType = 'reject';
+    }
+
+    if (triggerType) {
+      await sendAutomaticEmail(candidate, triggerType);
+    }
+
     res.json(candidate);
   } catch (error) {
     console.error('Failed to change candidate stage:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.patch('/api/candidates/:id/position', async (req, res) => {
+  try {
+    const { jobId } = req.body;
+    const candidate = await Candidate.findOne({ id: req.params.id });
+    if (!candidate) return res.status(404).json({ error: 'Candidate not found.' });
+
+    let oldJobTitle = 'General Role';
+    if (candidate.jobId) {
+      const oldJob = await Job.findOne({ id: candidate.jobId });
+      if (oldJob) oldJobTitle = oldJob.title;
+    }
+
+    let newJobTitle = 'General Role';
+    let targetJob = null;
+    if (jobId) {
+      targetJob = await Job.findOne({ id: jobId });
+      if (targetJob) newJobTitle = targetJob.title;
+    }
+
+    candidate.jobId = jobId || null;
+    candidate.history.push({
+      date: new Date().toISOString(),
+      type: 'PositionChanged',
+      text: `Position updated from "${oldJobTitle}" to "${newJobTitle}"`
+    });
+
+    // Re-score candidate against the new job position
+    const parsedData = {
+      name: candidate.name,
+      email: candidate.email,
+      skills: candidate.skills,
+      experience: candidate.experience,
+      education: candidate.education,
+      seniorityLevel: candidate.seniorityLevel,
+      projects: candidate.projects
+    };
+
+    if (targetJob) {
+      const ragChunks = await getRelevantChunksForJob(candidate.id, targetJob.description || targetJob.requirements);
+      const scoringResult = await scoreCandidate(parsedData, targetJob, ragChunks);
+      candidate.matchScore = scoringResult.score || 0;
+      candidate.matchingSkills = scoringResult.matchingSkills || [];
+      candidate.missingSkills = scoringResult.missingSkills || [];
+      candidate.matchExplanation = scoringResult.reasoning || '';
+    } else {
+      const ownCategoryResult = await scoreCandidateByOwnCategory(parsedData);
+      candidate.matchScore = ownCategoryResult.score || 0;
+      candidate.matchingSkills = ownCategoryResult.matchingSkills || [];
+      candidate.missingSkills = ownCategoryResult.missingSkills || [];
+      candidate.matchExplanation = ownCategoryResult.reasoning || '';
+    }
+
+    await candidate.save();
+
+    // Trigger automatic position change email notification
+    const emailResult = await sendAutomaticEmail(candidate, 'positionChange', {
+      oldJobTitle,
+      jobTitle: newJobTitle
+    });
+
+    res.json({
+      candidate,
+      emailSent: emailResult.success,
+      emailReason: emailResult.reason || emailResult.error || null
+    });
+  } catch (error) {
+    console.error('Failed to change candidate position:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -1987,28 +2315,157 @@ app.patch('/api/candidates/:id/extracted-data', authenticateToken, async (req, r
 });
 
 app.post('/api/candidates/:id/send-email', authenticateToken, requireRole(['admin', 'recruiter']), async (req, res) => {
-  const { subject, body } = req.body;
+  const { subject, body, attachOfferPdf } = req.body;
   const emailConfig = await getEmailConfig();
 
   const candidate = await Candidate.findOne({ id: req.params.id });
   if (!candidate) return res.status(404).json({ error: 'Not found.' });
   if (!candidate.email) return res.status(400).json({ error: 'No email specified.' });
 
+  // Determine if offer letter PDF should be attached automatically
+  const isOfferedStage = candidate.stage && candidate.stage.toLowerCase() === 'offered';
+  const isOfferSubject = subject && /offer/i.test(subject);
+  const shouldAttachOffer = attachOfferPdf !== false && (attachOfferPdf === true || isOfferedStage || isOfferSubject);
+
+  let attachments = [];
+  if (shouldAttachOffer) {
+    try {
+      const pdfBuffer = await generateOfferLetterPDFBuffer(candidate, candidate.offerDetails || {});
+      const pdfFilename = `Offer_Letter_${(candidate.name || 'Candidate').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+      attachments.push({
+        filename: pdfFilename,
+        content: pdfBuffer,
+        contentType: 'application/pdf'
+      });
+      console.log(`[SendEmail] Attached Offer Letter PDF: ${pdfFilename}`);
+    } catch (pdfErr) {
+      console.error('[SendEmail] Failed to generate offer PDF attachment:', pdfErr);
+    }
+  }
+
   try {
     if (emailConfig.provider === 'outlook' && emailConfig.outlookClientId && emailConfig.outlookClientSecret && emailConfig.outlookUserEmail) {
       const accessToken = await getOutlookAccessToken();
-      await sendOutlookEmail(accessToken, emailConfig.outlookUserEmail, { to: candidate.email, subject, body });
+      await sendOutlookEmail(accessToken, emailConfig.outlookUserEmail, { to: candidate.email, subject, body, attachments });
     } else {
       const hasImapConfig = !!(emailConfig.user && emailConfig.pass);
       if (!hasImapConfig) return res.status(401).json({ error: 'Not authenticated.' });
-      await sendSMTPMessage({ to: candidate.email, subject, body });
+      await sendSMTPMessage({ to: candidate.email, subject, body, attachments });
     }
 
-    candidate.history.push({ date: new Date().toISOString(), type: 'EmailSent', text: `Sent email: "${subject}"` });
+    const emailNote = attachments.length > 0 ? ` (with ${attachments[0].filename} attached)` : '';
+    candidate.history.push({ date: new Date().toISOString(), type: 'EmailSent', text: `Sent email: "${subject}"${emailNote}` });
     await candidate.save();
-    res.json({ success: true, candidate });
+    res.json({ success: true, message: 'Email sent successfully.', hasAttachment: attachments.length > 0 });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/candidates/:id/send-offer-letter', authenticateToken, requireRole(['admin', 'recruiter']), async (req, res) => {
+  try {
+    const { offerDetails, subject, body, sendEmailNow } = req.body;
+    const candidate = await Candidate.findOne({ id: req.params.id });
+    if (!candidate) return res.status(404).json({ error: 'Candidate not found.' });
+
+    const shouldSendEmail = sendEmailNow !== false;
+    let emailSent = false;
+    let emailReason = '';
+
+    // Generate official PDF Attachment
+    let attachments = [];
+    try {
+      const pdfBuffer = await generateOfferLetterPDFBuffer(candidate, offerDetails);
+      const pdfFilename = `Offer_Letter_${candidate.name.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+      attachments.push({
+        filename: pdfFilename,
+        content: pdfBuffer,
+        contentType: 'application/pdf'
+      });
+    } catch (pdfErr) {
+      console.error('Failed to generate offer PDF:', pdfErr);
+    }
+
+    if (shouldSendEmail && subject && body && candidate.email) {
+      try {
+        const emailConfig = await getEmailConfig();
+        if (emailConfig.provider === 'outlook' && emailConfig.outlookClientId && emailConfig.outlookClientSecret && emailConfig.outlookUserEmail) {
+          const accessToken = await getOutlookAccessToken();
+          await sendOutlookEmail(accessToken, emailConfig.outlookUserEmail, { to: candidate.email, subject, body, attachments });
+          emailSent = true;
+        } else if (emailConfig.user && emailConfig.pass) {
+          await sendSMTPMessage({ to: candidate.email, subject, body, attachments });
+          emailSent = true;
+        } else {
+          emailReason = 'Email credentials not configured in Settings. Offer saved to candidate profile.';
+          console.warn(`[SendOffer] ${emailReason}`);
+        }
+      } catch (err) {
+        console.error('[SendOffer] Failed to send email:', err.message);
+        emailReason = `Email delivery failed: ${err.message}`;
+      }
+    }
+
+    const emailStatus = shouldSendEmail ? (emailSent ? 'Sent' : 'Failed') : 'Pending';
+
+    candidate.offerDetails = {
+      ...(offerDetails || {}),
+      emailStatus,
+      sentAt: emailSent ? new Date().toISOString() : (candidate.offerDetails?.sentAt || null),
+      lastUpdated: new Date().toISOString()
+    };
+    candidate.stage = 'Offered';
+
+    const joiningDate = offerDetails?.joiningDate || 'Not Specified';
+    const salary = offerDetails?.offeredSalary || 'Not Specified';
+    
+    candidate.history.push({
+      date: new Date().toISOString(),
+      type: 'Offer Extended',
+      text: shouldSendEmail 
+        ? (emailSent ? `Official Offer Letter PDF sent via email (Joining Date: ${joiningDate}, Offered Salary: ${salary})` : `Offer saved to profile (Email delivery failed: ${emailReason})`)
+        : `Offer saved to candidate profile (Email scheduled for later)`
+    });
+
+    await candidate.save();
+
+    let userMessage = '';
+    if (!shouldSendEmail) {
+      userMessage = `Offer details for ${candidate.name} saved! Official PDF generated & email set to be sent later.`;
+    } else if (emailSent) {
+      userMessage = `🎉 Official Offer Letter PDF successfully sent to ${candidate.name}!`;
+    } else {
+      userMessage = `Offer saved for ${candidate.name}. (${emailReason || 'Email not sent'})`;
+    }
+
+    res.json({
+      success: true,
+      candidate,
+      emailSent,
+      emailStatus,
+      emailReason,
+      message: userMessage
+    });
+  } catch (error) {
+    console.error('Failed to send offer letter:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/candidates/:id/offer-letter-pdf', authenticateToken, async (req, res) => {
+  try {
+    const candidate = await Candidate.findOne({ id: req.params.id });
+    if (!candidate) return res.status(404).json({ error: 'Candidate not found.' });
+
+    const pdfBuffer = await generateOfferLetterPDFBuffer(candidate, candidate.offerDetails || {});
+    const filename = `Offer_Letter_${candidate.name.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+    res.send(pdfBuffer);
+  } catch (err) {
+    console.error('Failed to stream offer PDF:', err);
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -2044,7 +2501,9 @@ app.post('/api/candidates/:id/re-score', authenticateToken, async (req, res) => 
     }
 
     if (job) {
-      const scoringResult = await scoreCandidate(parsedData, job);
+      // RAG-Enhanced JD Matching: fetch specific relevant chunks for the scoring prompt
+      const ragChunks = await getRelevantChunksForJob(candidate.id, job.description || job.requirements);
+      const scoringResult = await scoreCandidate(parsedData, job, ragChunks);
       candidate.matchScore = scoringResult.score || 0;
       candidate.matchingSkills = scoringResult.matchingSkills || [];
       candidate.missingSkills = scoringResult.missingSkills || [];
@@ -2155,6 +2614,21 @@ app.post('/api/jobs', authenticateToken, requireRole(['admin', 'recruiter']), as
     if (publishToCareers) {
       publicSlug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Math.floor(Math.random() * 1000);
     }
+    const defaultFields = [
+      { id: 'fn', label: 'First Name', fieldType: 'ShortText', isRequired: true },
+      { id: 'ln', label: 'Last Name', fieldType: 'ShortText', isRequired: true },
+      { id: 'em', label: 'Email', fieldType: 'Email', isRequired: true },
+      { id: 'ph', label: 'Phone Number', fieldType: 'Phone', isRequired: true },
+      { id: 'cl', label: 'Current Location', fieldType: 'ShortText', isRequired: true },
+      { id: 'ex', label: 'Total Years of Experience', fieldType: 'Number', isRequired: true },
+      { id: 'np', label: 'Notice Period', fieldType: 'Dropdown', options: 'Immediate, 15 days, 30 days, 45 days, 60 days, 90 days, More than 90 days', isRequired: true },
+      { id: 'jd', label: 'Earliest Joining Date', fieldType: 'Date', isRequired: true },
+      { id: 'eq', label: 'Education Qualification', fieldType: 'ShortText', isRequired: true },
+      { id: 'ks', label: 'Key Skills', fieldType: 'ShortText', isRequired: true },
+      { id: 'li', label: 'LinkedIn Profile', fieldType: 'Url', isRequired: true },
+      { id: 'cv', label: 'Upload CV', fieldType: 'CvUpload', isRequired: true }
+    ];
+
     const newJob = new Job({ 
       id: id || `job-${Date.now()}`, 
       title, 
@@ -2167,7 +2641,7 @@ app.post('/api/jobs', authenticateToken, requireRole(['admin', 'recruiter']), as
       workMode,
       requiredExperience,
       closingDate,
-      customFields,
+      customFields: (customFields && customFields.length > 0) ? customFields : defaultFields,
       publishToCareers,
       publicSlug
     });
@@ -2183,6 +2657,19 @@ app.put('/api/jobs/:id', authenticateToken, requireRole(['admin', 'recruiter']),
   try {
     const { title, jobRole, department, location, description, jobDescription, requirements, publicDescription, postings, workMode, requiredExperience, closingDate, customFields, publishToCareers } = req.body;
     
+    // Support bulk update for all jobs when id is 'all'
+    if (req.params.id === 'all') {
+      if (customFields) {
+        await Job.updateMany({}, { $set: { customFields } });
+        await Settings.findByIdAndUpdate(
+          'global',
+          { $set: { defaultCustomFields: customFields } },
+          { upsert: true }
+        ).catch(() => {});
+      }
+      return res.json({ success: true, message: 'Updated default application form for all job positions.' });
+    }
+
     // Support payloads coming from both Settings.jsx (title, description) and FormBuilder.jsx (jobRole, jobDescription)
     const finalTitle = title || jobRole;
     const finalDescription = description || jobDescription;
@@ -2255,9 +2742,74 @@ app.post('/api/jobs/:id/postings', authenticateToken, requireRole(['admin', 'rec
   }
 });
 
+app.post('/api/jobs/:id/publish', async (req, res) => {
+  try {
+    const job = await Job.findOne({ id: req.params.id });
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+
+    const { publishToCareers } = req.body;
+    job.publishToCareers = publishToCareers !== undefined ? publishToCareers : !job.publishToCareers;
+
+    if (job.publishToCareers && !job.publicSlug) {
+      const baseSlug = (job.title || 'job').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      job.publicSlug = `${baseSlug}-${Date.now().toString(36)}`;
+    }
+
+    await job.save();
+    res.json({
+      success: true,
+      job,
+      message: job.publishToCareers ? `Position "${job.title}" published successfully.` : `Position "${job.title}" unpublished.`
+    });
+  } catch (error) {
+    console.error('Failed to update publish status:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.delete('/api/jobs/:id', authenticateToken, requireRole(['admin', 'recruiter']), async (req, res) => {
-  await Job.deleteOne({ id: req.params.id });
-  res.json({ success: true });
+  try {
+    const jobId = req.params.id;
+    
+    // Find all candidates associated with this job
+    const candidates = await Candidate.find({ jobId });
+    
+    for (const candidate of candidates) {
+      // Delete resume file if it exists
+      if (candidate.resumeUrl) {
+        const filename = candidate.resumeUrl.replace('/api/uploads/', '').replace('/uploads/', '');
+        const filepath = path.join(UPLOADS_DIR, filename);
+        if (fs.existsSync(filepath)) {
+          try { fs.unlinkSync(filepath); } catch (e) {}
+        }
+      }
+      
+      // Remove candidate from database
+      await Candidate.deleteOne({ id: candidate.id });
+      
+      // Cascade delete candidate's related records
+      await CandidateProfile.deleteMany({ candidateId: candidate.id }).catch(() => {});
+      await JobMatch.deleteMany({ candidateId: candidate.id }).catch(() => {});
+      await ResumeChunk.deleteMany({ candidateId: candidate.id }).catch(() => {});
+      
+      // Remove from RAG index
+      removeCandidate(candidate.id).catch(err => console.error('RAG removal failed:', err.message));
+    }
+    
+    // Delete the job itself
+    await Job.deleteOne({ id: jobId });
+
+    // Clean up any remaining JobMatch records for this job
+    await JobMatch.deleteMany({ jobId }).catch(() => {});
+    
+    // Rebuild search index for remaining candidates
+    const remainingCandidates = await Candidate.find();
+    searchIndex.buildIndex(remainingCandidates);
+    
+    res.json({ success: true, deletedCandidates: candidates.length });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 app.get('/api/settings', authenticateToken, requireRole(['admin']), async (req, res) => {
@@ -2766,16 +3318,20 @@ app.get('/api/public/jobs/:id', async (req, res) => {
   try {
     const job = await Job.findOne({ id: req.params.id, status: 'Active' });
     if (!job) return res.status(404).json({ error: 'Job not found' });
-    
     let fieldsToReturn = job.customFields;
     if (!fieldsToReturn || fieldsToReturn.length === 0) {
       fieldsToReturn = [
         { id: 'fn', label: 'First Name', fieldType: 'ShortText', isRequired: true },
         { id: 'ln', label: 'Last Name', fieldType: 'ShortText', isRequired: true },
-        { id: 'em', label: 'Email', fieldType: 'Email', fieldKey: 'email', isRequired: true },
-        { id: 'ph', label: 'Phone', fieldType: 'Phone', fieldKey: 'phone', isRequired: true },
-        { id: 'ks', label: 'Key Skills', fieldType: 'LongText', isRequired: true },
-        { id: 'ex', label: 'Total Experience (years)', fieldType: 'Number', isRequired: true },
+        { id: 'em', label: 'Email', fieldType: 'Email', isRequired: true },
+        { id: 'ph', label: 'Phone Number', fieldType: 'Phone', isRequired: true },
+        { id: 'cl', label: 'Current Location', fieldType: 'ShortText', isRequired: true },
+        { id: 'ex', label: 'Total Years of Experience', fieldType: 'Number', isRequired: true },
+        { id: 'np', label: 'Notice Period', fieldType: 'Dropdown', options: 'Immediate, 15 days, 30 days, 45 days, 60 days, 90 days, More than 90 days', isRequired: true },
+        { id: 'jd', label: 'Earliest Joining Date', fieldType: 'Date', isRequired: true },
+        { id: 'eq', label: 'Education Qualification', fieldType: 'ShortText', isRequired: true },
+        { id: 'ks', label: 'Key Skills', fieldType: 'ShortText', isRequired: true },
+        { id: 'li', label: 'LinkedIn Profile', fieldType: 'Url', isRequired: true },
         { id: 'cv', label: 'Upload CV', fieldType: 'CvUpload', isRequired: true }
       ];
     }
@@ -2984,6 +3540,18 @@ app.post('/api/public/apply', async (req, res) => {
           console.error('Parallel scoring/tagging failed for public apply:', err.message);
         }
 
+        const formDiscrepancies = detectFormCvDiscrepancies({
+          name: finalName,
+          email: finalEmail,
+          phone: finalPhone,
+          totalYearsExperience: getAnswerByKeywords(ansMap, ['Total Years of Experience', 'Total Experience (years)', 'Experience', 'Total Experience'], 'experience')
+        }, parsedData);
+
+        const mergedRedFlags = [
+          ...formDiscrepancies,
+          ...(jdQuestions?.red_flags || parsedData.red_flags || [])
+        ];
+
         // Update candidate in DB
         const updatedCandidate = await Candidate.findOneAndUpdate(
           { id: candidateId },
@@ -3011,7 +3579,7 @@ app.post('/api/public/apply', async (req, res) => {
               hrQuestions: jdQuestions?.hrQuestions || parsedData.hrQuestions || [],
               technicalQuestions: jdQuestions?.technicalQuestions || parsedData.technicalQuestions || [],
               projects: parsedData.projects || [],
-              redFlags: jdQuestions?.red_flags || parsedData.red_flags || [],
+              redFlags: mergedRedFlags,
               extractedData: {
                 currentLocation: getAnswerByKeywords(ansMap, ['Current Location', 'Location'], 'location') || parsedData.currentLocation || '',
                 totalYearsExperience: getAnswerByKeywords(ansMap, ['Total Years of Experience', 'Total Experience (years)', 'Experience', 'Total Experience'], 'experience') || parsedData.totalYearsExperience || '',
@@ -3427,11 +3995,6 @@ app.get('/api/pending-cvs', authenticateToken, async (req, res) => {
         formTitle: 'Unknown',
         currentLocation: 'Unknown',
         noticePeriod: 'Unknown',
-        keySkills: c.skills ? c.skills.join(', ') : '',
-        ats: c.matchScore,
-        status: c.stage,
-        daysPending: daysPending,
-        isAging: daysPending > 5
       };
     });
     res.json(formatted);
@@ -3440,12 +4003,19 @@ app.get('/api/pending-cvs', authenticateToken, async (req, res) => {
   }
 });
 
-
 const server = app.listen(PORT, () => {
   console.log(`\n=================================================`);
   console.log(` TalentFlow server running at http://localhost:${PORT}`);
   console.log(` MongoDB Connected & Ready.`);
   console.log(`=================================================\n`);
+}).on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`\n[ERROR] Port ${PORT} is already in use by another process!`);
+    console.error(`Please kill the existing process or run: taskkill /f /im node.exe\n`);
+    process.exit(1);
+  } else {
+    console.error('[ERROR] Server startup error:', err);
+  }
 });
 server.timeout = 600000; // 10 minutes to support long Ollama parsing tasks
 

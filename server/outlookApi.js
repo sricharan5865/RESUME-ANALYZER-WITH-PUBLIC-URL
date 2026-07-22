@@ -297,7 +297,7 @@ export async function markOutlookEmailAsRead(accessToken, emailUser, messageId) 
 /**
  * Sends an email from the configured Outlook mailbox.
  */
-export async function sendOutlookEmail(accessToken, emailUser, { to, subject, body }) {
+export async function sendOutlookEmail(accessToken, emailUser, { to, subject, body, attachments = [] }) {
   if (!emailUser) {
     throw new Error('Sourcing email user must be specified.');
   }
@@ -305,6 +305,32 @@ export async function sendOutlookEmail(accessToken, emailUser, { to, subject, bo
   const url = `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(emailUser)}/sendMail`;
 
   const isHtml = /<[a-z][\s\S]*>/i.test(body);
+  const formattedAttachments = (attachments || []).map(att => ({
+    '@odata.type': '#microsoft.graph.fileAttachment',
+    name: att.filename,
+    contentType: att.contentType || 'application/pdf',
+    contentBytes: Buffer.isBuffer(att.content) ? att.content.toString('base64') : att.content
+  }));
+
+  const messageObj = {
+    subject: subject,
+    body: {
+      contentType: isHtml ? 'Html' : 'Text',
+      content: body
+    },
+    toRecipients: [
+      {
+        emailAddress: {
+          address: to
+        }
+      }
+    ]
+  };
+
+  if (formattedAttachments.length > 0) {
+    messageObj.attachments = formattedAttachments;
+  }
+
   try {
     const response = await graphApiRequest(url, {
       method: 'POST',
@@ -313,20 +339,7 @@ export async function sendOutlookEmail(accessToken, emailUser, { to, subject, bo
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        message: {
-          subject: subject,
-          body: {
-            contentType: isHtml ? 'Html' : 'Text',
-            content: body
-          },
-          toRecipients: [
-            {
-              emailAddress: {
-                address: to
-              }
-            }
-          ]
-        }
+        message: messageObj
       })
     }, emailUser);
 
