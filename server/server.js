@@ -546,7 +546,7 @@ app.post('/api/auth/login', async (req, res) => {
     if (!isMatch) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
-    const token = jwt.sign({ userId: user._id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
+    const token = jwt.sign({ userId: user._id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
     res.json({ token, user: { email: user.email, role: user.role } });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -3298,7 +3298,7 @@ app.get('/api/ingestion-logs', authenticateToken, requireRole(['admin', 'recruit
 
 app.get('/api/public/jobs', async (req, res) => {
   try {
-    const jobs = await Job.find({ status: 'Active' });
+    const jobs = await Job.find({ status: 'Active', publishToCareers: true });
     // Strip sensitive fields if any, map to simple format
     const mapped = jobs.map(j => ({
       id: j.id,
@@ -3316,7 +3316,7 @@ app.get('/api/public/jobs', async (req, res) => {
 
 app.get('/api/public/jobs/:id', async (req, res) => {
   try {
-    const job = await Job.findOne({ id: req.params.id, status: 'Active' });
+    const job = await Job.findOne({ id: req.params.id, status: 'Active', publishToCareers: true });
     if (!job) return res.status(404).json({ error: 'Job not found' });
     let fieldsToReturn = job.customFields;
     if (!fieldsToReturn || fieldsToReturn.length === 0) {
@@ -3377,22 +3377,46 @@ function getAnswerByKeywords(ansMap, exactKeys, fuzzyKeyword) {
 
 app.post('/api/public/apply', async (req, res) => {
   try {
-    const { jobId, cvFileRef, cvFileName, answers } = req.body;
+    const { jobId, cvFileRef, cvFileName, answers, formData } = req.body;
     
-    // Convert answers array to map
+    // Convert answers array or formData object to map & unified answers list
     const ansMap = {};
+    const finalAnswersList = [];
+
+    if (formData && typeof formData === 'object') {
+      Object.entries(formData).forEach(([label, value]) => {
+        if (value !== undefined && value !== null) {
+          ansMap[label] = value;
+          finalAnswersList.push({ label, value: String(value) });
+        }
+      });
+    }
     if (answers && Array.isArray(answers)) {
-      answers.forEach(a => ansMap[a.label] = a.value);
+      answers.forEach(a => {
+        if (a && a.label) {
+          ansMap[a.label] = a.value;
+          if (!finalAnswersList.some(item => item.label === a.label)) {
+            finalAnswersList.push({ label: a.label, value: String(a.value || '') });
+          }
+        }
+      });
     }
     
-    const name = (ansMap['First Name'] || '') + ' ' + (ansMap['Last Name'] || '');
-    const finalName = name.trim() || 'Unknown Candidate';
-    const finalEmail = ansMap['Email'] || ansMap['Email Address'] || '';
-    const finalPhone = ansMap['Phone Number'] || ansMap['Phone'] || '';
+    const firstName = getAnswerByKeywords(ansMap, ['First Name', 'Given Name'], 'first name');
+    const lastName = getAnswerByKeywords(ansMap, ['Last Name', 'Surname', 'Family Name'], 'last name');
+    const fullName = getAnswerByKeywords(ansMap, ['Full Name', 'Name', 'Candidate Name'], 'name');
     
+    let constructedName = (firstName + ' ' + lastName).trim();
+    if (!constructedName) constructedName = fullName;
+    const finalName = constructedName || 'Unknown Candidate';
+    
+    const finalEmail = getAnswerByKeywords(ansMap, ['Email', 'Email Address', 'E-mail', 'Email ID'], 'email');
+    const finalPhone = getAnswerByKeywords(ansMap, ['Phone Number', 'Phone', 'Mobile', 'Mobile Number', 'Contact Number', 'Contact'], 'phone');
+    
+    const skillsAnswer = getAnswerByKeywords(ansMap, ['Key Skills', 'Skills', 'Technical Skills'], 'skill');
     let formSkills = [];
-    if (ansMap['Key Skills']) {
-      formSkills = ansMap['Key Skills'].split(',').map(s => s.trim()).filter(Boolean);
+    if (skillsAnswer) {
+      formSkills = skillsAnswer.split(/[,;\n]+/).map(s => s.trim()).filter(Boolean);
     }
 
     // R1: Normalized label matching using shared helper
@@ -3414,6 +3438,7 @@ app.post('/api/public/apply', async (req, res) => {
       trackingId = existingCandidate.trackingId || generateTrackingId();
 
       existingCandidate.name = finalName !== 'Unknown Candidate' ? finalName : existingCandidate.name;
+      existingCandidate.email = finalEmail || existingCandidate.email;
       existingCandidate.phone = finalPhone || existingCandidate.phone;
       existingCandidate.skills = formSkills.length > 0 ? formSkills : existingCandidate.skills;
       existingCandidate.resumeUrl = cvFileRef ? `/api/uploads/${path.basename(cvFileRef)}` : existingCandidate.resumeUrl;
@@ -3424,7 +3449,7 @@ app.post('/api/public/apply', async (req, res) => {
         currentLocation: initialLocation || existingCandidate.extractedData?.currentLocation || '',
         totalYearsExperience: initialExp || existingCandidate.extractedData?.totalYearsExperience || '',
         noticePeriod: initialNotice || existingCandidate.extractedData?.noticePeriod || '',
-        formAnswers: answers || []
+        formAnswers: finalAnswersList
       };
       existingCandidate.markModified('extractedData');
       existingCandidate.history.push({ date: new Date().toISOString(), type: 'Status', text: 'Application re-submitted. Previous data updated.' });
@@ -3451,7 +3476,7 @@ app.post('/api/public/apply', async (req, res) => {
           currentLocation: initialLocation,
           totalYearsExperience: initialExp,
           noticePeriod: initialNotice,
-          formAnswers: answers || []
+          formAnswers: finalAnswersList
         },
         history: [{ date: new Date().toISOString(), type: 'Status', text: 'Application submitted. AI Analysis in progress...' }]
       });
@@ -3584,7 +3609,7 @@ app.post('/api/public/apply', async (req, res) => {
                 currentLocation: getAnswerByKeywords(ansMap, ['Current Location', 'Location'], 'location') || parsedData.currentLocation || '',
                 totalYearsExperience: getAnswerByKeywords(ansMap, ['Total Years of Experience', 'Total Experience (years)', 'Experience', 'Total Experience'], 'experience') || parsedData.totalYearsExperience || '',
                 noticePeriod: getAnswerByKeywords(ansMap, ['Notice Period'], 'notice') || parsedData.noticePeriod || '',
-                formAnswers: answers || []
+                formAnswers: finalAnswersList
               },
               checklist: checklistResult.checklist || [],
               checklistScore: checklistResult.score || 0,

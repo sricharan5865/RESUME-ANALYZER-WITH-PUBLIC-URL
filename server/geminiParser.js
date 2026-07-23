@@ -1223,6 +1223,16 @@ export async function parseResume(resumeText, pdfBase64 = null) {
   const parsedData = await callAIProvider(prompt, systemInstruction, schema, canUsePdfDirectly ? pdfBase64 : null);
   
   if (parsedData) {
+    if (resumeText) {
+      if (!parsedData.email || parsedData.email.trim() === '' || parsedData.email === 'N/A') {
+        const emailMatch = resumeText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+        if (emailMatch) parsedData.email = emailMatch[0];
+      }
+      if (!parsedData.phone || parsedData.phone.trim() === '' || parsedData.phone === 'N/A') {
+        const phoneMatch = resumeText.match(/(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/);
+        if (phoneMatch) parsedData.phone = phoneMatch[0];
+      }
+    }
     if (parsedData.interviewQuestions) {
       parsedData.interviewQuestions = sanitizeStringArray(parsedData.interviewQuestions);
     } else {

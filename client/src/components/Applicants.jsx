@@ -27,11 +27,19 @@ export default function Applicants({
   onSelectCandidate, 
   onOpenOfferModal,
   onCompare, 
+  selectedJobFilter = '',
+  setSelectedJobFilter,
   backendUrl, 
   token 
 }) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedJobId, setSelectedJobId] = useState('');
+  const [selectedJobId, setSelectedJobId] = useState(selectedJobFilter || '');
+
+  useEffect(() => {
+    if (selectedJobFilter !== undefined && selectedJobFilter !== null) {
+      setSelectedJobId(selectedJobFilter);
+    }
+  }, [selectedJobFilter]);
   const [locationFilter, setLocationFilter] = useState('');
   const [skillsFilter, setSkillsFilter] = useState('');
   const [noticeFilter, setNoticeFilter] = useState('');

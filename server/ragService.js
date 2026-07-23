@@ -582,7 +582,7 @@ export async function findSimilarCandidates(candidateId, topK = 5) {
       seniorityLevel: doc?.seniorityLevel || '',
       skills: doc?.skills || [],
       similarityScore: Math.round(tc.bestScore * 1000) / 1000,
-      matchedOn: tc.matchedSections.map(s => s.section)
+      matchedOn: Array.from(new Set(tc.matchedSections.map(s => s.section)))
     };
   }).filter(c => c.name !== 'Unknown');
 }

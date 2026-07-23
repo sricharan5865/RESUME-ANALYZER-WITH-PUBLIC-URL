@@ -1,10 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Briefcase, ArrowLeft, CheckCircle2, Upload, Paperclip, ChevronDown } from 'lucide-react';
+import { 
+  Briefcase, ArrowLeft, CheckCircle2, Upload, Paperclip, ChevronDown, 
+  MapPin, Clock, Award, ShieldCheck, HeartHandshake, Building2, Globe, 
+  Check, Send, Sparkles, AlertCircle 
+} from 'lucide-react';
 
 export default function PublicApply({ backendUrl }) {
   const { jobId: urlJobId } = useParams();
   const navigate = useNavigate();
+  const formRef = useRef(null);
   
   const [jobsList, setJobsList] = useState([]);
   const [selectedJobId, setSelectedJobId] = useState(urlJobId || '');
@@ -13,6 +18,7 @@ export default function PublicApply({ backendUrl }) {
   const [loadingJobs, setLoadingJobs] = useState(true);
   const [loadingDetails, setLoadingDetails] = useState(false);
   
+  const [showApplyForm, setShowApplyForm] = useState(false);
   const [formData, setFormData] = useState({});
   const [cvFile, setCvFile] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -28,7 +34,6 @@ export default function PublicApply({ backendUrl }) {
         setJobsList(activeJobs);
         setLoadingJobs(false);
 
-        // If URL had a jobId and it exists in list, keep it; otherwise default to first available position
         if (urlJobId && activeJobs.some(j => j.id === urlJobId)) {
           setSelectedJobId(urlJobId);
         } else if (activeJobs.length > 0) {
@@ -95,6 +100,12 @@ export default function PublicApply({ backendUrl }) {
     }
   };
 
+  const scrollToForm = () => {
+    if (formRef.current) {
+      formRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedJobId) {
@@ -105,7 +116,7 @@ export default function PublicApply({ backendUrl }) {
     setSubmitting(true);
     setErrorMsg(null);
 
-    // Custom Validation for required fields
+    // Validation
     const validationErrors = [];
     if (job && job.customFields) {
       job.customFields.forEach(field => {
@@ -148,75 +159,96 @@ export default function PublicApply({ backendUrl }) {
           method: 'POST',
           body: formDataUpload
         });
-        if (!uploadRes.ok) throw new Error('Failed to upload CV file');
+
+        if (!uploadRes.ok) {
+          throw new Error('Failed to upload CV file. Please try again.');
+        }
+
         const uploadData = await uploadRes.json();
-        cvFileRef = uploadData.fileRef;
-        cvFileName = uploadData.fileName;
+        cvFileRef = uploadData.filename || uploadData.fileRef || uploadData.path;
+        cvFileName = cvFile.name;
       }
 
-      // 2. Submit Application
-      const answers = Object.entries(formData).map(([label, value]) => ({ label, value }));
+      // 2. Submit candidate application
+      const payload = {
+        jobId: selectedJobId,
+        formData: formData,
+        cvFileRef: cvFileRef,
+        cvFileName: cvFileName
+      };
+
       const submitRes = await fetch(`${backendUrl}/api/public/apply`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jobId: selectedJobId,
-          cvFileRef,
-          cvFileName,
-          answers
-        })
+        body: JSON.stringify(payload)
       });
 
-      if (!submitRes.ok) throw new Error('Failed to submit application.');
+      if (!submitRes.ok) {
+        const errData = await submitRes.json();
+        throw new Error(errData.error || 'Failed to submit candidate application.');
+      }
+
       const submitData = await submitRes.json();
-      
       setSuccessTrackingId(submitData.trackingId);
     } catch (err) {
+      console.error('Submission error:', err);
       setErrorMsg(err.message);
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (loadingJobs) return (
-    <div className="public-portal" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ padding: '80px', fontSize: '18px', color: '#94a3b8' }}>Loading open job positions...</div>
-    </div>
-  );
+  // Extract structured responsibilities and qualifications from job description text
+  const parseResponsibilities = (text) => {
+    if (!text) return [
+      "Lead the design, architecture, and implementation of enterprise GIS solutions based on ESRI technologies.",
+      "Manage and mentor a team of GIS developers, analysts, and administrators.",
+      "Translate business requirements into innovative geospatial solutions and actionable technical plans.",
+      "Develop high-performance web GIS applications using ArcGIS API for JavaScript, ArcGIS Pro SDK, and Python.",
+      "Oversee configuration and deployment of ArcGIS Enterprise (Server, Portal, Data Store).",
+      "Integrate GIS applications with enterprise third-party systems and APIs.",
+      "Ensure adherence to quality standards, best practices, and security policies in all GIS solutions."
+    ];
+    const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 5);
+    return lines.length > 0 ? lines : [text];
+  };
 
   if (successTrackingId) {
     return (
-      <div className="public-portal">
-        <div className="portal-content" style={{ maxWidth: '600px' }}>
-          {/* iSpatialTec Branding Header */}
-          <div className="logo-container">
-            <div className="globe-wrapper">
-              <img src="https://ispatialtec.com/wp-content/themes/ist-wp/images/world-logo.gif" alt="globe" className="globe" />
-              <img src="https://ispatialtec.com/wp-content/themes/ist-wp/images/logo-tick.png" alt="tick" className="tick" />
+      <div className="public-portal" style={{ minHeight: '100vh', backgroundColor: '#070b14', color: '#f3f4f6', fontFamily: 'system-ui, sans-serif' }}>
+        
+        {/* Navigation */}
+        <nav style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.1)', backgroundColor: '#0b0f19', padding: '16px 24px' }}>
+          <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }} onClick={() => navigate('/careers')}>
+              <img src="https://ispatialtec.com/wp-content/themes/ist-wp/images/world-logo.gif" alt="globe" style={{ width: '36px' }} />
+              <img src="https://ispatialtec.com/wp-content/themes/ist-wp/images/logo-text.svg" alt="iSpatial Techno Solutions" style={{ height: '28px' }} />
             </div>
-            <img src="https://ispatialtec.com/wp-content/themes/ist-wp/images/logo-text.svg" alt="iSpatial Techno Solutions" style={{ height: '32px' }} />
           </div>
+        </nav>
 
-          <div className="portal-card" style={{ padding: '40px', textAlign: 'center' }}>
+        <div style={{ maxWidth: '640px', margin: '60px auto', padding: '0 24px' }}>
+          <div className="portal-card" style={{ padding: '40px', textAlign: 'center', backgroundColor: '#0f172a', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '16px' }}>
             <CheckCircle2 size={64} style={{ color: '#10b981', margin: '0 auto 20px' }} />
-            <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '12px' }}>Application Submitted!</h2>
-            <p style={{ marginBottom: '24px' }}>
-              Thank you for applying to the <strong>{job?.title || 'selected'}</strong> position.
+            <h2 style={{ fontSize: '26px', fontWeight: 'bold', marginBottom: '12px', color: '#ffffff' }}>Application Submitted!</h2>
+            <p style={{ marginBottom: '24px', color: '#94a3b8', fontSize: '15px' }}>
+              Thank you for applying for the <strong style={{ color: '#ffffff' }}>{job?.title || 'selected'}</strong> position at iSpatialTec.
             </p>
-            <div style={{ background: 'rgba(73, 114, 194, 0.1)', border: '1px dashed #4972c2', padding: '16px', borderRadius: '8px', marginBottom: '24px' }}>
-              <span style={{ display: 'block', fontSize: '12px', textTransform: 'uppercase', marginBottom: '4px' }}>Your Tracking ID</span>
-              <span style={{ fontSize: '20px', fontWeight: 'bold', color: '#4972c2', letterSpacing: '1px' }}>{successTrackingId}</span>
+            <div style={{ background: 'rgba(56, 189, 248, 0.1)', border: '1px dashed #38bdf8', padding: '20px', borderRadius: '12px', marginBottom: '28px' }}>
+              <span style={{ display: 'block', fontSize: '12px', textTransform: 'uppercase', marginBottom: '6px', color: '#94a3b8', letterSpacing: '1px' }}>Your Official Tracking ID</span>
+              <span style={{ fontSize: '24px', fontWeight: 'bold', color: '#38bdf8', letterSpacing: '2px' }}>{successTrackingId}</span>
             </div>
-            <p style={{ fontSize: '14px', marginBottom: '32px' }}>
-              Please save this tracking ID. You can use it to check your application status at any time.
+            <p style={{ fontSize: '14px', color: '#cbd5e1', marginBottom: '32px' }}>
+              Please save this tracking ID. You can use it to track your recruitment status anytime on our portal.
             </p>
-            <button 
-              onClick={() => navigate('/careers')}
-              className="btn-brand"
-              style={{ width: '100%' }}
-            >
-              Return to Careers
-            </button>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button onClick={() => navigate('/careers')} className="btn-brand" style={{ flex: 1, padding: '12px' }}>
+                Return to Careers
+              </button>
+              <button onClick={() => navigate(`/status/${successTrackingId}`)} className="btn-secondary-brand" style={{ flex: 1, padding: '12px' }}>
+                Track Status Now
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -224,103 +256,185 @@ export default function PublicApply({ backendUrl }) {
   }
 
   return (
-    <div className="public-portal">
-      <div className="portal-content">
-        {/* iSpatialTec Branding Header */}
-        <div className="logo-container">
-          <div className="globe-wrapper">
-            <img src="https://ispatialtec.com/wp-content/themes/ist-wp/images/world-logo.gif" alt="globe" className="globe" />
-            <img src="https://ispatialtec.com/wp-content/themes/ist-wp/images/logo-tick.png" alt="tick" className="tick" />
-          </div>
-          <img src="https://ispatialtec.com/wp-content/themes/ist-wp/images/logo-text.svg" alt="iSpatial Techno Solutions" style={{ height: '32px' }} />
-        </div>
-
-        <button 
-          onClick={() => navigate('/careers')}
-          className="btn-secondary-brand"
-          style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}
-        >
-          <ArrowLeft size={16} /> Back to Openings
-        </button>
-
-        {/* Universal Position Selection Header Card */}
-        <div className="portal-card" style={{ padding: '28px', marginBottom: '24px', border: '1px solid rgba(73, 114, 194, 0.4)', background: 'linear-gradient(135deg, #0d1527 0%, #111c35 100%)' }}>
-          <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '8px', color: '#ffffff' }}>
-            Job Application Form
-          </h2>
-          <p style={{ fontSize: '14px', color: '#94a3b8', marginBottom: '20px' }}>
-            Select the position you wish to apply for from the active job openings below:
-          </p>
-
-          <div style={{ position: 'relative' }}>
-            <label style={{ display: 'block', fontWeight: '600', fontSize: '14px', marginBottom: '8px', color: '#38bdf8' }}>
-              Select Job Position / Role <span style={{ color: '#ef4444' }}>*</span>
-            </label>
-            <select
-              value={selectedJobId}
-              onChange={handleJobSelectChange}
-              className="input-field"
-              style={{
-                width: '100%',
-                padding: '14px 16px',
-                fontSize: '15px',
-                fontWeight: '600',
-                borderRadius: '8px',
-                border: '1px solid #4972c2',
-                background: '#090e1a',
-                color: '#ffffff',
-                cursor: 'pointer'
-              }}
-            >
-              <option value="" disabled style={{ background: '#090e1a' }}>-- Select a Job Position --</option>
-              {jobsList.map(j => (
-                <option key={j.id} value={j.id} style={{ background: '#090e1a' }}>
-                  {j.title} — ({j.department || 'General Role'} | {j.location || 'Hybrid/On-site'})
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {loadingDetails ? (
-          <div className="portal-card" style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>
-            Loading position details...
-          </div>
-        ) : job ? (
-          <>
-            <div className="portal-card" style={{ padding: '32px', marginBottom: '32px' }}>
-              <h1 style={{ fontSize: '26px', fontWeight: 'bold', marginBottom: '8px' }}>{job.title}</h1>
-              <div style={{ display: 'flex', gap: '16px', fontSize: '14px', marginBottom: '24px' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <Briefcase size={16} style={{ color: '#4972c2' }} /> {job.department}
-                </span>
-                {job.location && (
-                  <span style={{ color: '#94a3b8' }}>• {job.location}</span>
-                )}
-              </div>
-              <div style={{ fontSize: '15px', lineHeight: '1.6', whiteSpace: 'pre-wrap', color: '#e0e0e0' }}>
-                {job.jobDescription}
-              </div>
+    <div className="public-portal" style={{ minHeight: '100vh', backgroundColor: '#070b14', color: '#f3f4f6', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+      
+      {/* 1. Official Navigation Header */}
+      <nav style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.1)', backgroundColor: 'rgba(11, 15, 25, 0.85)', backdropFilter: 'blur(12px)', sticky: 'top', top: 0, zIndex: 100, padding: '16px 24px' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }} onClick={() => navigate('/careers')}>
+            <div className="globe-wrapper" style={{ position: 'relative', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <img src="https://ispatialtec.com/wp-content/themes/ist-wp/images/world-logo.gif" alt="globe" style={{ width: '36px', height: '36px' }} />
+              <img src="https://ispatialtec.com/wp-content/themes/ist-wp/images/logo-tick.png" alt="tick" style={{ position: 'absolute', width: '36px', height: '36px' }} />
             </div>
+            <img src="https://ispatialtec.com/wp-content/themes/ist-wp/images/logo-text.svg" alt="iSpatial Techno Solutions" style={{ height: '28px' }} />
+          </div>
 
-            <div className="portal-card" style={{ padding: '32px' }}>
-              <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '24px' }}>Submit Your Details</h2>
+          <button 
+            onClick={() => navigate('/careers')}
+            className="btn-secondary-brand"
+            style={{ fontSize: '13px', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
+            <ArrowLeft size={15} /> All Openings
+          </button>
+
+        </div>
+      </nav>
+
+      {/* 2. Breadcrumb Banner */}
+      <div style={{ backgroundColor: '#0b1120', borderBottom: '1px solid rgba(255, 255, 255, 0.06)', padding: '14px 24px' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto', fontSize: '13px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ cursor: 'pointer' }} onClick={() => navigate('/careers')}>Careers</span>
+          <span>/</span>
+          <span style={{ color: '#38bdf8', fontWeight: '600' }}>{job ? job.title : 'GIS Technical Manager'}</span>
+        </div>
+      </div>
+
+      {loadingDetails ? (
+        <div style={{ maxWidth: '1100px', margin: '60px auto', textAlign: 'center', color: '#94a3b8' }}>
+          Loading position details...
+        </div>
+      ) : job ? (
+        <main style={{ maxWidth: '1100px', margin: '0 auto', padding: '40px 24px 60px' }}>
+          
+          {/* 3. Job Title & Quick Apply Header Card */}
+          <div className="portal-card" style={{ padding: '36px', marginBottom: '32px', backgroundColor: '#0f172a', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '20px' }}>
+              <div>
+                <span style={{ display: 'inline-block', padding: '4px 12px', borderRadius: '6px', backgroundColor: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', marginBottom: '12px', letterSpacing: '0.5px' }}>
+                  {job.department || 'Engineering & GIS'}
+                </span>
+                <h1 style={{ fontSize: '32px', fontWeight: '800', color: '#ffffff', margin: '0 0 16px 0' }}>
+                  {job.title}
+                </h1>
+                
+                <div style={{ display: 'flex', gap: '20px', fontSize: '14px', color: '#cbd5e1', flexWrap: 'wrap' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <MapPin size={16} style={{ color: '#38bdf8' }} /> {job.location || 'India (Remote / Hybrid)'}
+                  </span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Briefcase size={16} style={{ color: '#38bdf8' }} /> {job.workMode || 'Full-time'}
+                  </span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Award size={16} style={{ color: '#38bdf8' }} /> Experience: 5+ to 10+ years
+                  </span>
+                </div>
+              </div>
+
+              {showApplyForm && (
+                <button 
+                  onClick={() => setShowApplyForm(false)}
+                  className="btn-secondary-brand"
+                  style={{ padding: '10px 18px', fontSize: '13px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <ArrowLeft size={14} /> Back to Job Specifications
+                </button>
+              )}
+            </div>
+          </div>
+
+          {!showApplyForm ? (
+            /* Job Specifications View */
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px', marginBottom: '40px' }}>
               
+              {/* Qualification Requirement */}
+              <div className="portal-card" style={{ padding: '32px', backgroundColor: '#0f172a', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '16px' }}>
+                <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#ffffff', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Award size={20} style={{ color: '#38bdf8' }} /> Qualification Requirement
+                </h3>
+                <ul style={{ margin: 0, paddingLeft: '20px', color: '#94a3b8', fontSize: '15px', lineHeight: 1.8 }}>
+                  <li style={{ marginBottom: '8px' }}>Bachelor’s or Master’s degree in Geoinformatics, Computer Science, Geography, Engineering, or related discipline.</li>
+                  <li style={{ marginBottom: '8px' }}>ESRI Technical Certifications (e.g., Enterprise Administration, Web Application Developer, ArcGIS Pro) are a strong advantage.</li>
+                  <li style={{ marginBottom: '8px' }}>Proven experience working with Smart City, Urban Planning, Infrastructure, Utilities, or Oil & Gas domains.</li>
+                  <li style={{ marginBottom: '8px' }}>Strong communication skills with ability to engage with technical teams and business stakeholders effectively.</li>
+                </ul>
+              </div>
+
+              {/* Job Responsibility */}
+              <div className="portal-card" style={{ padding: '32px', backgroundColor: '#0f172a', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '16px' }}>
+                <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#ffffff', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Briefcase size={20} style={{ color: '#38bdf8' }} /> Job Responsibility
+                </h3>
+                <ul style={{ margin: 0, paddingLeft: '20px', color: '#94a3b8', fontSize: '15px', lineHeight: 1.8 }}>
+                  {parseResponsibilities(job.jobDescription).map((resp, idx) => (
+                    <li key={idx} style={{ marginBottom: '8px' }}>{resp}</li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Benefits & Perks */}
+              <div className="portal-card" style={{ padding: '32px', backgroundColor: '#0f172a', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '16px' }}>
+                <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#ffffff', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Sparkles size={20} style={{ color: '#38bdf8' }} /> Why Join iSpatialTec? (Benefits & Culture)
+                </h3>
+                <ul style={{ margin: 0, paddingLeft: '20px', color: '#94a3b8', fontSize: '15px', lineHeight: 1.8, marginBottom: '24px' }}>
+                  <li style={{ marginBottom: '8px' }}><strong>Competitive Compensation</strong>: Market-leading salary package based on experience and industry standards.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>Flexible Work Model</strong>: Support for hybrid and remote work options tailored to project requirements and operational needs.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>Medical Insurance</strong>: Comprehensive health coverage for employee, spouse, and dependent children.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>Quarterly Appraisals & Rewards</strong>: Yearly performance bonus, quarterly engagement activities, and career growth tracks.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>Learning & Development</strong>: Access to specialized ESRI certification programs and advanced Spatial AI workshops.</li>
+                </ul>
+
+                <div style={{ textAlign: 'center', paddingTop: '16px', borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                  <button 
+                    onClick={() => {
+                      setShowApplyForm(true);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="btn-brand"
+                    style={{ padding: '14px 36px', fontSize: '16px', fontWeight: '700', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    Apply for this Position <Send size={16} />
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          ) : (
+            /* Candidate Application Form View */
+            <div ref={formRef} className="portal-card" style={{ padding: '36px', backgroundColor: '#090e1a', border: '1px solid #38bdf8', borderRadius: '16px', boxShadow: '0 0 30px rgba(56, 189, 248, 0.1)', marginBottom: '40px' }}>
+              
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ background: 'rgba(56, 189, 248, 0.2)', padding: '8px', borderRadius: '8px', color: '#38bdf8' }}>
+                    <Send size={20} />
+                  </div>
+                  <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#ffffff', margin: 0 }}>
+                    Candidate Application Form
+                  </h2>
+                </div>
+
+                <button 
+                  onClick={() => setShowApplyForm(false)}
+                  className="btn-secondary-brand"
+                  style={{ fontSize: '12px', padding: '6px 14px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <ArrowLeft size={14} /> Back to Job Details
+                </button>
+              </div>
+              
+              <p style={{ fontSize: '14px', color: '#94a3b8', marginBottom: '28px' }}>
+                Submitting application for <strong style={{ color: '#ffffff' }}>{job.title}</strong>
+              </p>
+
               {errorMsg && (
-                <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '12px 16px', borderRadius: '8px', marginBottom: '24px', fontSize: '14px' }}>
-                  {errorMsg}
+                <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#ef4444', padding: '12px 16px', borderRadius: '8px', marginBottom: '24px', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <AlertCircle size={16} />
+                  <span>{errorMsg}</span>
                 </div>
               )}
 
               <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 <div className="portal-grid">
-                  {job.customFields
+                  
+                  {/* Form Fields */}
+                  {job.customFields && job.customFields
                     .filter(field => field.fieldType !== 'CvUpload')
                     .map(field => {
                       const isWide = field.fieldType === 'LongText' || field.fieldType === 'MultiSelect' || field.fieldType === 'Radio';
                       return (
                         <div key={field.id} className={isWide ? 'portal-grid-wide' : ''} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          <label style={{ display: 'block', fontWeight: '500', fontSize: '14px' }}>
+                          <label style={{ display: 'block', fontWeight: '500', fontSize: '14px', color: '#e2e8f0' }}>
                             {field.label} {field.isRequired && <span style={{ color: '#ef4444' }}>*</span>}
                           </label>
                           {field.fieldType === 'LongText' ? (
@@ -329,88 +443,25 @@ export default function PublicApply({ backendUrl }) {
                               onChange={(e) => handleChange(field.label, e.target.value)}
                               rows={4}
                               className="input-field"
-                              style={{ width: '100%', resize: 'vertical' }}
+                              style={{ width: '100%', resize: 'vertical', backgroundColor: '#040711' }}
                             />
                           ) : field.fieldType === 'Dropdown' ? (
                             <select
                               value={formData[field.label] || ''}
                               onChange={(e) => handleChange(field.label, e.target.value)}
                               className="input-field"
-                              style={{ width: '100%' }}
+                              style={{ width: '100%', backgroundColor: '#040711' }}
                             >
-                              <option value="" style={{ background: '#090e1a' }}>Select option</option>
+                              <option value="" style={{ background: '#040711' }}>Select option</option>
                               {(field.options || '')
                                 .split(',')
                                 .map(o => o.trim())
                                 .filter(Boolean)
                                 .map(o => (
-                                  <option key={o} value={o} style={{ background: '#090e1a' }}>{o}</option>
+                                  <option key={o} value={o} style={{ background: '#040711' }}>{o}</option>
                                 ))
                               }
                             </select>
-                          ) : field.fieldType === 'Checkbox' ? (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minHeight: '44px' }}>
-                              <input 
-                                type="checkbox"
-                                checked={formData[field.label] === 'Yes'}
-                                onChange={(e) => handleChange(field.label, e.target.checked ? 'Yes' : 'No')}
-                                style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                              />
-                              <span style={{ fontSize: '14px', color: '#bdbdbd' }}>Yes</span>
-                            </div>
-                          ) : field.fieldType === 'Radio' ? (
-                            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', minHeight: '44px', alignItems: 'center' }}>
-                              {(field.options || '')
-                                .split(',')
-                                .map(o => o.trim())
-                                .filter(Boolean)
-                                .map(o => (
-                                  <label key={o} style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '14px', color: '#bdbdbd' }}>
-                                    <input 
-                                      type="radio"
-                                      name={field.id}
-                                      value={o}
-                                      checked={formData[field.label] === o}
-                                      onChange={() => handleChange(field.label, o)}
-                                      style={{ width: '16px', height: '16px', cursor: 'pointer' }}
-                                    />
-                                    {o}
-                                  </label>
-                                ))
-                              }
-                            </div>
-                          ) : field.fieldType === 'MultiSelect' ? (
-                            <div style={{ display: 'flex', gap: '12px 18px', flexWrap: 'wrap', padding: '6px 0' }}>
-                              {(field.options || '')
-                                .split(',')
-                                .map(o => o.trim())
-                                .filter(Boolean)
-                                .map(o => {
-                                  const currentVals = (formData[field.label] || '').split(',').map(v => v.trim()).filter(Boolean);
-                                  const isChecked = currentVals.includes(o);
-                                  return (
-                                    <label key={o} style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '14px', color: '#bdbdbd' }}>
-                                      <input 
-                                        type="checkbox"
-                                        value={o}
-                                        checked={isChecked}
-                                        onChange={(e) => {
-                                          let newVals;
-                                          if (e.target.checked) {
-                                            newVals = [...currentVals, o];
-                                          } else {
-                                            newVals = currentVals.filter(v => v !== o);
-                                          }
-                                          handleChange(field.label, newVals.join(', '));
-                                        }}
-                                        style={{ width: '16px', height: '16px', cursor: 'pointer' }}
-                                      />
-                                      {o}
-                                    </label>
-                                  );
-                                })
-                              }
-                            </div>
                           ) : (
                             <input 
                               type={
@@ -429,7 +480,7 @@ export default function PublicApply({ backendUrl }) {
                                 handleChange(field.label, val);
                               }}
                               className="input-field"
-                              style={{ width: '100%' }}
+                              style={{ width: '100%', backgroundColor: '#040711' }}
                             />
                           )}
                         </div>
@@ -437,46 +488,95 @@ export default function PublicApply({ backendUrl }) {
                     })}
                 </div>
 
-                {job.customFields
+                {/* CV Upload */}
+                {job.customFields && job.customFields
                   .filter(field => field.fieldType === 'CvUpload')
                   .map(field => (
                     <div key={field.id} style={{ marginTop: '8px' }}>
-                      <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', fontSize: '14px' }}>
+                      <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', fontSize: '14px', color: '#e2e8f0' }}>
                         {field.label} {field.isRequired && <span style={{ color: '#ef4444' }}>*</span>}
                       </label>
-                      <label className="upload-dropzone">
-                        <Upload size={24} style={{ color: '#94a3b8', marginBottom: '8px' }} />
-                        <span style={{ fontSize: '14px' }}>Click to upload or drag and drop</span>
-                        <span style={{ fontSize: '12px', marginTop: '4px' }}>PDF, DOCX up to 10MB</span>
-                        <input type="file" style={{ display: 'none' }} onChange={handleFileChange} accept=".pdf,.doc,.docx" />
-                        {cvFile && (
-                          <div style={{ marginTop: '16px', padding: '8px 12px', background: 'rgba(73, 114, 194, 0.15)', color: '#4972c2', borderRadius: '4px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', border: '1px solid rgba(73, 114, 194, 0.3)' }}>
-                            <Paperclip size={14} /> {cvFile.name}
-                          </div>
-                        )}
+                      <label className="upload-dropzone" style={{ backgroundColor: '#040711', border: '1px dashed #334155' }}>
+                        <Upload size={24} style={{ color: '#38bdf8', marginBottom: '8px' }} />
+                        <span style={{ fontSize: '14px', color: '#e2e8f0' }}>Click to upload or drag and drop your CV</span>
+                        <span style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>PDF, DOCX up to 10MB</span>
+                        <input 
+                          type="file" 
+                          accept=".pdf,.docx,.doc" 
+                          onChange={handleFileChange}
+                          style={{ display: 'none' }}
+                        />
                       </label>
+                      {cvFile && (
+                        <div style={{ marginTop: '8px', fontSize: '13px', color: '#10b981', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Paperclip size={14} /> Attached: <strong>{cvFile.name}</strong>
+                        </div>
+                      )}
                     </div>
                   ))}
 
-                <div style={{ marginTop: '8px' }}>
+                <div style={{ marginTop: '12px' }}>
                   <button 
                     type="submit" 
                     disabled={submitting}
                     className="btn-brand"
-                    style={{ width: '100%', padding: '14px', fontSize: '16px' }}
+                    style={{ width: '100%', padding: '14px', fontSize: '16px', fontWeight: '700', borderRadius: '8px' }}
                   >
                     {submitting ? 'Submitting Application...' : `Submit Application for ${job.title}`}
                   </button>
                 </div>
               </form>
             </div>
-          </>
-        ) : (
-          <div className="portal-card" style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>
-            No open job position selected or available.
+          )}
+
+        </main>
+      ) : (
+        <div style={{ maxWidth: '1100px', margin: '60px auto', textAlign: 'center', color: '#94a3b8' }}>
+          No job position selected or available.
+        </div>
+      )}
+
+      {/* 6. Global Offices Footer */}
+      <footer style={{ backgroundColor: '#030712', borderTop: '1px solid rgba(255, 255, 255, 0.08)', padding: '60px 24px 30px' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+          <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#ffffff', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Building2 size={20} style={{ color: '#38bdf8' }} /> Global Presence & Offices
+          </h3>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '24px', marginBottom: '40px' }}>
+            <div>
+              <h4 style={{ color: '#38bdf8', fontSize: '14px', fontWeight: '700', marginBottom: '8px' }}>USA</h4>
+              <p style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.6, margin: 0 }}>16225 Park Ten Place, Suite 500, Houston, Texas 77084</p>
+              <span style={{ fontSize: '12px', color: '#cbd5e1', display: 'block', marginTop: '4px' }}>+1 (858) 522 9799</span>
+            </div>
+            <div>
+              <h4 style={{ color: '#38bdf8', fontSize: '14px', fontWeight: '700', marginBottom: '8px' }}>UAE</h4>
+              <p style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.6, margin: 0 }}>1002, C54 Building, Al Mamoura, Abu Dhabi, UAE</p>
+              <span style={{ fontSize: '12px', color: '#cbd5e1', display: 'block', marginTop: '4px' }}>+971 2635 5503</span>
+            </div>
+            <div>
+              <h4 style={{ color: '#38bdf8', fontSize: '14px', fontWeight: '700', marginBottom: '8px' }}>NETHERLANDS</h4>
+              <p style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.6, margin: 0 }}>Akkrumerraklaan 170, 3544TV Utrecht</p>
+              <span style={{ fontSize: '12px', color: '#cbd5e1', display: 'block', marginTop: '4px' }}>+31 640 211 785</span>
+            </div>
+            <div>
+              <h4 style={{ color: '#38bdf8', fontSize: '14px', fontWeight: '700', marginBottom: '8px' }}>BAHRAIN</h4>
+              <p style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.6, margin: 0 }}>Office 917, Bldg 33, Road 1802, Alhoora</p>
+              <span style={{ fontSize: '12px', color: '#cbd5e1', display: 'block', marginTop: '4px' }}>connectus@ispatialtec.com</span>
+            </div>
+            <div>
+              <h4 style={{ color: '#38bdf8', fontSize: '14px', fontWeight: '700', marginBottom: '8px' }}>INDIA</h4>
+              <p style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.6, margin: 0 }}>3rd Floor 3B, Trendz Metro, Madhapur, Hyderabad 500081</p>
+              <span style={{ fontSize: '12px', color: '#cbd5e1', display: 'block', marginTop: '4px' }}>+91 40 2354 4535</span>
+            </div>
           </div>
-        )}
-      </div>
+
+          <div style={{ paddingTop: '24px', borderTop: '1px solid rgba(255, 255, 255, 0.06)', textAlign: 'center', fontSize: '13px', color: '#64748b' }}>
+            © 2025 iSpatial Techno Solutions, All Rights Reserved.
+          </div>
+        </div>
+      </footer>
+
     </div>
   );
 }

@@ -172,21 +172,48 @@ export default function CandidateDetails({ candidate: propCandidate, job, jobs =
       // 1. Gather any existing answers from candidate.extractedData.formAnswers
       const existingAnswers = candidate.extractedData?.formAnswers || [];
       existingAnswers.forEach(ans => {
-        initialAnswers[ans.label] = ans.value;
+        if (ans && ans.label) {
+          initialAnswers[ans.label] = ans.value;
+        }
       });
 
-      // 2. Fallbacks from top level fields
+      // Helper for fuzzy finding in existingAnswers array
+      const findFormAnswer = (keywords) => {
+        const found = existingAnswers.find(a => a?.label && keywords.some(kw => a.label.toLowerCase().includes(kw)));
+        return found ? found.value : null;
+      };
+
+      // 2. Fallbacks from top level extracted data
       if (candidate.extractedData?.currentLocation) {
-        initialAnswers['Location'] = candidate.extractedData.currentLocation;
-        initialAnswers['Current Location'] = candidate.extractedData.currentLocation;
+        initialAnswers['Location'] = initialAnswers['Location'] || candidate.extractedData.currentLocation;
+        initialAnswers['Current Location'] = initialAnswers['Current Location'] || candidate.extractedData.currentLocation;
       }
       if (candidate.extractedData?.totalYearsExperience) {
-        initialAnswers['Experience'] = candidate.extractedData.totalYearsExperience;
-        initialAnswers['Total Experience (years)'] = candidate.extractedData.totalYearsExperience;
-        initialAnswers['Total Years of Experience'] = candidate.extractedData.totalYearsExperience;
+        initialAnswers['Experience'] = initialAnswers['Experience'] || candidate.extractedData.totalYearsExperience;
+        initialAnswers['Total Experience (years)'] = initialAnswers['Total Experience (years)'] || candidate.extractedData.totalYearsExperience;
+        initialAnswers['Total Years of Experience'] = initialAnswers['Total Years of Experience'] || candidate.extractedData.totalYearsExperience;
       }
       if (candidate.extractedData?.noticePeriod) {
-        initialAnswers['Notice Period'] = candidate.extractedData.noticePeriod;
+        initialAnswers['Notice Period'] = initialAnswers['Notice Period'] || candidate.extractedData.noticePeriod;
+      }
+
+      // Name breakdown helper
+      const fullCandidateName = (candidate.name && candidate.name !== 'Unknown Candidate' && candidate.name !== 'Unknown') ? candidate.name.trim() : '';
+      const nameParts = fullCandidateName ? fullCandidateName.split(/\s+/) : [];
+      const firstNameVal = nameParts[0] || '';
+      const lastNameVal = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+
+      // Education summary helper
+      let educationVal = '';
+      if (candidate.education && Array.isArray(candidate.education) && candidate.education.length > 0) {
+        const primaryEdu = candidate.education[0];
+        if (typeof primaryEdu === 'string') {
+          educationVal = primaryEdu;
+        } else if (primaryEdu) {
+          const deg = primaryEdu.degree || '';
+          const inst = primaryEdu.institution || primaryEdu.school || '';
+          educationVal = [deg, inst].filter(Boolean).join(' - ');
+        }
       }
 
       // 3. Dynamic match of job custom fields against parsed candidate properties
@@ -194,20 +221,31 @@ export default function CandidateDetails({ candidate: propCandidate, job, jobs =
         const label = f.label;
         if (initialAnswers[label] === undefined || initialAnswers[label] === null || initialAnswers[label] === '') {
           const lowerLabel = label.toLowerCase();
-          if (lowerLabel.includes('phone')) {
-            initialAnswers[label] = candidate.phone || '';
+          
+          if (lowerLabel.includes('first name')) {
+            initialAnswers[label] = findFormAnswer(['first name']) || firstNameVal;
+          } else if (lowerLabel.includes('last name')) {
+            initialAnswers[label] = findFormAnswer(['last name']) || lastNameVal;
+          } else if (lowerLabel === 'name' || lowerLabel.includes('full name') || lowerLabel.includes('candidate name')) {
+            initialAnswers[label] = findFormAnswer(['full name', 'candidate name', 'name']) || fullCandidateName;
+          } else if (lowerLabel.includes('email')) {
+            initialAnswers[label] = findFormAnswer(['email']) || candidate.email || '';
+          } else if (lowerLabel.includes('phone') || lowerLabel.includes('mobile') || lowerLabel.includes('contact')) {
+            initialAnswers[label] = findFormAnswer(['phone', 'mobile', 'contact']) || candidate.phone || '';
           } else if (lowerLabel.includes('linkedin')) {
-            initialAnswers[label] = candidate.linkedinUrl || '';
+            initialAnswers[label] = findFormAnswer(['linkedin']) || candidate.linkedinUrl || '';
           } else if (lowerLabel.includes('skills')) {
-            initialAnswers[label] = (candidate.skills || []).join(', ');
+            initialAnswers[label] = findFormAnswer(['skill']) || (candidate.skills || []).join(', ');
           } else if (lowerLabel.includes('location')) {
-            initialAnswers[label] = candidate.extractedData?.currentLocation || '';
+            initialAnswers[label] = findFormAnswer(['location']) || candidate.extractedData?.currentLocation || candidate.location || '';
           } else if (lowerLabel.includes('experience')) {
-            initialAnswers[label] = candidate.extractedData?.totalYearsExperience || '';
-          } else if (lowerLabel.includes('notice')) {
-            initialAnswers[label] = candidate.extractedData?.noticePeriod || '';
+            initialAnswers[label] = findFormAnswer(['experience']) || candidate.extractedData?.totalYearsExperience || '';
+          } else if (lowerLabel.includes('notice') || lowerLabel.includes('joining') || lowerLabel.includes('available')) {
+            initialAnswers[label] = findFormAnswer(['notice', 'joining', 'available']) || candidate.extractedData?.noticePeriod || '';
+          } else if (lowerLabel.includes('education') || lowerLabel.includes('degree') || lowerLabel.includes('qualification')) {
+            initialAnswers[label] = findFormAnswer(['education', 'qualification', 'degree']) || educationVal;
           } else {
-            initialAnswers[label] = '';
+            initialAnswers[label] = findFormAnswer([lowerLabel]) || '';
           }
         }
       });
@@ -822,10 +860,10 @@ export default function CandidateDetails({ candidate: propCandidate, job, jobs =
               </h2>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '13px', color: 'var(--text-secondary)' }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Mail size={12} /> {candidate.email || 'No email specified'}
+                  <Mail size={12} /> {candidate.email || editedAnswers['Email'] || editedAnswers['Email Address'] || editedAnswers['E-mail'] || 'No email specified'}
                 </span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Phone size={12} /> {candidate.phone || 'No phone specified'}
+                  <Phone size={12} /> {candidate.phone || editedAnswers['Phone Number'] || editedAnswers['Phone'] || editedAnswers['Contact Number'] || editedAnswers['Contact'] || editedAnswers['Mobile'] || 'No phone specified'}
                 </span>
                 {candidate.linkedinUrl && (
                   <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1309,24 +1347,29 @@ export default function CandidateDetails({ candidate: propCandidate, job, jobs =
               )}
 
               {similarCandidates && similarCandidates.length > 0 && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingTop: '16px', borderTop: '1px solid var(--glass-border)', marginTop: '16px' }}>
-                  <h4 style={{ fontSize: '12px', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    <Briefcase size={14} /> Similar Candidates (RAG Match)
-                  </h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', paddingTop: '16px', borderTop: '1px solid var(--glass-border)', marginTop: '16px' }}>
+                  <div>
+                    <h4 style={{ fontSize: '12px', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>
+                      <Briefcase size={14} /> Other Similar Candidates in Database (RAG Search)
+                    </h4>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginTop: '2px' }}>
+                      Distinct candidates saved in your talent pool with similar skills & profile:
+                    </span>
+                  </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {similarCandidates.map((sim, idx) => (
-                      <div key={idx} style={{ background: 'var(--glass-bg)', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--glass-border)' }}>
+                      <div key={idx} style={{ background: 'var(--glass-bg)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--glass-border)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                           <div style={{ display: 'flex', flexDirection: 'column' }}>
                             <span style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-primary)' }}>{sim.name}</span>
-                            <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{sim.seniorityLevel}</span>
+                            <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{sim.seniorityLevel ? `${sim.seniorityLevel} Level` : 'Database Candidate'}</span>
                           </div>
-                          <span style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--accent-primary)', background: 'var(--accent-primary-alpha)', padding: '2px 6px', borderRadius: '4px' }}>
-                            {Math.round(sim.similarityScore * 100)}% Match
+                          <span style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--accent-primary)', background: 'rgba(59, 130, 246, 0.12)', border: '1px solid rgba(59, 130, 246, 0.3)', padding: '2px 8px', borderRadius: '4px' }}>
+                            {Math.round(sim.similarityScore * 100)}% Profile Similarity
                           </span>
                         </div>
                         <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '6px' }}>
-                          Matched on: {sim.matchedOn?.join(', ')}
+                          Matched attributes: {Array.from(new Set(sim.matchedOn || [])).join(', ')}
                         </div>
                       </div>
                     ))}

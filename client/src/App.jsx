@@ -57,6 +57,7 @@ export default function App() {
   const [emailConnected, setEmailConnected] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [compareIds, setCompareIds] = useState([]);
+  const [selectedJobIdFilter, setSelectedJobIdFilter] = useState('');
   
   // Dialog/modal overlay state
   const [selectedCandidate, setSelectedCandidate] = useState(null);
@@ -111,7 +112,7 @@ export default function App() {
     const originalFetch = window.fetch;
     window.fetch = async (...args) => {
       const response = await originalFetch(...args);
-      if (response.status === 401) {
+      if (response.status === 401 && !response.url.includes('/api/auth/login')) {
         try {
           const clone = response.clone();
           const body = await clone.json().catch(() => ({}));
@@ -391,13 +392,18 @@ export default function App() {
   }
 
   if (!token) {
-    return <Login backendUrl={BACKEND_URL} onLoginSuccess={(newToken, loggedInUser) => {
-      localStorage.setItem('token', newToken);
-      localStorage.setItem('user', JSON.stringify(loggedInUser));
-      setToken(newToken);
-      setUser(loggedInUser);
-      showToast(`Welcome back, ${loggedInUser.email}!`, 'success');
-    }} />;
+    return <Login 
+      backendUrl={BACKEND_URL} 
+      sessionExpired={showSessionExpiredModal}
+      onLoginSuccess={(newToken, loggedInUser) => {
+        localStorage.setItem('token', newToken);
+        localStorage.setItem('user', JSON.stringify(loggedInUser));
+        setShowSessionExpiredModal(false);
+        setToken(newToken);
+        setUser(loggedInUser);
+        showToast(`Welcome back, ${loggedInUser.email}!`, 'success');
+      }} 
+    />;
   }
 
   const mappedRole = user?.role === 'admin' ? 'Admin' : user?.role === 'recruiter' ? 'Recruiter' : 'Hiring Manager';
@@ -466,7 +472,7 @@ export default function App() {
             <LayoutDashboard size={16} /> Dashboard
           </button>
 
-          {/* 2. Job Positions */}
+          {/* 2. Job Openings */}
           <button 
             className="btn" 
             style={{ 
@@ -480,7 +486,7 @@ export default function App() {
             }}
             onClick={() => setActiveTab('jobs')}
           >
-            <Briefcase size={16} /> Job Positions
+            <Briefcase size={16} /> Job Openings
           </button>
 
           {/* 3. Applicants */}
@@ -915,9 +921,16 @@ export default function App() {
             <JobPositions 
               token={token} 
               jobs={jobs} 
+              candidates={candidates}
               onJobCreated={(newJob) => setJobs(prev => [...prev, newJob])}
               onJobDeleted={(id) => setJobs(prev => prev.filter(j => j.id !== id))}
               onJobUpdated={(updatedJob) => setJobs(prev => prev.map(j => j.id === updatedJob.id ? updatedJob : j))}
+              onSelectCandidate={setSelectedCandidate}
+              onStageChanged={handleStageChanged}
+              onViewApplicants={(jobId) => {
+                setSelectedJobIdFilter(jobId);
+                setActiveTab('applicants');
+              }}
               backendUrl={BACKEND_URL}
               currentRole={mappedRole}
             />
@@ -957,6 +970,8 @@ export default function App() {
               onSelectCandidate={setSelectedCandidate}
               onOpenOfferModal={(c) => setOfferCandidate(c)}
               onCompare={(ids) => { setCompareIds(ids); setActiveTab('compare'); }}
+              selectedJobFilter={selectedJobIdFilter}
+              setSelectedJobFilter={setSelectedJobIdFilter}
               backendUrl={BACKEND_URL}
               token={token}
             />

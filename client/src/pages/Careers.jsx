@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, MapPin, Briefcase } from 'lucide-react';
+import { Search, MapPin, Briefcase, Mail, ArrowRight, ExternalLink, Globe, ShieldCheck, HeartHandshake, Building2 } from 'lucide-react';
 
 export default function Careers({ backendUrl }) {
   const [jobs, setJobs] = useState([]);
@@ -12,93 +12,224 @@ export default function Careers({ backendUrl }) {
     fetch(`${backendUrl}/api/public/jobs`)
       .then(r => r.json())
       .then(data => {
-        setJobs(data);
+        setJobs(Array.isArray(data) ? data : []);
         setLoading(false);
       })
       .catch(err => {
-        console.error('Failed to fetch jobs', err);
+        console.error('Failed to fetch public jobs:', err);
         setLoading(false);
       });
   }, [backendUrl]);
 
   const filtered = jobs.filter(j => 
-    j.title.toLowerCase().includes(search.toLowerCase()) || 
-    j.department.toLowerCase().includes(search.toLowerCase())
+    (j.title || '').toLowerCase().includes(search.toLowerCase()) || 
+    (j.department || '').toLowerCase().includes(search.toLowerCase()) ||
+    (j.location || '').toLowerCase().includes(search.toLowerCase())
   );
 
   return (
-    <div className="public-portal">
-      <div className="portal-content">
-        {/* iSpatialTec Branding Header */}
-        <div className="logo-container">
-          <div className="globe-wrapper">
-            <img src="https://ispatialtec.com/wp-content/themes/ist-wp/images/world-logo.gif" alt="globe" className="globe" />
-            <img src="https://ispatialtec.com/wp-content/themes/ist-wp/images/logo-tick.png" alt="tick" className="tick" />
+    <div className="public-portal" style={{ minHeight: '100vh', backgroundColor: '#070b14', color: '#f3f4f6', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+      
+      {/* 1. Official Corporate Navigation Header */}
+      <nav style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.1)', backgroundColor: 'rgba(11, 15, 25, 0.85)', backdropFilter: 'blur(12px)', position: 'sticky', top: 0, zIndex: 100, padding: '16px 24px' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+          
+          {/* Brand Logo */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }} onClick={() => navigate('/careers')}>
+            <div className="globe-wrapper" style={{ position: 'relative', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <img src="https://ispatialtec.com/wp-content/themes/ist-wp/images/world-logo.gif" alt="globe" style={{ width: '36px', height: '36px' }} />
+              <img src="https://ispatialtec.com/wp-content/themes/ist-wp/images/logo-tick.png" alt="tick" style={{ position: 'absolute', width: '36px', height: '36px' }} />
+            </div>
+            <img src="https://ispatialtec.com/wp-content/themes/ist-wp/images/logo-text.svg" alt="iSpatial Techno Solutions" style={{ height: '28px' }} />
           </div>
-          <img src="https://ispatialtec.com/wp-content/themes/ist-wp/images/logo-text.svg" alt="iSpatial Techno Solutions" style={{ height: '32px' }} />
+
+          {/* Top Quick Actions */}
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <button 
+              onClick={() => navigate('/apply')}
+              className="btn-brand"
+              style={{ fontSize: '13px', padding: '10px 18px', borderRadius: '8px', fontWeight: '600' }}
+            >
+              Job Application Form
+            </button>
+            <button 
+              onClick={() => navigate('/status')}
+              className="btn-secondary-brand"
+              style={{ fontSize: '13px', padding: '10px 18px', borderRadius: '8px' }}
+            >
+              Check Status
+            </button>
+          </div>
+
         </div>
+      </nav>
 
-        <header style={{ textAlign: 'center', marginBottom: '40px' }}>
-          <h1 style={{ fontSize: '36px', fontWeight: '800', marginBottom: '16px' }}>Join Our Team</h1>
-          <p style={{ fontSize: '18px' }}>We're looking for passionate people to join us on our mission.</p>
-        </header>
+      {/* 2. Hero Section */}
+      <section style={{ padding: '60px 24px', background: 'linear-gradient(180deg, rgba(99, 102, 241, 0.12) 0%, rgba(7, 11, 20, 0) 100%)', textAlign: 'center' }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 16px', borderRadius: '20px', backgroundColor: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.3)', color: '#38bdf8', fontSize: '13px', fontWeight: '600', marginBottom: '20px' }}>
+            <Globe size={14} /> Global Enterprise GIS & AI Technology Leader
+          </div>
+          
+          <h1 style={{ fontSize: '38px', fontWeight: '800', lineHeight: 1.25, marginBottom: '20px', color: '#ffffff' }}>
+            Discover a world of innovation, learning, growth and equal opportunities.
+          </h1>
+          
+          <p style={{ fontSize: '16px', lineHeight: 1.7, color: '#94a3b8', marginBottom: '28px' }}>
+            We are committed to attract, retain and motivate a diverse, bright, creative and talented workforce eager to learn and grow with us. We provide our team with opportunities to work on cutting-edge GIS, Location Intelligence, and Spatial AI technologies in an entrepreneurial and client-focused environment.
+          </p>
 
-        <div style={{ display: 'flex', gap: '12px', marginBottom: '32px' }}>
-          <div style={{ flex: 1, position: 'relative' }}>
-            <Search size={20} style={{ position: 'absolute', left: '12px', top: '12px', color: '#94a3b8' }} />
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', padding: '12px 20px', borderRadius: '12px', backgroundColor: 'rgba(30, 41, 59, 0.8)', border: '1px solid rgba(255, 255, 255, 0.1)', fontSize: '14px', color: '#e2e8f0' }}>
+            <Mail size={16} style={{ color: '#38bdf8' }} />
+            <span>Send your CV directly to <strong style={{ color: '#ffffff' }}>careers@ispatialtec.com</strong></span>
+          </div>
+        </div>
+      </section>
+
+      {/* 3. Open Positions Section */}
+      <section style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 24px 60px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+          <div>
+            <h2 style={{ fontSize: '24px', fontWeight: '700', color: '#ffffff', margin: 0 }}>Active Job Openings</h2>
+            <p style={{ fontSize: '14px', color: '#94a3b8', margin: '4px 0 0 0' }}>Explore current career opportunities at iSpatialTec</p>
+          </div>
+
+          {/* Search Box */}
+          <div style={{ position: 'relative', width: '320px' }}>
+            <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
             <input 
               type="text" 
-              placeholder="Search roles or departments..." 
+              placeholder="Search by title, dept, location..." 
               value={search}
               onChange={e => setSearch(e.target.value)}
               className="input-field"
-              style={{ width: '100%', paddingLeft: '44px' }}
+              style={{ width: '100%', paddingLeft: '40px', paddingRight: '16px', height: '42px', fontSize: '14px', borderRadius: '8px', backgroundColor: '#0f172a', border: '1px solid #334155', color: '#ffffff' }}
             />
           </div>
-          <button 
-            onClick={() => navigate('/apply')}
-            className="btn-brand"
-          >
-            Job Application Form
-          </button>
-          <button 
-            onClick={() => navigate('/status')}
-            className="btn-secondary-brand"
-          >
-            Check Application Status
-          </button>
         </div>
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: '#bdbdbd' }}>Loading open positions...</div>
+          <div className="portal-card" style={{ textAlign: 'center', padding: '50px', color: '#94a3b8' }}>
+            Loading active positions...
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="portal-card" style={{ textAlign: 'center', padding: '50px', color: '#94a3b8' }}>
+            No open positions found matching your search.
+          </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {filtered.length === 0 ? (
-              <div className="portal-card" style={{ textAlign: 'center', padding: '40px' }}>
-                No positions found matching your search.
-              </div>
-            ) : (
-              filtered.map(job => (
-                <div key={job.id} className="portal-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '24px' }}>
-                  <div>
-                    <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px' }}>{job.title}</h3>
-                    <div style={{ display: 'flex', gap: '16px', fontSize: '14px' }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Briefcase size={14} style={{ color: '#4972c2' }} /> {job.department}</span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><MapPin size={14} style={{ color: '#4972c2' }} /> {job.location}</span>
-                    </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '20px' }}>
+            {filtered.map(job => (
+              <div 
+                key={job.id} 
+                className="portal-card" 
+                style={{ 
+                  padding: '24px', 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  justify: 'space-between', 
+                  border: '1px solid rgba(255, 255, 255, 0.08)', 
+                  backgroundColor: '#0f172a',
+                  borderRadius: '12px',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <div>
+                  <div style={{ display: 'inline-block', padding: '4px 10px', borderRadius: '6px', backgroundColor: 'rgba(99, 102, 241, 0.15)', color: '#818cf8', fontSize: '12px', fontWeight: '600', marginBottom: '12px' }}>
+                    {job.department || 'Engineering'}
                   </div>
+                  <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#ffffff', marginBottom: '12px' }}>{job.title}</h3>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px', color: '#94a3b8', marginBottom: '20px' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <MapPin size={14} style={{ color: '#38bdf8' }} /> {job.location || 'Hyderabad, India / Remote'}
+                    </span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Briefcase size={14} style={{ color: '#38bdf8' }} /> {job.workMode || 'Full-time / On-site'}
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ paddingTop: '16px', borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}>
                   <button 
                     onClick={() => navigate(`/apply/${job.id}`)}
                     className="btn-brand"
+                    style={{ width: '100%', padding: '10px 16px', fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                   >
-                    Apply
+                    Know More / Apply <ArrowRight size={14} />
                   </button>
                 </div>
-              ))
-            )}
+              </div>
+            ))}
           </div>
         )}
-      </div>
+      </section>
+
+      {/* 4. Global Offices Footer */}
+
+      {/* 5. Global Offices Footer */}
+      <footer style={{ backgroundColor: '#030712', borderTop: '1px solid rgba(255, 255, 255, 0.08)', padding: '60px 24px 30px' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+          
+          <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#ffffff', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Building2 size={20} style={{ color: '#38bdf8' }} /> Global Presence & Offices
+          </h3>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '24px', marginBottom: '40px' }}>
+            
+            {/* USA */}
+            <div>
+              <h4 style={{ color: '#38bdf8', fontSize: '14px', fontWeight: '700', marginBottom: '8px' }}>USA</h4>
+              <p style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.6, margin: 0 }}>
+                16225 Park Ten Place, Suite 500, Houston, Texas 77084
+              </p>
+              <span style={{ fontSize: '12px', color: '#cbd5e1', display: 'block', marginTop: '4px' }}>+1 (858) 522 9799</span>
+            </div>
+
+            {/* UAE */}
+            <div>
+              <h4 style={{ color: '#38bdf8', fontSize: '14px', fontWeight: '700', marginBottom: '8px' }}>UAE</h4>
+              <p style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.6, margin: 0 }}>
+                1002, C54 Building, Al Mamoura, Abu Dhabi, UAE
+              </p>
+              <span style={{ fontSize: '12px', color: '#cbd5e1', display: 'block', marginTop: '4px' }}>+971 2635 5503</span>
+            </div>
+
+            {/* Netherlands */}
+            <div>
+              <h4 style={{ color: '#38bdf8', fontSize: '14px', fontWeight: '700', marginBottom: '8px' }}>NETHERLANDS</h4>
+              <p style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.6, margin: 0 }}>
+                Akkrumerraklaan 170, 3544TV Utrecht
+              </p>
+              <span style={{ fontSize: '12px', color: '#cbd5e1', display: 'block', marginTop: '4px' }}>+31 640 211 785</span>
+            </div>
+
+            {/* Bahrain */}
+            <div>
+              <h4 style={{ color: '#38bdf8', fontSize: '14px', fontWeight: '700', marginBottom: '8px' }}>BAHRAIN</h4>
+              <p style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.6, margin: 0 }}>
+                Office 917, Bldg 33, Road 1802, Alhoora
+              </p>
+              <span style={{ fontSize: '12px', color: '#cbd5e1', display: 'block', marginTop: '4px' }}>connectus@ispatialtec.com</span>
+            </div>
+
+            {/* India */}
+            <div>
+              <h4 style={{ color: '#38bdf8', fontSize: '14px', fontWeight: '700', marginBottom: '8px' }}>INDIA</h4>
+              <p style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.6, margin: 0 }}>
+                3rd Floor 3B, Trendz Metro, Madhapur, Hyderabad 500081
+              </p>
+              <span style={{ fontSize: '12px', color: '#cbd5e1', display: 'block', marginTop: '4px' }}>+91 40 2354 4535</span>
+            </div>
+
+          </div>
+
+          <div style={{ paddingTop: '24px', borderTop: '1px solid rgba(255, 255, 255, 0.06)', textAlign: 'center', fontSize: '13px', color: '#64748b' }}>
+            © 2025 iSpatial Techno Solutions, All Rights Reserved.
+          </div>
+
+        </div>
+      </footer>
+
     </div>
   );
 }

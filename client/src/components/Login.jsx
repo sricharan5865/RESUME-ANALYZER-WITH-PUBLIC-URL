@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Lock, Mail, Shield, User, Users } from 'lucide-react';
+import { Lock, Mail, Shield, User, Users, AlertCircle } from 'lucide-react';
 
-export default function Login({ backendUrl, onLoginSuccess }) {
+export default function Login({ backendUrl, onLoginSuccess, sessionExpired }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -92,6 +92,24 @@ export default function Login({ backendUrl, onLoginSuccess }) {
           <h2 style={{ fontSize: '1.75rem', fontWeight: 'bold', margin: '0 0 0.5rem 0' }}>TalentFlow Portal</h2>
           <p style={{ color: '#9ca3af', fontSize: '0.9rem', margin: 0 }}>Sign in to manage candidates and access Q&A analytics</p>
         </div>
+
+        {sessionExpired && !error && (
+          <div style={{
+            padding: '0.75rem 1rem',
+            backgroundColor: 'rgba(245, 158, 11, 0.15)',
+            border: '1px solid rgba(245, 158, 11, 0.3)',
+            borderRadius: '8px',
+            color: '#f59e0b',
+            fontSize: '0.85rem',
+            marginBottom: '1.5rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            <AlertCircle size={16} />
+            <span>Your session has expired. Please log in again to continue.</span>
+          </div>
+        )}
 
         {error && (
           <div style={{
