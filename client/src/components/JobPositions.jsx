@@ -128,6 +128,7 @@ export default function JobPositions({
   const [jobPublicDesc, setJobPublicDesc] = useState('');
   const [generatingJD, setGeneratingJD] = useState(false);
   const [jdKeywords, setJdKeywords] = useState('');
+  const [jobExp, setJobExp] = useState('3 - 5 Years');
   const [editingJobId, setEditingJobId] = useState(null);
   const [editForm, setEditForm] = useState({ title: '', department: '', location: '', description: '', requirements: '', publicDescription: '' });
   const [publishingId, setPublishingId] = useState(null);
@@ -169,6 +170,7 @@ export default function JobPositions({
           description: jobDesc,
           requirements: jobReqs,
           publicDescription: jobPublicDesc,
+          requiredExperience: jobExp,
           publishToCareers: publishImmediately
         })
       });
@@ -183,6 +185,7 @@ export default function JobPositions({
       setJobDesc('');
       setJobReqs('');
       setJobPublicDesc('');
+      setJobExp('3 - 5 Years');
       setShowCreateModal(false);
 
       if (publishImmediately) {
@@ -695,7 +698,7 @@ export default function JobPositions({
 
             {/* Modal Body */}
             <form onSubmit={handleCreateJob} style={{ flexGrow: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '16px' }}>
                 <div className="form-group">
                   <label className="form-label">Job Title*</label>
                   <input type="text" className="form-input" placeholder="e.g. Node Backend Engineer" value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} autoFocus />
@@ -707,6 +710,10 @@ export default function JobPositions({
                 <div className="form-group">
                   <label className="form-label">Location</label>
                   <input type="text" className="form-input" placeholder="e.g. Remote / Hyderabad" value={jobLoc} onChange={(e) => setJobLoc(e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Required Exp</label>
+                  <input type="text" className="form-input" placeholder="e.g. 3 - 5 Years" value={jobExp} onChange={(e) => setJobExp(e.target.value)} />
                 </div>
               </div>
               
