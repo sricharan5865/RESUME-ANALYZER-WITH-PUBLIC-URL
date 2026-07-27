@@ -1329,28 +1329,37 @@ export default function CandidateDetails({ candidate: propCandidate, job, jobs =
                 </div>
               </div>
 
-              {candidate.redFlags && candidate.redFlags.length > 0 && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingTop: '16px', borderTop: '1px solid var(--glass-border)', marginTop: '16px' }}>
-                  <h4 style={{ fontSize: '12px', color: 'var(--status-rejected)', display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    <AlertCircle size={14} /> Red Flags / Discrepancies Detected
-                  </h4>
-                  {candidate.redFlags.map((flag, idx) => {
-                    const sevColor = flag.severity?.toLowerCase() === 'high' ? '#f87171' : flag.severity?.toLowerCase() === 'medium' ? '#fb923c' : '#fbbf24';
-                    const sevBg = flag.severity?.toLowerCase() === 'high' ? 'rgba(239, 68, 68, 0.05)' : flag.severity?.toLowerCase() === 'medium' ? 'rgba(249, 115, 22, 0.05)' : 'rgba(245, 158, 11, 0.05)';
-                    const sevBorder = flag.severity?.toLowerCase() === 'high' ? 'rgba(239, 68, 68, 0.2)' : flag.severity?.toLowerCase() === 'medium' ? 'rgba(249, 115, 22, 0.2)' : 'rgba(245, 158, 11, 0.2)';
+              {(() => {
+                const validRedFlags = (candidate.redFlags || []).filter(flag => 
+                  (flag.flag && flag.flag.trim() !== '') || 
+                  (flag.issue && flag.issue.trim() !== '') || 
+                  (flag.explanation && flag.explanation.trim() !== '') || 
+                  (flag.fix_suggestion && flag.fix_suggestion.trim() !== '')
+                );
+                if (validRedFlags.length === 0) return null;
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingTop: '16px', borderTop: '1px solid var(--glass-border)', marginTop: '16px' }}>
+                    <h4 style={{ fontSize: '12px', color: 'var(--status-rejected)', display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      <AlertCircle size={14} /> Red Flags / Discrepancies Detected
+                    </h4>
+                    {validRedFlags.map((flag, idx) => {
+                      const sevColor = flag.severity?.toLowerCase() === 'high' ? '#f87171' : flag.severity?.toLowerCase() === 'medium' ? '#fb923c' : '#fbbf24';
+                      const sevBg = flag.severity?.toLowerCase() === 'high' ? 'rgba(239, 68, 68, 0.05)' : flag.severity?.toLowerCase() === 'medium' ? 'rgba(249, 115, 22, 0.05)' : 'rgba(245, 158, 11, 0.05)';
+                      const sevBorder = flag.severity?.toLowerCase() === 'high' ? 'rgba(239, 68, 68, 0.2)' : flag.severity?.toLowerCase() === 'medium' ? 'rgba(249, 115, 22, 0.2)' : 'rgba(245, 158, 11, 0.2)';
 
-                    return (
-                      <div key={idx} style={{ background: sevBg, padding: '12px', borderRadius: 'var(--radius-sm)', border: `1px solid ${sevBorder}` }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                          <span style={{ fontSize: '13px', fontWeight: 'bold', color: sevColor }}>{flag.flag || flag.issue}</span>
-                          <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}><strong>Severity:</strong> {flag.severity}</span>
-                          <span style={{ fontSize: '12px', color: 'var(--text-primary)' }}><strong>Explanation:</strong> {flag.explanation || flag.fix_suggestion}</span>
+                      return (
+                        <div key={idx} style={{ background: sevBg, padding: '12px', borderRadius: 'var(--radius-sm)', border: `1px solid ${sevBorder}` }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <span style={{ fontSize: '13px', fontWeight: 'bold', color: sevColor }}>{flag.flag || flag.issue}</span>
+                            <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}><strong>Severity:</strong> {flag.severity}</span>
+                            <span style={{ fontSize: '12px', color: 'var(--text-primary)' }}><strong>Explanation:</strong> {flag.explanation || flag.fix_suggestion}</span>
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+                      );
+                    })}
+                  </div>
+                );
+              })()}
 
               {similarCandidates && similarCandidates.length > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', paddingTop: '16px', borderTop: '1px solid var(--glass-border)', marginTop: '16px' }}>
