@@ -458,7 +458,9 @@ export default function CandidateDetails({ candidate: propCandidate, job, jobs =
         const questionsResult = await res.json();
         setCandidate(prev => ({
           ...prev,
-          jdQuestions: questionsResult
+          jdQuestions: questionsResult,
+          hrQuestions: questionsResult.hrQuestions || [],
+          technicalQuestions: questionsResult.technicalQuestions || []
         }));
       } else {
         console.error('Failed to generate JD questions:', res.statusText);
@@ -1547,19 +1549,42 @@ export default function CandidateDetails({ candidate: propCandidate, job, jobs =
               )}
             </div>
           ) : (
-            candidate.interviewQuestions && candidate.interviewQuestions.length > 0 && (
+            (candidate.matchScore <= 50) ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <h3 style={{ fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-secondary)' }}>
                   <Sparkles size={16} /> HR & Technical Interview Questions
                 </h3>
-                <div className="glass" style={{ padding: '20px', borderRadius: 'var(--radius-md)', background: 'rgba(99, 102, 241, 0.03)', border: '1px solid rgba(99, 102, 241, 0.15)' }}>
-                  <ul style={{ margin: 0, paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13px', color: 'var(--text-primary)' }}>
-                    {candidate.interviewQuestions.map((q, idx) => (
-                      <li key={idx} style={{ lineHeight: '1.5' }}>{q}</li>
-                    ))}
-                  </ul>
+                <div className="glass" style={{ padding: '24px', borderRadius: 'var(--radius-lg)', background: 'rgba(239, 68, 68, 0.02)', border: '1px solid rgba(239, 68, 68, 0.15)', textAlign: 'center' }}>
+                  <div style={{ color: '#ef4444', fontSize: '24px', marginBottom: '12px' }}>⚠️</div>
+                  <h4 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '6px' }}>ATS Match Score is 50% or Below ({candidate.matchScore}%)</h4>
+                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)', maxWidth: '480px', margin: '0 auto 16px auto', lineHeight: '1.5' }}>
+                    Automated interview question generation was skipped during upload to decrease the load on your Ollama server. You can generate them manually now if desired.
+                  </p>
+                  <button
+                    onClick={handleGenerateJdQuestions}
+                    disabled={loadingJdQuestions}
+                    className="btn btn-primary"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 18px', fontSize: '13px', fontWeight: '600' }}
+                  >
+                    {loadingJdQuestions ? 'Generating...' : 'Create HR & Technical Questions'}
+                  </button>
                 </div>
               </div>
+            ) : (
+              candidate.interviewQuestions && candidate.interviewQuestions.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <h3 style={{ fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-secondary)' }}>
+                    <Sparkles size={16} /> HR & Technical Interview Questions
+                  </h3>
+                  <div className="glass" style={{ padding: '20px', borderRadius: 'var(--radius-md)', background: 'rgba(99, 102, 241, 0.03)', border: '1px solid rgba(99, 102, 241, 0.15)' }}>
+                    <ul style={{ margin: 0, paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13px', color: 'var(--text-primary)' }}>
+                      {candidate.interviewQuestions.map((q, idx) => (
+                        <li key={idx} style={{ lineHeight: '1.5' }}>{q}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )
             )
           )}
 

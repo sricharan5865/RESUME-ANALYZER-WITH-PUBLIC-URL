@@ -1648,13 +1648,11 @@ app.post('/api/candidates/upload', authenticateToken, requireRole(['admin', 'rec
         job ? scoreCandidate(parsedData, job).catch(e => { console.error('Job match score failed:', e.message); return null; }) : Promise.resolve(null),
         generateTags(parsedData, job || { title: 'General', description: '' }, settings?.tagPreferences || []).catch(e => { console.error('Tag generation failed:', e.message); return null; }),
         job ? scoreCandidateAgainstChecklist(parsedData, job).catch(e => { console.error('Checklist score failed:', e.message); return null; }) : Promise.resolve(null),
-        job ? generateQuestionsForCandidate(parsedData, job).catch(e => { console.error('JD question generation failed:', e.message); return null; }) : Promise.resolve(null)
       ]);
       if (results[0]) ownCategoryResult = results[0];
       if (results[1]) scoringResult = results[1];
       if (results[2]) generatedTags = results[2];
       if (results[3]) checklistResult = results[3];
-      if (results[4]) jdQuestions = results[4];
       
       // Override primary holistic score with the checklist score if a checklist was generated and evaluated
       if (checklistResult.checklist && checklistResult.checklist.length > 0) {
@@ -1664,6 +1662,17 @@ app.post('/api/candidates/upload', authenticateToken, requireRole(['admin', 'rec
           missingSkills: checklistResult.unmatchedRequirements,
           reasoning: checklistResult.reasoning
         };
+      }
+
+      const score = scoringResult.score || 0;
+      if (job && score > 50) {
+        console.log(`ATS score is ${score}% (> 50%). Generating Tailored Questions...`);
+        jdQuestions = await generateQuestionsForCandidate(parsedData, job).catch(e => {
+          console.error('JD question generation failed:', e.message);
+          return null;
+        });
+      } else {
+        console.log(`ATS score is ${score}% (<= 50%). Skipping tailored question generation to decrease load on Ollama.`);
       }
     } catch (err) {
       console.error('Parallel scoring/tagging failed:', err.message);
@@ -2028,12 +2037,17 @@ app.post('/api/candidates/upload/resolve', authenticateToken, requireRole(['admi
         projects: data.projects || []
       });
 
-      try {
-        const qna = await generateQuestionsForCandidate(newCandidate, job);
-        newCandidate.hrQuestions = qna.hrQuestions || [];
-        newCandidate.technicalQuestions = qna.technicalQuestions || [];
-      } catch (err) {
-        console.error('LLM Q&A generation failed during resolve delete-before:', err.message);
+      const duplicateScore = scoringResult.score || 0;
+      if (job && duplicateScore > 50) {
+        try {
+          const qna = await generateQuestionsForCandidate(newCandidate, job);
+          newCandidate.hrQuestions = qna.hrQuestions || [];
+          newCandidate.technicalQuestions = qna.technicalQuestions || [];
+        } catch (err) {
+          console.error('LLM Q&A generation failed during resolve delete-before:', err.message);
+        }
+      } else {
+        console.log(`Duplicate candidate score is ${duplicateScore}% (<= 50%). Skipping Q&A generation to decrease load on Ollama.`);
       }
 
       newCandidate.history.push({
@@ -3733,14 +3747,12 @@ app.post('/api/public/apply', async (req, res) => {
             scoreCandidateByOwnCategory(parsedData).catch(e => { console.error('Own category score failed:', e.message); return null; }),
             job ? scoreCandidate(parsedData, job).catch(e => { console.error('Job match score failed:', e.message); return null; }) : Promise.resolve(null),
             generateTags(parsedData, job || { title: 'General', description: '' }, settings?.tagPreferences || []).catch(e => { console.error('Tag generation failed:', e.message); return null; }),
-            job ? scoreCandidateAgainstChecklist(parsedData, job).catch(e => { console.error('Checklist score failed:', e.message); return null; }) : Promise.resolve(null),
-            job ? generateQuestionsForCandidate({ ...parsedData, formAnswers: answers }, job).catch(e => { console.error('JD question generation failed:', e.message); return null; }) : Promise.resolve(null)
+            job ? scoreCandidateAgainstChecklist(parsedData, job).catch(e => { console.error('Checklist score failed:', e.message); return null; }) : Promise.resolve(null)
           ]);
           if (results[0]) ownCategoryResult = results[0];
           if (results[1]) scoringResult = results[1];
           if (results[2]) generatedTags = results[2];
           if (results[3]) checklistResult = results[3];
-          if (results[4]) jdQuestions = results[4];
           
           // Override primary holistic score with the checklist score if a checklist was generated and evaluated
           if (checklistResult.checklist && checklistResult.checklist.length > 0) {
@@ -3750,6 +3762,17 @@ app.post('/api/public/apply', async (req, res) => {
               missingSkills: checklistResult.unmatchedRequirements,
               reasoning: checklistResult.reasoning
             };
+          }
+
+          const score = scoringResult.score || 0;
+          if (job && score > 50) {
+            console.log(`ATS score is ${score}% (> 50%) for public apply. Generating Tailored Questions...`);
+            jdQuestions = await generateQuestionsForCandidate({ ...parsedData, formAnswers: answers }, job).catch(e => {
+              console.error('JD question generation failed for public apply:', e.message);
+              return null;
+            });
+          } else {
+            console.log(`ATS score is ${score}% (<= 50%) for public apply. Skipping tailored question generation to decrease load on Ollama.`);
           }
         } catch (err) {
           console.error('Parallel scoring/tagging failed for public apply:', err.message);
