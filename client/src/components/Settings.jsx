@@ -307,6 +307,23 @@ export default function SettingsView({ token, jobs, templates, onJobCreated, onJ
     }
   };
 
+  const handleToggleSourcingAgent = async (active) => {
+    setSourcingAgentActive(active);
+    try {
+      const token = localStorage.getItem('token');
+      await fetch(`${backendUrl}/api/settings`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ sourcingAgentActive: active })
+      });
+    } catch (err) {
+      console.error('Failed to auto-save sourcing agent toggle:', err);
+    }
+  };
+
   const handleSaveSourcingAndAISettings = async (e) => {
     e.preventDefault();
     setSavingSettings(true);
@@ -643,8 +660,8 @@ export default function SettingsView({ token, jobs, templates, onJobCreated, onJ
                 </p>
               </div>
               <div style={{ display: 'flex', gap: '4px', background: 'var(--bg-tertiary)', padding: '4px', borderRadius: 'var(--radius-md)', border: '1px solid var(--glass-border)', width: '180px' }}>
-                <button type="button" onClick={() => setSourcingAgentActive(true)} style={{ flex: 1, padding: '6px 12px', borderRadius: '6px', border: 'none', background: sourcingAgentActive ? 'var(--status-offered)' : 'transparent', color: sourcingAgentActive ? 'white' : 'var(--text-secondary)', cursor: 'pointer', fontWeight: '600', fontSize: '12px', transition: 'all 0.2s' }}>Active</button>
-                <button type="button" onClick={() => setSourcingAgentActive(false)} style={{ flex: 1, padding: '6px 12px', borderRadius: '6px', border: 'none', background: !sourcingAgentActive ? 'rgba(244, 63, 94, 0.2)' : 'transparent', color: !sourcingAgentActive ? 'var(--status-rejected)' : 'var(--text-secondary)', cursor: 'pointer', fontWeight: '600', fontSize: '12px', transition: 'all 0.2s' }}>Inactive</button>
+                <button type="button" onClick={() => handleToggleSourcingAgent(true)} style={{ flex: 1, padding: '6px 12px', borderRadius: '6px', border: 'none', background: sourcingAgentActive ? 'var(--status-offered)' : 'transparent', color: sourcingAgentActive ? 'white' : 'var(--text-secondary)', cursor: 'pointer', fontWeight: '600', fontSize: '12px', transition: 'all 0.2s' }}>Active</button>
+                <button type="button" onClick={() => handleToggleSourcingAgent(false)} style={{ flex: 1, padding: '6px 12px', borderRadius: '6px', border: 'none', background: !sourcingAgentActive ? 'rgba(244, 63, 94, 0.2)' : 'transparent', color: !sourcingAgentActive ? 'var(--status-rejected)' : 'var(--text-secondary)', cursor: 'pointer', fontWeight: '600', fontSize: '12px', transition: 'all 0.2s' }}>Inactive</button>
               </div>
             </div>
 
