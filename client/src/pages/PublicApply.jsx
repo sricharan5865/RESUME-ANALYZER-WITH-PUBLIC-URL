@@ -439,7 +439,7 @@ export default function PublicApply({ backendUrl }) {
                     <Briefcase size={16} style={{ color: '#38bdf8' }} /> {job.workMode || 'Full-time'}
                   </span>
                   <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Award size={16} style={{ color: '#38bdf8' }} /> Experience: 5+ to 10+ years
+                    <Award size={16} style={{ color: '#38bdf8' }} /> Experience: {job.requiredExperience || '3 - 5 Years'}
                   </span>
                 </div>
               </div>
