@@ -1363,36 +1363,7 @@ export default function CandidateDetails({ candidate: propCandidate, job, jobs =
                 );
               })()}
 
-              {similarCandidates && similarCandidates.length > 0 && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', paddingTop: '16px', borderTop: '1px solid var(--glass-border)', marginTop: '16px' }}>
-                  <div>
-                    <h4 style={{ fontSize: '12px', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>
-                      <Briefcase size={14} /> Other Similar Candidates in Database (RAG Search)
-                    </h4>
-                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginTop: '2px' }}>
-                      Distinct candidates saved in your talent pool with similar skills & profile:
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {similarCandidates.map((sim, idx) => (
-                      <div key={idx} style={{ background: 'var(--glass-bg)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--glass-border)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                          <div style={{ display: 'flex', flexDirection: 'column' }}>
-                            <span style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-primary)' }}>{sim.name}</span>
-                            <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{sim.seniorityLevel ? `${sim.seniorityLevel} Level` : 'Database Candidate'}</span>
-                          </div>
-                          <span style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--accent-primary)', background: 'rgba(59, 130, 246, 0.12)', border: '1px solid rgba(59, 130, 246, 0.3)', padding: '2px 8px', borderRadius: '4px' }}>
-                            {Math.round(sim.similarityScore * 100)}% Profile Similarity
-                          </span>
-                        </div>
-                        <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '6px' }}>
-                          Matched attributes: {Array.from(new Set(sim.matchedOn || [])).join(', ')}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+
             </div>
           </div>
 
