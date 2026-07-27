@@ -171,99 +171,100 @@ export default function PublicApply({ backendUrl }) {
     setSubmitting(true);
     setErrorMsg(null);
 
-    // Validation
-    const errors = {};
-    if (job && job.customFields) {
-      job.customFields.forEach(field => {
-        const label = field.label;
-        const val = (formData[label] || '').trim();
-        const lowerLabel = label.toLowerCase();
-        const isRequired = field.isRequired;
+    try {
+      // Validation
+      const errors = {};
+      if (job && job.customFields) {
+        job.customFields.forEach(field => {
+          const label = field.label;
+          const rawVal = formData[label];
+          const val = rawVal !== undefined && rawVal !== null ? String(rawVal).trim() : '';
+          const lowerLabel = label.toLowerCase();
+          const isRequired = field.isRequired;
 
-        // 1. Required Check
-        if (isRequired) {
-          if (field.fieldType === 'CvUpload') {
-            if (!cvFile) {
-              errors[label] = 'Please attach your CV / Resume.';
-            }
-          } else if (field.fieldType === 'Checkbox') {
-            if (formData[label] !== 'Yes') {
-              errors[label] = 'You must check this box to proceed.';
-            }
-          } else if (field.fieldType === 'MultiSelect' || field.fieldType === 'Radio' || field.fieldType === 'Dropdown') {
-            if (!val) {
-              errors[label] = `Please select an option for ${label}.`;
-            }
-          } else {
-            if (!val) {
-              errors[label] = `${label} is required.`;
-            }
-          }
-        }
-
-        // 2. Format & Value Constraints
-        if (val) {
-          // Phone validation (+91 requires exactly 10 digits, other countries do not enforce 10 digits)
-          if (field.fieldType === 'Phone' || lowerLabel.includes('phone') || lowerLabel.includes('mobile') || lowerLabel.includes('contact')) {
-            if (!val.startsWith('+')) {
-              errors[label] = 'Please include country code starting with + (e.g. +91 9876543210).';
+          // 1. Required Check
+          if (isRequired) {
+            if (field.fieldType === 'CvUpload') {
+              if (!cvFile) {
+                errors[label] = 'Please attach your CV / Resume.';
+              }
+            } else if (field.fieldType === 'Checkbox') {
+              if (val.toLowerCase() !== 'yes' && rawVal !== true) {
+                errors[label] = 'You must check this box to proceed.';
+              }
+            } else if (field.fieldType === 'MultiSelect' || field.fieldType === 'Radio' || field.fieldType === 'Dropdown') {
+              if (!val) {
+                errors[label] = `Please select an option for ${label}.`;
+              }
             } else {
-              const cleanStr = val.replace(/[\s\-\(\)]/g, '');
-              const digitsOnly = cleanStr.replace(/[^0-9]/g, '');
-
-              if (cleanStr.startsWith('+91')) {
-                const subscriberDigits = digitsOnly.substring(2);
-                if (subscriberDigits.length !== 10) {
-                  errors[label] = 'Phone numbers with +91 country code must contain exactly 10 digits.';
-                }
-              } else if (digitsOnly.length < 5 || digitsOnly.length > 15) {
-                errors[label] = 'Please enter a valid international phone number with country code.';
+              if (!val) {
+                errors[label] = `${label} is required.`;
               }
             }
           }
-          // Name validation
-          else if (lowerLabel.includes('first name') || lowerLabel.includes('last name') || lowerLabel === 'name' || lowerLabel.includes('full name')) {
-            if (val.length < 2) {
-              errors[label] = 'Name must be at least 2 characters long.';
-            }
-          }
-          // URL / LinkedIn validation
-          else if (field.fieldType === 'Url' || lowerLabel.includes('linkedin') || lowerLabel.includes('url') || lowerLabel.includes('website') || lowerLabel.includes('portfolio')) {
-            const urlPattern = /^(https?:\/\/)?(www\.)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(\/.*)?$/;
-            if (!urlPattern.test(val) && !val.toLowerCase().includes('linkedin.com')) {
-              errors[label] = 'Please enter a valid web URL (e.g. https://linkedin.com/in/username).';
-            }
-          }
-        }
-      });
-    }
 
-    if (cvFile) {
-      const ext = cvFile.name.split('.').pop().toLowerCase();
-      if (!['pdf', 'doc', 'docx'].includes(ext)) {
-        errors['Upload CV'] = 'Only PDF, DOC, or DOCX files are allowed.';
-      } else if (cvFile.size > 10 * 1024 * 1024) {
-        errors['Upload CV'] = 'CV file size must be 10MB or smaller.';
+          // 2. Format & Value Constraints
+          if (val) {
+            // Phone validation (+91 requires exactly 10 digits, other countries do not enforce 10 digits)
+            if (field.fieldType === 'Phone' || lowerLabel.includes('phone') || lowerLabel.includes('mobile') || lowerLabel.includes('contact')) {
+              if (!val.startsWith('+')) {
+                errors[label] = 'Please include country code starting with + (e.g. +91 9876543210).';
+              } else {
+                const cleanStr = val.replace(/[\s\-\(\)]/g, '');
+                const digitsOnly = cleanStr.replace(/[^0-9]/g, '');
+
+                if (cleanStr.startsWith('+91')) {
+                  const subscriberDigits = digitsOnly.substring(2);
+                  if (subscriberDigits.length !== 10) {
+                    errors[label] = 'Phone numbers with +91 country code must contain exactly 10 digits.';
+                  }
+                } else if (digitsOnly.length < 5 || digitsOnly.length > 15) {
+                  errors[label] = 'Please enter a valid international phone number with country code.';
+                }
+              }
+            }
+            // Name validation
+            else if (lowerLabel.includes('first name') || lowerLabel.includes('last name') || lowerLabel === 'name' || lowerLabel.includes('full name')) {
+              if (val.length < 2) {
+                errors[label] = 'Name must be at least 2 characters long.';
+              }
+            }
+            // URL / LinkedIn validation
+            else if (field.fieldType === 'Url' || lowerLabel.includes('linkedin') || lowerLabel.includes('url') || lowerLabel.includes('website') || lowerLabel.includes('portfolio')) {
+              const urlPattern = /^(https?:\/\/)?(www\.)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(\/.*)?$/;
+              if (!urlPattern.test(val) && !val.toLowerCase().includes('linkedin.com')) {
+                errors[label] = 'Please enter a valid web URL (e.g. https://linkedin.com/in/username).';
+              }
+            }
+          }
+        });
       }
-    }
 
-    setFieldErrors(errors);
-
-    if (Object.keys(errors).length > 0) {
-      setErrorMsg('Please fix the errors marked in red below before submitting your application.');
-      setSubmitting(false);
-
-      setTimeout(() => {
-        const firstKey = Object.keys(errors)[0];
-        const el = document.querySelector(`[data-field-label="${firstKey}"]`);
-        if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (cvFile) {
+        const ext = cvFile.name.split('.').pop().toLowerCase();
+        if (!['pdf', 'doc', 'docx'].includes(ext)) {
+          errors['Upload CV'] = 'Only PDF, DOC, or DOCX files are allowed.';
+        } else if (cvFile.size > 10 * 1024 * 1024) {
+          errors['Upload CV'] = 'CV file size must be 10MB or smaller.';
         }
-      }, 100);
-      return;
-    }
+      }
 
-    try {
+      setFieldErrors(errors);
+
+      if (Object.keys(errors).length > 0) {
+        setErrorMsg('Please fix the errors marked in red below before submitting your application.');
+        setSubmitting(false);
+
+        setTimeout(() => {
+          const firstKey = Object.keys(errors)[0];
+          const el = document.querySelector(`[data-field-label="${firstKey}"]`);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 100);
+        return;
+      }
+
       // 1. Upload CV if present
       let cvFileRef = '';
       let cvFileName = '';
