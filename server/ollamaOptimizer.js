@@ -8,8 +8,7 @@
  * Helps fit the candidate profile into smaller model contexts and decreases prompt processing time.
  * @param {Object} profile - The candidate profile object or document.
  * @returns {Object} A cleaned clone of the candidate profile.
- */
-export function compressCandidateProfile(profile) {
+ */export function compressCandidateProfile(profile) {
   if (!profile) return profile;
   
   let cleanProfile;
@@ -34,7 +33,21 @@ export function compressCandidateProfile(profile) {
     'hr_questions',
     'red_flags',
     'must_prepare_topics',
-    'fit_summary'
+    'fit_summary',
+    'resumeText',
+    'resumeUrl',
+    'resumePath',
+    '_id',
+    '__v',
+    'createdAt',
+    'updatedAt',
+    'history',
+    'comments',
+    'extractedData',
+    'jdQuestions',
+    'checklist',
+    'checklistScore',
+    'matchedRequirements'
   ];
 
   for (const key of keysToStrip) {
@@ -45,6 +58,7 @@ export function compressCandidateProfile(profile) {
 
   return cleanProfile;
 }
+
 
 /**
  * Recursively strips `description` keys from JSON schema objects to save token overhead.

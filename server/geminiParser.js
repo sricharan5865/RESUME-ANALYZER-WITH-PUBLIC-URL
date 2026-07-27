@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 import { Settings } from './models.js';
+import { compressCandidateProfile } from './ollamaOptimizer.js';
 dotenv.config();
 
 function extractJsonString(text) {
@@ -1400,7 +1401,8 @@ Today's date is ${new Date().toDateString()}. Use the pre-calculated "totalExper
     required: ['score', 'matchingSkills', 'missingSkills', 'reasoning']
   };
 
-  const { resumeText, interviewQuestions, _id, __v, createdAt, updatedAt, resumePath, tags, redFlags, careerGaps, ...cleanProfile } = candidateProfile;
+  const compressedProfile = compressCandidateProfile(candidateProfile);
+  const { totalExperience: _, ...cleanProfile } = compressedProfile;
   const profileToEval = {
     ...cleanProfile,
     totalExperience
@@ -1482,7 +1484,7 @@ export async function generateTags(candidateProfile, jobDescription, tagPreferen
 
   const prompt = `
 Candidate Profile:
-${JSON.stringify(candidateProfile, null, 2)}
+${JSON.stringify(compressCandidateProfile(candidateProfile), null, 2)}
 
 Job Description:
 Title: ${jobDescription?.title || 'General'}
@@ -1558,8 +1560,9 @@ Today's date is ${new Date().toDateString()}. Use the pre-calculated "totalExper
     required: ['score', 'matchingSkills', 'missingSkills', 'reasoning']
   };
 
+  const compressedProfile = compressCandidateProfile(candidateProfile);
   const profileToEval = {
-    ...candidateProfile,
+    ...compressedProfile,
     totalExperience
   };
 
@@ -1711,7 +1714,7 @@ export async function generateQuestionsForCandidate(candidateProfile, jobDescrip
 
   const prompt = `
 Candidate Profile:
-${JSON.stringify(candidateProfile, null, 2)}
+${JSON.stringify(compressCandidateProfile(candidateProfile), null, 2)}
 
 ${jobDescription ? `Job Description:\nTitle: ${jobDescription.title}\nRequirements: ${jobDescription.requirements}\nDescription: ${jobDescription.description}` : 'Job Description: None (General Role)'}
 
@@ -1833,7 +1836,8 @@ export async function scoreCandidateAgainstChecklist(candidateProfile, job) {
     required: ['results', 'passedCoreSkills']
   };
 
-  const { resumeText, interviewQuestions, _id, __v, createdAt, updatedAt, resumePath, tags, ...cleanProfile } = candidateProfile;
+  const compressedProfile = compressCandidateProfile(candidateProfile);
+  const { totalExperience: _, ...cleanProfile } = compressedProfile;
 
   const prompt = `You are a strict technical recruiter. Evaluate this candidate against each requirement below using a strict HIERARCHICAL approach.
 
