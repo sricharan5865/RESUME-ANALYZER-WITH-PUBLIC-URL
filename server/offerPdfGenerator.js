@@ -142,7 +142,17 @@ export async function generateOfferLetterPDFBuffer(candidate, offerData = {}) {
   coverAndDraw(page1, `${ctcStr}/-`, 256, 292.64, 88, 13, true, 9.0);
 
   // Erase static dashed region '--------------------).' (X = 390 to 482) and redraw rupees words + ').'
-  coverAndDraw(page1, `${ctcWords}).`, 392, 292.64, 92, 13, true, 9.0);
+  // Scale down font size dynamically for long numbers to prevent overlapping with static 'Please refer to' text
+  const ctcWordsFull = `${ctcWords}).`;
+  let ctcWordsSize = 9.0;
+  if (ctcWordsFull.length > 35) {
+    ctcWordsSize = 5.5;
+  } else if (ctcWordsFull.length > 25) {
+    ctcWordsSize = 7.0;
+  } else if (ctcWordsFull.length > 18) {
+    ctcWordsSize = 8.0;
+  }
+  coverAndDraw(page1, ctcWordsFull, 392, 292.64, 92, 13, true, ctcWordsSize);
 
   // Formalities submit deadline (width = 135 to erase all dashes '-----------------------.')
   coverAndDraw(page1, `${joinDate}.`, 53.5, 371.9, 135, 13, true, 9.0);
