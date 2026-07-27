@@ -1,18 +1,38 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { 
   Briefcase, ArrowLeft, CheckCircle2, Upload, Paperclip, ChevronDown, 
   MapPin, Clock, Award, ShieldCheck, HeartHandshake, Building2, Globe, 
-  Check, Send, Sparkles, AlertCircle 
+  Check, Send, Sparkles, AlertCircle, Gift
 } from 'lucide-react';
 
 export default function PublicApply({ backendUrl }) {
-  const { jobId: urlJobId } = useParams();
+  const params = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
   const formRef = useRef(null);
+
+  // Extract raw job parameter and referral info from URL path/params
+  const urlJobId = params.jobId || params['*'] || '';
+
+  // Extract referral code (e.g. from /careers/arcgis-pro-specialist/ref=ABCD1 or ?ref=ABCD1)
+  let extractedRefCode = searchParams.get('ref') || '';
+  if (!extractedRefCode && location.pathname.includes('/ref=')) {
+    const match = location.pathname.match(/ref=([A-Za-z0-9_-]+)/);
+    if (match) extractedRefCode = match[1];
+  }
   
+  // Clean job slug if path contains /ref=
+  let cleanJobSlug = urlJobId;
+  if (cleanJobSlug.includes('/ref=')) {
+    cleanJobSlug = cleanJobSlug.split('/ref=')[0];
+  }
+  cleanJobSlug = cleanJobSlug.replace(/\/$/, '');
+
   const [jobsList, setJobsList] = useState([]);
-  const [selectedJobId, setSelectedJobId] = useState(urlJobId || '');
+  const [selectedJobId, setSelectedJobId] = useState(cleanJobSlug || '');
+  const [referralCode] = useState(extractedRefCode);
   const [job, setJob] = useState(null);
   
   const [loadingJobs, setLoadingJobs] = useState(true);
@@ -34,8 +54,17 @@ export default function PublicApply({ backendUrl }) {
         setJobsList(activeJobs);
         setLoadingJobs(false);
 
-        if (urlJobId && activeJobs.some(j => j.id === urlJobId)) {
-          setSelectedJobId(urlJobId);
+        if (cleanJobSlug) {
+          const match = activeJobs.find(j => 
+            j.id === cleanJobSlug || 
+            (j.title && j.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') === cleanJobSlug.toLowerCase()) ||
+            (j.title && j.title.toLowerCase().replace(/[^a-z0-9]+/g, '') === cleanJobSlug.toLowerCase().replace(/[^a-z0-9]+/g, ''))
+          );
+          if (match) {
+            setSelectedJobId(match.id);
+          } else {
+            setSelectedJobId(cleanJobSlug);
+          }
         } else if (activeJobs.length > 0) {
           setSelectedJobId(activeJobs[0].id);
         }
@@ -45,7 +74,7 @@ export default function PublicApply({ backendUrl }) {
         setErrorMsg('Failed to load job positions.');
         setLoadingJobs(false);
       });
-  }, [backendUrl, urlJobId]);
+  }, [backendUrl, cleanJobSlug]);
 
   // 2. Fetch specific job details when selectedJobId changes
   useEffect(() => {
@@ -80,13 +109,39 @@ export default function PublicApply({ backendUrl }) {
       });
   }, [backendUrl, selectedJobId]);
 
+  const [fieldErrors, setFieldErrors] = useState({});
+
   const handleChange = (label, val) => {
     setFormData(prev => ({ ...prev, [label]: val }));
+    if (fieldErrors[label]) {
+      setFieldErrors(prev => {
+        const next = { ...prev };
+        delete next[label];
+        return next;
+      });
+    }
   };
 
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files.length > 0) {
-      setCvFile(e.target.files[0]);
+      const selectedFile = e.target.files[0];
+      const ext = selectedFile.name.split('.').pop().toLowerCase();
+      if (!['pdf', 'doc', 'docx'].includes(ext)) {
+        setFieldErrors(prev => ({ ...prev, 'Upload CV': 'Invalid file format. Only PDF, DOC, and DOCX files are allowed.' }));
+        setCvFile(null);
+        return;
+      }
+      if (selectedFile.size > 10 * 1024 * 1024) {
+        setFieldErrors(prev => ({ ...prev, 'Upload CV': 'File size exceeds 10MB limit.' }));
+        setCvFile(null);
+        return;
+      }
+      setCvFile(selectedFile);
+      setFieldErrors(prev => {
+        const next = { ...prev };
+        delete next['Upload CV'];
+        return next;
+      });
     }
   };
 
@@ -117,34 +172,94 @@ export default function PublicApply({ backendUrl }) {
     setErrorMsg(null);
 
     // Validation
-    const validationErrors = [];
+    const errors = {};
     if (job && job.customFields) {
       job.customFields.forEach(field => {
-        if (field.isRequired) {
+        const label = field.label;
+        const val = (formData[label] || '').trim();
+        const lowerLabel = label.toLowerCase();
+        const isRequired = field.isRequired;
+
+        // 1. Required Check
+        if (isRequired) {
           if (field.fieldType === 'CvUpload') {
             if (!cvFile) {
-              validationErrors.push(`${field.label} is required.`);
+              errors[label] = 'Please attach your CV / Resume.';
             }
           } else if (field.fieldType === 'Checkbox') {
-            if (formData[field.label] !== 'Yes') {
-              validationErrors.push(`${field.label} must be checked.`);
+            if (formData[label] !== 'Yes') {
+              errors[label] = 'You must check this box to proceed.';
             }
-          } else if (field.fieldType === 'MultiSelect' || field.fieldType === 'Radio') {
-            if (!formData[field.label] || !formData[field.label].trim()) {
-              validationErrors.push(`Please select an option for ${field.label}.`);
+          } else if (field.fieldType === 'MultiSelect' || field.fieldType === 'Radio' || field.fieldType === 'Dropdown') {
+            if (!val) {
+              errors[label] = `Please select an option for ${label}.`;
             }
           } else {
-            if (!formData[field.label] || !formData[field.label].trim()) {
-              validationErrors.push(`${field.label} is required.`);
+            if (!val) {
+              errors[label] = `${label} is required.`;
+            }
+          }
+        }
+
+        // 2. Format & Value Constraints
+        if (val) {
+          // Phone validation (+91 requires exactly 10 digits, other countries do not enforce 10 digits)
+          if (field.fieldType === 'Phone' || lowerLabel.includes('phone') || lowerLabel.includes('mobile') || lowerLabel.includes('contact')) {
+            if (!val.startsWith('+')) {
+              errors[label] = 'Please include country code starting with + (e.g. +91 9876543210).';
+            } else {
+              const cleanStr = val.replace(/[\s\-\(\)]/g, '');
+              const digitsOnly = cleanStr.replace(/[^0-9]/g, '');
+
+              if (cleanStr.startsWith('+91')) {
+                const subscriberDigits = digitsOnly.substring(2);
+                if (subscriberDigits.length !== 10) {
+                  errors[label] = 'Phone numbers with +91 country code must contain exactly 10 digits.';
+                }
+              } else if (digitsOnly.length < 5 || digitsOnly.length > 15) {
+                errors[label] = 'Please enter a valid international phone number with country code.';
+              }
+            }
+          }
+          // Name validation
+          else if (lowerLabel.includes('first name') || lowerLabel.includes('last name') || lowerLabel === 'name' || lowerLabel.includes('full name')) {
+            if (val.length < 2) {
+              errors[label] = 'Name must be at least 2 characters long.';
+            }
+          }
+          // URL / LinkedIn validation
+          else if (field.fieldType === 'Url' || lowerLabel.includes('linkedin') || lowerLabel.includes('url') || lowerLabel.includes('website') || lowerLabel.includes('portfolio')) {
+            const urlPattern = /^(https?:\/\/)?(www\.)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(\/.*)?$/;
+            if (!urlPattern.test(val) && !val.toLowerCase().includes('linkedin.com')) {
+              errors[label] = 'Please enter a valid web URL (e.g. https://linkedin.com/in/username).';
             }
           }
         }
       });
     }
 
-    if (validationErrors.length > 0) {
-      setErrorMsg(validationErrors.join(' '));
+    if (cvFile) {
+      const ext = cvFile.name.split('.').pop().toLowerCase();
+      if (!['pdf', 'doc', 'docx'].includes(ext)) {
+        errors['Upload CV'] = 'Only PDF, DOC, or DOCX files are allowed.';
+      } else if (cvFile.size > 10 * 1024 * 1024) {
+        errors['Upload CV'] = 'CV file size must be 10MB or smaller.';
+      }
+    }
+
+    setFieldErrors(errors);
+
+    if (Object.keys(errors).length > 0) {
+      setErrorMsg('Please fix the errors marked in red below before submitting your application.');
       setSubmitting(false);
+
+      setTimeout(() => {
+        const firstKey = Object.keys(errors)[0];
+        const el = document.querySelector(`[data-field-label="${firstKey}"]`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
       return;
     }
 
@@ -174,7 +289,8 @@ export default function PublicApply({ backendUrl }) {
         jobId: selectedJobId,
         formData: formData,
         cvFileRef: cvFileRef,
-        cvFileName: cvFileName
+        cvFileName: cvFileName,
+        refCode: referralCode || ''
       };
 
       const submitRes = await fetch(`${backendUrl}/api/public/apply`, {
@@ -301,6 +417,12 @@ export default function PublicApply({ backendUrl }) {
           <div className="portal-card" style={{ padding: '36px', marginBottom: '32px', backgroundColor: '#0f172a', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '20px' }}>
               <div>
+                {referralCode && (
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 14px', borderRadius: '20px', backgroundColor: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#34d399', fontSize: '13px', fontWeight: '600', marginBottom: '12px' }}>
+                    <Gift size={15} /> Referred Application (Ref Code: <strong style={{ textDecoration: 'underline' }}>{referralCode}</strong>)
+                  </div>
+                )}
+                <br />
                 <span style={{ display: 'inline-block', padding: '4px 12px', borderRadius: '6px', backgroundColor: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', marginBottom: '12px', letterSpacing: '0.5px' }}>
                   {job.department || 'Engineering & GIS'}
                 </span>
@@ -432,8 +554,16 @@ export default function PublicApply({ backendUrl }) {
                     .filter(field => field.fieldType !== 'CvUpload')
                     .map(field => {
                       const isWide = field.fieldType === 'LongText' || field.fieldType === 'MultiSelect' || field.fieldType === 'Radio';
+                      const fieldErr = fieldErrors[field.label];
+                      const inputBorderStyle = {
+                        width: '100%',
+                        backgroundColor: '#040711',
+                        border: fieldErr ? '1px solid #ef4444' : '1px solid #334155',
+                        boxShadow: fieldErr ? '0 0 8px rgba(239, 68, 68, 0.2)' : 'none'
+                      };
+
                       return (
-                        <div key={field.id} className={isWide ? 'portal-grid-wide' : ''} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div key={field.id} data-field-label={field.label} className={isWide ? 'portal-grid-wide' : ''} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                           <label style={{ display: 'block', fontWeight: '500', fontSize: '14px', color: '#e2e8f0' }}>
                             {field.label} {field.isRequired && <span style={{ color: '#ef4444' }}>*</span>}
                           </label>
@@ -443,14 +573,14 @@ export default function PublicApply({ backendUrl }) {
                               onChange={(e) => handleChange(field.label, e.target.value)}
                               rows={4}
                               className="input-field"
-                              style={{ width: '100%', resize: 'vertical', backgroundColor: '#040711' }}
+                              style={{ ...inputBorderStyle, resize: 'vertical' }}
                             />
                           ) : field.fieldType === 'Dropdown' ? (
                             <select
                               value={formData[field.label] || ''}
                               onChange={(e) => handleChange(field.label, e.target.value)}
                               className="input-field"
-                              style={{ width: '100%', backgroundColor: '#040711' }}
+                              style={inputBorderStyle}
                             >
                               <option value="" style={{ background: '#040711' }}>Select option</option>
                               {(field.options || '')
@@ -479,41 +609,108 @@ export default function PublicApply({ backendUrl }) {
                                 }
                                 handleChange(field.label, val);
                               }}
+                              placeholder={
+                                (field.fieldType === 'Phone' || field.label.toLowerCase().includes('phone') || field.label.toLowerCase().includes('mobile') || field.label.toLowerCase().includes('contact'))
+                                  ? 'e.g. +91 9876543210'
+                                  : undefined
+                              }
                               className="input-field"
-                              style={{ width: '100%', backgroundColor: '#040711' }}
+                              style={inputBorderStyle}
                             />
+                          )}
+                          {fieldErr && (
+                            <span style={{ color: '#ef4444', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                              <AlertCircle size={13} /> {fieldErr}
+                            </span>
                           )}
                         </div>
                       );
                     })}
+
+                  {/* Standard Compensation & Availability Inputs if not present in customFields */}
+                  {!job.customFields?.some(f => f.label.toLowerCase().includes('current ctc')) && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <label style={{ display: 'block', fontWeight: '500', fontSize: '14px', color: '#e2e8f0' }}>Current CTC</label>
+                      <input 
+                        type="text" 
+                        value={formData['Current CTC'] || ''} 
+                        onChange={(e) => handleChange('Current CTC', e.target.value)} 
+                        placeholder="e.g. 12 LPA" 
+                        className="input-field" 
+                        style={{ width: '100%', backgroundColor: '#040711', border: '1px solid #334155' }} 
+                      />
+                    </div>
+                  )}
+
+                  {!job.customFields?.some(f => f.label.toLowerCase().includes('expected ctc')) && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <label style={{ display: 'block', fontWeight: '500', fontSize: '14px', color: '#e2e8f0' }}>Expected CTC</label>
+                      <input 
+                        type="text" 
+                        value={formData['Expected CTC'] || ''} 
+                        onChange={(e) => handleChange('Expected CTC', e.target.value)} 
+                        placeholder="e.g. 16 LPA" 
+                        className="input-field" 
+                        style={{ width: '100%', backgroundColor: '#040711', border: '1px solid #334155' }} 
+                      />
+                    </div>
+                  )}
+
+                  {!job.customFields?.some(f => f.label.toLowerCase().includes('notice')) && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <label style={{ display: 'block', fontWeight: '500', fontSize: '14px', color: '#e2e8f0' }}>Notice Period</label>
+                      <select 
+                        value={formData['Notice Period'] || ''} 
+                        onChange={(e) => handleChange('Notice Period', e.target.value)} 
+                        className="input-field" 
+                        style={{ width: '100%', backgroundColor: '#040711', border: '1px solid #334155' }}
+                      >
+                        <option value="" style={{ background: '#040711' }}>Select Notice Period</option>
+                        <option value="Immediate" style={{ background: '#040711' }}>Immediate</option>
+                        <option value="15 days" style={{ background: '#040711' }}>15 days</option>
+                        <option value="30 days" style={{ background: '#040711' }}>30 days</option>
+                        <option value="45 days" style={{ background: '#040711' }}>45 days</option>
+                        <option value="60 days" style={{ background: '#040711' }}>60 days</option>
+                        <option value="90 days" style={{ background: '#040711' }}>90 days</option>
+                      </select>
+                    </div>
+                  )}
                 </div>
 
                 {/* CV Upload */}
                 {job.customFields && job.customFields
                   .filter(field => field.fieldType === 'CvUpload')
-                  .map(field => (
-                    <div key={field.id} style={{ marginTop: '8px' }}>
-                      <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', fontSize: '14px', color: '#e2e8f0' }}>
-                        {field.label} {field.isRequired && <span style={{ color: '#ef4444' }}>*</span>}
-                      </label>
-                      <label className="upload-dropzone" style={{ backgroundColor: '#040711', border: '1px dashed #334155' }}>
-                        <Upload size={24} style={{ color: '#38bdf8', marginBottom: '8px' }} />
-                        <span style={{ fontSize: '14px', color: '#e2e8f0' }}>Click to upload or drag and drop your CV</span>
-                        <span style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>PDF, DOCX up to 10MB</span>
-                        <input 
-                          type="file" 
-                          accept=".pdf,.docx,.doc" 
-                          onChange={handleFileChange}
-                          style={{ display: 'none' }}
-                        />
-                      </label>
-                      {cvFile && (
-                        <div style={{ marginTop: '8px', fontSize: '13px', color: '#10b981', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <Paperclip size={14} /> Attached: <strong>{cvFile.name}</strong>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                  .map(field => {
+                    const cvErr = fieldErrors[field.label];
+                    return (
+                      <div key={field.id} data-field-label={field.label} style={{ marginTop: '8px' }}>
+                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', fontSize: '14px', color: '#e2e8f0' }}>
+                          {field.label} {field.isRequired && <span style={{ color: '#ef4444' }}>*</span>}
+                        </label>
+                        <label className="upload-dropzone" style={{ backgroundColor: '#040711', border: cvErr ? '1px dashed #ef4444' : '1px dashed #334155', boxShadow: cvErr ? '0 0 8px rgba(239, 68, 68, 0.2)' : 'none' }}>
+                          <Upload size={24} style={{ color: cvErr ? '#ef4444' : '#38bdf8', marginBottom: '8px' }} />
+                          <span style={{ fontSize: '14px', color: '#e2e8f0' }}>Click to upload or drag and drop your CV</span>
+                          <span style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>PDF, DOCX up to 10MB</span>
+                          <input 
+                            type="file" 
+                            accept=".pdf,.docx,.doc" 
+                            onChange={handleFileChange}
+                            style={{ display: 'none' }}
+                          />
+                        </label>
+                        {cvErr && (
+                          <span style={{ color: '#ef4444', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '6px' }}>
+                            <AlertCircle size={13} /> {cvErr}
+                          </span>
+                        )}
+                        {cvFile && !cvErr && (
+                          <div style={{ marginTop: '8px', fontSize: '13px', color: '#10b981', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Paperclip size={14} /> Attached: <strong>{cvFile.name}</strong>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
 
                 <div style={{ marginTop: '12px' }}>
                   <button 

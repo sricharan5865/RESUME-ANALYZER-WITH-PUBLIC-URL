@@ -11,6 +11,8 @@ const ALL_COLUMNS = [
   { id: 'jobRole', label: 'Job Role', defaultVisible: true },
   { id: 'location', label: 'Location', defaultVisible: true },
   { id: 'experience', label: 'Total Experience', defaultVisible: true },
+  { id: 'currentCtc', label: 'Current CTC', defaultVisible: true },
+  { id: 'expectedCtc', label: 'Expected CTC', defaultVisible: true },
   { id: 'noticePeriod', label: 'Notice Period', defaultVisible: true },
   { id: 'matchScore', label: 'ATS Match Score', defaultVisible: true },
   { id: 'stage', label: 'Stage', defaultVisible: true },
@@ -253,8 +255,16 @@ export default function Applicants({
 
   return (
     <div style={{ padding: '0px', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      <header style={{ marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+      <header style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
         <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
+            <h2 style={{ fontSize: '24px', fontWeight: '800', margin: 0, fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>
+              Applicants
+            </h2>
+            <span style={{ fontSize: '13px', fontWeight: '700', background: 'rgba(99, 102, 241, 0.15)', color: 'var(--accent-primary)', border: '1px solid rgba(99, 102, 241, 0.3)', padding: '4px 14px', borderRadius: '20px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              {sortedCandidates.length} {sortedCandidates.length === candidates.length ? 'Total Applicants' : `of ${candidates.length} Applicants`}
+            </span>
+          </div>
           <p style={{ color: 'var(--text-secondary)', fontSize: '13px', margin: 0 }}>View, search, filter, and bulk action all applicants in one place.</p>
         </div>
         <div style={{ display: 'flex', gap: '12px', position: 'relative' }}>
@@ -537,6 +547,12 @@ export default function Applicants({
               {visibleColumns.includes('experience') && (
                 <th style={{ padding: '16px', fontWeight: 'bold' }}>Total Experience</th>
               )}
+              {visibleColumns.includes('currentCtc') && (
+                <th style={{ padding: '16px', fontWeight: 'bold' }}>Current CTC</th>
+              )}
+              {visibleColumns.includes('expectedCtc') && (
+                <th style={{ padding: '16px', fontWeight: 'bold' }}>Expected CTC</th>
+              )}
               {visibleColumns.includes('noticePeriod') && (
                 <th style={{ padding: '16px', fontWeight: 'bold' }}>Notice Period</th>
               )}
@@ -625,6 +641,14 @@ export default function Applicants({
                       <td style={{ padding: '16px' }}>{getCandidateExperience(c)}</td>
                     )}
 
+                    {visibleColumns.includes('currentCtc') && (
+                      <td style={{ padding: '16px' }}>{c.currentCtc || c.extractedData?.currentCtc || 'N/A'}</td>
+                    )}
+
+                    {visibleColumns.includes('expectedCtc') && (
+                      <td style={{ padding: '16px' }}>{c.expectedCtc || c.extractedData?.expectedCtc || 'N/A'}</td>
+                    )}
+
                     {visibleColumns.includes('noticePeriod') && (
                       <td style={{ padding: '16px' }}>{getCandidateNoticePeriod(c)}</td>
                     )}
@@ -690,16 +714,6 @@ export default function Applicants({
                           >
                             <Eye size={14} />
                           </button>
-                          {onOpenOfferModal && (
-                            <button 
-                              onClick={() => onOpenOfferModal(c)} 
-                              className="btn btn-secondary" 
-                              style={{ padding: '6px', borderRadius: '4px', color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.3)' }}
-                              title="Generate & Send Offer Letter"
-                            >
-                              <FileText size={14} />
-                            </button>
-                          )}
                           {c.resumeUrl && (
                             <a 
                               href={`${backendUrl}${c.resumeUrl}`} 
@@ -722,6 +736,11 @@ export default function Applicants({
             )}
           </tbody>
         </table>
+      </div>
+
+      <div style={{ marginTop: '12px', padding: '8px 4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: 'var(--text-secondary)', flexShrink: 0 }}>
+        <span>Showing <strong style={{ color: 'var(--text-primary)' }}>{sortedCandidates.length}</strong> of <strong style={{ color: 'var(--text-primary)' }}>{candidates.length}</strong> total applicants</span>
+        {selectedCandidates.length > 0 && <span style={{ color: 'var(--accent-primary)', fontWeight: '600' }}>{selectedCandidates.length} applicant(s) selected</span>}
       </div>
     </div>
   );

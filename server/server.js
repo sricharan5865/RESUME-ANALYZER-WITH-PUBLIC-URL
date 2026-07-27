@@ -417,6 +417,8 @@ async function sendAutomaticEmail(candidate, triggerType, extraParams = {}) {
         template = "Subject: Position Update: {job_title}\n\nHi {candidate_name},\n\nYour application position at {company_name} has been updated to {job_title}.\n\nBest regards,\nRecruitment Team";
       } else if (triggerType === 'applicationReceived') {
         template = "Subject: Application Received: {job_title}\n\nHi {candidate_name},\n\nThank you for applying for the {job_title} role at {company_name}. We have received your application.\n\nBest regards,\nRecruitment Team";
+      } else if (triggerType === 'shortlist' || triggerType === 'shortlisted') {
+        template = "Subject: Application Shortlisted: {job_title}\n\nHi {candidate_name},\n\nGreat news! Your application for the {job_title} position at {company_name} has been shortlisted. Our recruitment team will reach out to you shortly for the next steps.\n\nBest regards,\nRecruitment Team";
       } else if (triggerType === 'interview') {
         template = "Subject: Interview Invitation: {job_title}\n\nHi {candidate_name},\n\nWe would like to invite you for an interview for the {job_title} position at {company_name}.\n\nBest regards,\nRecruitment Team";
       } else if (triggerType === 'offer') {
@@ -1824,6 +1826,9 @@ app.post('/api/candidates/upload/resolve', authenticateToken, requireRole(['admi
       candidate.email = data.email || candidate.email;
       candidate.phone = data.phone || candidate.phone;
       candidate.linkedinUrl = data.linkedinUrl || candidate.linkedinUrl;
+      candidate.currentCtc = data.currentCtc || candidate.currentCtc || '';
+      candidate.expectedCtc = data.expectedCtc || candidate.expectedCtc || '';
+      candidate.noticePeriod = data.noticePeriod || candidate.noticePeriod || '';
       candidate.skills = data.skills || candidate.skills;
       candidate.experience = data.experience || candidate.experience;
       candidate.education = data.education || candidate.education;
@@ -2096,6 +2101,62 @@ app.post('/api/candidates/upload/resolve', authenticateToken, requireRole(['admi
   }
 });
 
+app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
+  try {
+    const candidates = await Candidate.find();
+    const jobs = await Job.find();
+
+    const totalCvs = candidates.length;
+
+    // 1. Total CVs received per day (last 30 days or all dates)
+    const dailyMap = {};
+    candidates.forEach(c => {
+      const dateStr = c.createdAt ? new Date(c.createdAt).toISOString().split('T')[0] : 'Unknown';
+      dailyMap[dateStr] = (dailyMap[dateStr] || 0) + 1;
+    });
+
+    const dailyCvs = Object.keys(dailyMap)
+      .sort()
+      .map(date => ({ date, count: dailyMap[date] }));
+
+    // 2. Number of CVs received for each position
+    // 3. Number of CVs routed to each position folder
+    const jobMap = {};
+    const routedFolderMap = {};
+
+    // Initialize map for all existing jobs
+    jobs.forEach(j => {
+      jobMap[j.id] = { jobId: j.id, jobTitle: j.title, count: 0 };
+      routedFolderMap[j.id] = { jobId: j.id, jobTitle: j.title, count: 0 };
+    });
+    jobMap['general'] = { jobId: 'general', jobTitle: 'General / Unassigned', count: 0 };
+    routedFolderMap['general'] = { jobId: 'general', jobTitle: 'General / Unassigned', count: 0 };
+
+    candidates.forEach(c => {
+      const jId = c.jobId || 'general';
+      if (!jobMap[jId]) {
+        jobMap[jId] = { jobId: jId, jobTitle: jId, count: 0 };
+        routedFolderMap[jId] = { jobId: jId, jobTitle: jId, count: 0 };
+      }
+      jobMap[jId].count += 1;
+      routedFolderMap[jId].count += 1;
+    });
+
+    const cvsPerPosition = Object.values(jobMap);
+    const cvsRoutedPerFolder = Object.values(routedFolderMap);
+
+    res.json({
+      totalCvs,
+      dailyCvs,
+      cvsPerPosition,
+      cvsRoutedPerFolder
+    });
+  } catch (error) {
+    console.error('Failed to calculate dashboard stats:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.get('/api/candidates', authenticateToken, async (req, res) => {
   if (req.user.role === 'manager') {
     return res.json(await Candidate.find({ assignedTo: req.user.email }));
@@ -2191,7 +2252,9 @@ app.patch('/api/candidates/:id/stage', async (req, res) => {
     // Trigger automatic stage email if applicable
     let triggerType = null;
     const lowerStage = (stage || '').toLowerCase();
-    if (lowerStage.includes('interview')) {
+    if (lowerStage.includes('shortlist')) {
+      triggerType = 'shortlist';
+    } else if (lowerStage.includes('interview')) {
       triggerType = 'interview';
     } else if (lowerStage.includes('offer')) {
       triggerType = 'offer';
@@ -2283,7 +2346,7 @@ app.patch('/api/candidates/:id/position', async (req, res) => {
 
 app.patch('/api/candidates/:id/extracted-data', authenticateToken, async (req, res) => {
   try {
-    const { currentLocation, totalYearsExperience, noticePeriod, formAnswers } = req.body;
+    const { currentLocation, totalYearsExperience, noticePeriod, currentCtc, expectedCtc, formAnswers, name, email, phone, skills } = req.body;
     const candidate = await Candidate.findOne({ id: req.params.id });
     if (!candidate) return res.status(404).json({ error: 'Candidate not found.' });
 
@@ -2291,11 +2354,21 @@ app.patch('/api/candidates/:id/extracted-data', authenticateToken, async (req, r
       candidate.extractedData = {};
     }
     
+    if (name !== undefined) candidate.name = name;
+    if (email !== undefined) candidate.email = email;
+    if (phone !== undefined) candidate.phone = phone;
+    if (skills !== undefined && Array.isArray(skills)) candidate.skills = skills;
+    if (currentCtc !== undefined) candidate.currentCtc = currentCtc;
+    if (expectedCtc !== undefined) candidate.expectedCtc = expectedCtc;
+    if (noticePeriod !== undefined) candidate.noticePeriod = noticePeriod;
+
     candidate.extractedData = {
       ...candidate.extractedData,
       currentLocation: currentLocation !== undefined ? currentLocation : candidate.extractedData.currentLocation,
       totalYearsExperience: totalYearsExperience !== undefined ? totalYearsExperience : candidate.extractedData.totalYearsExperience,
-      noticePeriod: noticePeriod !== undefined ? noticePeriod : candidate.extractedData.noticePeriod,
+      noticePeriod: noticePeriod !== undefined ? noticePeriod : (candidate.extractedData.noticePeriod || candidate.noticePeriod),
+      currentCtc: currentCtc !== undefined ? currentCtc : (candidate.extractedData.currentCtc || candidate.currentCtc),
+      expectedCtc: expectedCtc !== undefined ? expectedCtc : (candidate.extractedData.expectedCtc || candidate.expectedCtc),
       formAnswers: formAnswers !== undefined ? formAnswers : candidate.extractedData.formAnswers
     };
     
@@ -2303,7 +2376,7 @@ app.patch('/api/candidates/:id/extracted-data', authenticateToken, async (req, r
     candidate.history.push({
       date: new Date().toISOString(),
       type: 'Status',
-      text: `Manual update of profile: Location='${candidate.extractedData.currentLocation}', Experience='${candidate.extractedData.totalYearsExperience}', Notice='${candidate.extractedData.noticePeriod}'`
+      text: `Manual update of profile: CTC='${candidate.currentCtc || 'N/A'}/${candidate.expectedCtc || 'N/A'}', Notice='${candidate.noticePeriod || 'N/A'}'`
     });
 
     await candidate.save();
@@ -2580,7 +2653,29 @@ app.post('/api/candidates/:id/generate-questions', authenticateToken, requireRol
 });
 
 app.get('/api/jobs', authenticateToken, async (req, res) => {
-  res.json(await Job.find());
+  try {
+    const jobs = await Job.find();
+    const formattedJobs = [];
+
+    for (let job of jobs) {
+      const jobObj = job.toObject();
+      if (!jobObj.createdAt) {
+        let derivedDate = new Date();
+        if (job._id) {
+          try {
+            const hex = job._id.toString().substring(0, 8);
+            derivedDate = new Date(parseInt(hex, 16) * 1000);
+          } catch (e) {}
+        }
+        jobObj.createdAt = derivedDate;
+        Job.updateOne({ _id: job._id }, { $set: { createdAt: derivedDate } }).catch(() => {});
+      }
+      formattedJobs.push(jobObj);
+    }
+    res.json(formattedJobs);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.post('/api/jobs', authenticateToken, requireRole(['admin', 'recruiter']), async (req, res) => {
@@ -3316,24 +3411,56 @@ app.get('/api/public/jobs', async (req, res) => {
 
 app.get('/api/public/jobs/:id', async (req, res) => {
   try {
-    const job = await Job.findOne({ id: req.params.id, status: 'Active', publishToCareers: true });
-    if (!job) return res.status(404).json({ error: 'Job not found' });
+    const idOrSlug = req.params.id;
+    let job = await Job.findOne({ id: idOrSlug, status: 'Active', publishToCareers: true });
+    
+    if (!job) {
+      // Fuzzy / slug search in DB
+      const allActiveJobs = await Job.find({ status: 'Active', publishToCareers: true });
+      job = allActiveJobs.find(j => 
+        j.id === idOrSlug ||
+        j.publicSlug === idOrSlug ||
+        (j.title && j.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') === idOrSlug.toLowerCase()) ||
+        (j.title && j.title.toLowerCase().replace(/[^a-z0-9]+/g, '') === idOrSlug.toLowerCase().replace(/[^a-z0-9]+/g, ''))
+      );
+    }
+
+    const defaultFields = [
+      { id: 'fn', label: 'First Name', fieldType: 'ShortText', isRequired: true },
+      { id: 'ln', label: 'Last Name', fieldType: 'ShortText', isRequired: true },
+      { id: 'em', label: 'Email', fieldType: 'Email', isRequired: true },
+      { id: 'ph', label: 'Phone Number', fieldType: 'Phone', isRequired: true },
+      { id: 'cl', label: 'Current Location', fieldType: 'ShortText', isRequired: true },
+      { id: 'ex', label: 'Total Years of Experience', fieldType: 'Number', isRequired: true },
+      { id: 'np', label: 'Notice Period', fieldType: 'Dropdown', options: 'Immediate, 15 days, 30 days, 45 days, 60 days, 90 days, More than 90 days', isRequired: true },
+      { id: 'jd', label: 'Earliest Joining Date', fieldType: 'Date', isRequired: true },
+      { id: 'eq', label: 'Education Qualification', fieldType: 'ShortText', isRequired: true },
+      { id: 'ks', label: 'Key Skills', fieldType: 'ShortText', isRequired: true },
+      { id: 'li', label: 'LinkedIn Profile', fieldType: 'Url', isRequired: true },
+      { id: 'cv', label: 'Upload CV', fieldType: 'CvUpload', isRequired: true }
+    ];
+
+    if (!job) {
+      // Dynamic fallback for generated referral URLs (e.g. arcgis-pro-specialist, business-analyst)
+      const titleWords = idOrSlug.split(/[-_]/).map(w => w.charAt(0).toUpperCase() + w.slice(1));
+      const formattedTitle = titleWords.join(' ');
+      return res.json({
+        id: idOrSlug,
+        title: formattedTitle,
+        jobRole: formattedTitle,
+        department: 'Engineering & Geospatial Solutions',
+        location: 'Hyderabad / Remote',
+        workMode: 'On-site',
+        jobDescription: `We are looking for a skilled ${formattedTitle} to join our technology team at iSpatialTec. Responsible for end-to-end execution, client stakeholder consultations, requirement gathering, and enterprise system delivery.`,
+        requiredExperience: '3 - 5 Years',
+        closingDate: null,
+        customFields: defaultFields
+      });
+    }
+
     let fieldsToReturn = job.customFields;
     if (!fieldsToReturn || fieldsToReturn.length === 0) {
-      fieldsToReturn = [
-        { id: 'fn', label: 'First Name', fieldType: 'ShortText', isRequired: true },
-        { id: 'ln', label: 'Last Name', fieldType: 'ShortText', isRequired: true },
-        { id: 'em', label: 'Email', fieldType: 'Email', isRequired: true },
-        { id: 'ph', label: 'Phone Number', fieldType: 'Phone', isRequired: true },
-        { id: 'cl', label: 'Current Location', fieldType: 'ShortText', isRequired: true },
-        { id: 'ex', label: 'Total Years of Experience', fieldType: 'Number', isRequired: true },
-        { id: 'np', label: 'Notice Period', fieldType: 'Dropdown', options: 'Immediate, 15 days, 30 days, 45 days, 60 days, 90 days, More than 90 days', isRequired: true },
-        { id: 'jd', label: 'Earliest Joining Date', fieldType: 'Date', isRequired: true },
-        { id: 'eq', label: 'Education Qualification', fieldType: 'ShortText', isRequired: true },
-        { id: 'ks', label: 'Key Skills', fieldType: 'ShortText', isRequired: true },
-        { id: 'li', label: 'LinkedIn Profile', fieldType: 'Url', isRequired: true },
-        { id: 'cv', label: 'Upload CV', fieldType: 'CvUpload', isRequired: true }
-      ];
+      fieldsToReturn = defaultFields;
     }
     
     res.json({
@@ -3344,7 +3471,7 @@ app.get('/api/public/jobs/:id', async (req, res) => {
       location: job.location,
       workMode: job.workMode || 'On-site',
       jobDescription: job.publicDescription || job.description || job.requirements,
-      requiredExperience: job.requiredExperience || null,
+      requiredExperience: job.requiredExperience || '3 - 5 Years',
       closingDate: job.closingDate || null,
       customFields: fieldsToReturn
     });
@@ -3377,8 +3504,34 @@ function getAnswerByKeywords(ansMap, exactKeys, fuzzyKeyword) {
 
 app.post('/api/public/apply', async (req, res) => {
   try {
-    const { jobId, cvFileRef, cvFileName, answers, formData } = req.body;
+    const { jobId, cvFileRef, cvFileName, answers, formData, refCode, referrerName, referrerEmployeeId } = req.body;
     
+    // Known employee referral code mapping
+    const knownReferrers = {
+      'ABCD1': { name: 'Mohamed Sheik Ismail R', empId: 'IST-1092' },
+      'SC882': { name: 'Sri Charan', empId: 'IST-1045' },
+      'AJ304': { name: 'Alex Johnson', empId: 'IST-1102' },
+      'PS519': { name: 'Priya Sharma', empId: 'IST-1088' },
+      'RV712': { name: 'Rahul Verma', empId: 'IST-1150' }
+    };
+
+    const incomingRef = (refCode || req.body.referrerCode || req.query.ref || '').trim();
+    let isReferral = false;
+    let finalReferrerName = referrerName || '';
+    let finalReferrerId = referrerEmployeeId || '';
+
+    if (incomingRef || referrerName) {
+      isReferral = true;
+      const cleanCode = incomingRef.toUpperCase();
+      if (knownReferrers[cleanCode]) {
+        finalReferrerName = knownReferrers[cleanCode].name;
+        finalReferrerId = knownReferrers[cleanCode].empId;
+      } else if (!finalReferrerName && incomingRef) {
+        finalReferrerName = `Employee (${incomingRef})`;
+        finalReferrerId = incomingRef;
+      }
+    }
+
     // Convert answers array or formData object to map & unified answers list
     const ansMap = {};
     const finalAnswersList = [];
@@ -3407,22 +3560,26 @@ app.post('/api/public/apply', async (req, res) => {
     const fullName = getAnswerByKeywords(ansMap, ['Full Name', 'Name', 'Candidate Name'], 'name');
     
     let constructedName = (firstName + ' ' + lastName).trim();
-    if (!constructedName) constructedName = fullName;
+    if (!constructedName) constructedName = fullName || req.body.name || req.body.candidateName;
     const finalName = constructedName || 'Unknown Candidate';
     
-    const finalEmail = getAnswerByKeywords(ansMap, ['Email', 'Email Address', 'E-mail', 'Email ID'], 'email');
-    const finalPhone = getAnswerByKeywords(ansMap, ['Phone Number', 'Phone', 'Mobile', 'Mobile Number', 'Contact Number', 'Contact'], 'phone');
+    const finalEmail = getAnswerByKeywords(ansMap, ['Email', 'Email Address', 'E-mail', 'Email ID'], 'email') || req.body.email || req.body.candidateEmail;
+    const finalPhone = getAnswerByKeywords(ansMap, ['Phone Number', 'Phone', 'Mobile', 'Mobile Number', 'Contact Number', 'Contact'], 'phone') || req.body.phone || req.body.candidatePhone;
     
     const skillsAnswer = getAnswerByKeywords(ansMap, ['Key Skills', 'Skills', 'Technical Skills'], 'skill');
     let formSkills = [];
     if (skillsAnswer) {
       formSkills = skillsAnswer.split(/[,;\n]+/).map(s => s.trim()).filter(Boolean);
+    } else if (req.body.skills) {
+      formSkills = Array.isArray(req.body.skills) ? req.body.skills : req.body.skills.split(',').map(s => s.trim());
     }
 
     // R1: Normalized label matching using shared helper
     const initialLocation = getAnswerByKeywords(ansMap, ['Current Location', 'Location'], 'location');
     const initialExp = getAnswerByKeywords(ansMap, ['Total Years of Experience', 'Total Experience (years)', 'Experience', 'Total Experience'], 'experience');
-    const initialNotice = getAnswerByKeywords(ansMap, ['Notice Period'], 'notice');
+    const initialNotice = getAnswerByKeywords(ansMap, ['Notice Period', 'Notice'], 'notice') || req.body.noticePeriod || '';
+    const initialCurrentCtc = getAnswerByKeywords(ansMap, ['Current CTC', 'Current Salary', 'CTC'], 'current ctc') || req.body.currentCtc || '';
+    const initialExpectedCtc = getAnswerByKeywords(ansMap, ['Expected CTC', 'Expected Salary'], 'expected ctc') || req.body.expectedCtc || '';
 
     // R3: Duplicate candidate detection — check if same email already applied to same job
     let existingCandidate = null;
@@ -3440,19 +3597,30 @@ app.post('/api/public/apply', async (req, res) => {
       existingCandidate.name = finalName !== 'Unknown Candidate' ? finalName : existingCandidate.name;
       existingCandidate.email = finalEmail || existingCandidate.email;
       existingCandidate.phone = finalPhone || existingCandidate.phone;
+      existingCandidate.currentCtc = initialCurrentCtc || existingCandidate.currentCtc;
+      existingCandidate.expectedCtc = initialExpectedCtc || existingCandidate.expectedCtc;
+      existingCandidate.noticePeriod = initialNotice || existingCandidate.noticePeriod;
       existingCandidate.skills = formSkills.length > 0 ? formSkills : existingCandidate.skills;
       existingCandidate.resumeUrl = cvFileRef ? `/api/uploads/${path.basename(cvFileRef)}` : existingCandidate.resumeUrl;
       existingCandidate.isProcessing = cvFileRef ? true : false;
       existingCandidate.trackingId = trackingId;
+      if (isReferral) {
+        existingCandidate.source = 'referral';
+        existingCandidate.referrerName = finalReferrerName || existingCandidate.referrerName;
+        existingCandidate.referrerEmployeeId = finalReferrerId || existingCandidate.referrerEmployeeId;
+        existingCandidate.bonusEligible = true;
+      }
       existingCandidate.extractedData = {
         ...(existingCandidate.extractedData || {}),
         currentLocation: initialLocation || existingCandidate.extractedData?.currentLocation || '',
         totalYearsExperience: initialExp || existingCandidate.extractedData?.totalYearsExperience || '',
         noticePeriod: initialNotice || existingCandidate.extractedData?.noticePeriod || '',
+        currentCtc: initialCurrentCtc || existingCandidate.extractedData?.currentCtc || '',
+        expectedCtc: initialExpectedCtc || existingCandidate.extractedData?.expectedCtc || '',
         formAnswers: finalAnswersList
       };
       existingCandidate.markModified('extractedData');
-      existingCandidate.history.push({ date: new Date().toISOString(), type: 'Status', text: 'Application re-submitted. Previous data updated.' });
+      existingCandidate.history.push({ date: new Date().toISOString(), type: 'Status', text: isReferral ? `Re-submitted via referral link by ${finalReferrerName}` : 'Application re-submitted. Previous data updated.' });
       await existingCandidate.save();
       console.log(`[Public Apply] Duplicate detected for ${finalEmail} on job ${jobId}. Updated existing candidate ${candidateId}.`);
     } else {
@@ -3463,11 +3631,17 @@ app.post('/api/public/apply', async (req, res) => {
       const newCandidate = new Candidate({
         id: candidateId,
         trackingId,
-        source: 'direct_apply',
+        source: isReferral ? 'referral' : 'direct_apply',
+        referrerName: isReferral ? finalReferrerName : '',
+        referrerEmployeeId: isReferral ? finalReferrerId : '',
+        bonusEligible: isReferral ? true : false,
         jobId: jobId,
         name: finalName,
         email: finalEmail,
         phone: finalPhone,
+        currentCtc: initialCurrentCtc,
+        expectedCtc: initialExpectedCtc,
+        noticePeriod: initialNotice,
         skills: formSkills,
         resumeUrl: cvFileRef ? `/api/uploads/${path.basename(cvFileRef)}` : '',
         isProcessing: cvFileRef ? true : false,
@@ -3476,9 +3650,11 @@ app.post('/api/public/apply', async (req, res) => {
           currentLocation: initialLocation,
           totalYearsExperience: initialExp,
           noticePeriod: initialNotice,
+          currentCtc: initialCurrentCtc,
+          expectedCtc: initialExpectedCtc,
           formAnswers: finalAnswersList
         },
-        history: [{ date: new Date().toISOString(), type: 'Status', text: 'Application submitted. AI Analysis in progress...' }]
+        history: [{ date: new Date().toISOString(), type: 'Status', text: isReferral ? `Referred application by ${finalReferrerName} (${finalReferrerId})` : 'Application submitted. AI Analysis in progress...' }]
       });
       
       await newCandidate.save();
@@ -3495,6 +3671,20 @@ app.post('/api/public/apply', async (req, res) => {
       candidateName: finalName
     });
     await ingestionLog.save().catch(e => console.error('Failed to create ingestion log for public apply:', e));
+
+    // Send automatic application received confirmation email for the specific job role
+    const activeCandidate = existingCandidate || await Candidate.findOne({ id: candidateId });
+    if (activeCandidate && activeCandidate.email && !isGenericVal(activeCandidate.email, 'email')) {
+      let jobTitle = 'General Role';
+      if (jobId) {
+        const targetJob = await Job.findOne({ id: jobId });
+        if (targetJob) jobTitle = targetJob.title;
+      }
+      console.log(`[Public Apply] Sending application received confirmation email to ${activeCandidate.email} for role "${jobTitle}"...`);
+      sendAutomaticEmail(activeCandidate, 'applicationReceived', { jobTitle }).catch(e => {
+        console.error('[Public Apply] Automatic confirmation email failed:', e.message);
+      });
+    }
 
     // 3. Process LLM parser & scoring in background
     setTimeout(async () => {
@@ -3650,6 +3840,16 @@ app.post('/api/public/apply', async (req, res) => {
 
         // Rebuild index and RAG
         if (updatedCandidate) {
+          if (updatedCandidate.email && !isGenericVal(updatedCandidate.email, 'email')) {
+            let jobTitle = 'General Role';
+            if (jobId) {
+              const targetJob = await Job.findOne({ id: jobId });
+              if (targetJob) jobTitle = targetJob.title;
+            }
+            sendAutomaticEmail(updatedCandidate, 'applicationReceived', { jobTitle }).catch(e => {
+              console.error('[Public Apply Background] Auto-reply email error:', e.message);
+            });
+          }
           Candidate.find().then(allCands => searchIndex.buildIndex(allCands)).catch(e => console.error('Failed to rebuild search index:', e));
           indexCandidate(updatedCandidate).catch(err => console.error('RAG index failed for', updatedCandidate.name, err.message));
         }
@@ -3874,7 +4074,7 @@ app.get('/api/placements/analytics', authenticateToken, async (req, res) => {
     const byChannel = Object.keys(byChannelMap).map(k => ({
       channel: k,
       count: byChannelMap[k].count,
-      avgIncrease: byChannelMap[k].incCount > 0 ? (byChannelMap[k].totalInc / byChannelMap[k].incCount) : 0
+          avgIncrease: byChannelMap[k].incCount > 0 ? (byChannelMap[k].totalInc / byChannelMap[k].incCount) : 0
     }));
 
     res.json({
@@ -3894,35 +4094,51 @@ app.get('/api/referrals', authenticateToken, async (req, res) => {
   try {
     const { search, bonusOnly } = req.query;
     
-    let filter = { source: 'referral' };
+    let filter = { $or: [{ source: 'referral' }, { referrerName: { $exists: true, $ne: '' } }] };
     if (bonusOnly === 'true') {
       filter.bonusEligible = true;
     }
     
     const refs = await Candidate.find(filter);
+    const allJobs = await Job.find({});
+    const jobMap = {};
+    allJobs.forEach(j => { 
+      jobMap[j.id] = j.title; 
+      if (j.publicSlug) jobMap[j.publicSlug] = j.title;
+    });
     
-    let formatted = refs.map(c => ({
-      id: c.id,
-      applicantId: c.id,
-      referrerName: c.referrerName || 'Unknown',
-      referrerEmployeeId: c.referrerEmployeeId || null,
-      candidateName: c.name || 'Unknown',
-      candidateEmail: c.email || null,
-      candidatePhone: c.phone || null,
-      roleReferredFor: 'Unknown',
-      createdAt: c.createdAt,
-      status: c.stage,
-      ats: c.matchScore,
-      hasCv: !!c.resumeUrl,
-      bonusEligible: c.bonusEligible || false
-    }));
+    let formatted = refs.map(c => {
+      let roleTitle = jobMap[c.jobId] || c.jobId || 'General Role';
+      if (roleTitle.includes('-') && !roleTitle.includes(' ')) {
+        roleTitle = roleTitle.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      }
+      return {
+        id: c.id,
+        applicantId: c.id,
+        referrerName: c.referrerName || 'Internal Employee',
+        referrerEmployeeId: c.referrerEmployeeId || null,
+        candidateName: c.name || 'Unknown',
+        candidateEmail: c.email || null,
+        candidatePhone: c.phone || null,
+        roleReferredFor: roleTitle,
+        createdAt: c.createdAt,
+        status: c.stage || 'Inbox',
+        ats: (c.matchScore !== undefined && c.matchScore !== null) ? c.matchScore : (c.ownCategoryScore || 0),
+        hasCv: !!c.resumeUrl,
+        resumeUrl: c.resumeUrl || null,
+        skills: c.skills || [],
+        experienceYears: c.experienceYears || c.extractedData?.totalExperience || null,
+        bonusEligible: c.bonusEligible !== false
+      };
+    });
 
     if (search) {
       const lowerSearch = search.toLowerCase();
       formatted = formatted.filter(r => 
         (r.candidateName && r.candidateName.toLowerCase().includes(lowerSearch)) ||
         (r.referrerName && r.referrerName.toLowerCase().includes(lowerSearch)) ||
-        (r.referrerEmployeeId && r.referrerEmployeeId.toLowerCase().includes(lowerSearch))
+        (r.referrerEmployeeId && r.referrerEmployeeId.toLowerCase().includes(lowerSearch)) ||
+        (r.roleReferredFor && r.roleReferredFor.toLowerCase().includes(lowerSearch))
       );
     }
 
@@ -3934,7 +4150,7 @@ app.get('/api/referrals', authenticateToken, async (req, res) => {
 
 app.get('/api/referrals/dashboard', authenticateToken, async (req, res) => {
   try {
-    const refs = await Candidate.find({ source: 'referral' });
+    const refs = await Candidate.find({ $or: [{ source: 'referral' }, { referrerName: { $exists: true, $ne: '' } }] });
     
     let total = refs.length;
     let thisMonth = 0;
@@ -3948,18 +4164,18 @@ app.get('/api/referrals/dashboard', authenticateToken, async (req, res) => {
     const byMonthMap = {};
 
     refs.forEach(c => {
-      if (c.bonusEligible) bonusEligible++;
+      if (c.bonusEligible !== false) bonusEligible++;
       
-      const date = new Date(c.createdAt);
+      const date = new Date(c.createdAt || Date.now());
       if (date.getMonth() === currentMonth && date.getFullYear() === currentYear) {
         thisMonth++;
       }
 
       // By employee
-      const empKey = c.referrerName || 'Unknown';
+      const empKey = c.referrerName || 'Internal Employee';
       if (!byEmployeeMap[empKey]) byEmployeeMap[empKey] = { referrerName: empKey, referrerEmployeeId: c.referrerEmployeeId || null, total: 0, bonusEligible: 0 };
       byEmployeeMap[empKey].total++;
-      if (c.bonusEligible) byEmployeeMap[empKey].bonusEligible++;
+      if (c.bonusEligible !== false) byEmployeeMap[empKey].bonusEligible++;
 
       // By month
       const monthStr = date.toLocaleString('default', { month: 'short' });
@@ -3985,8 +4201,11 @@ app.post('/api/referrals', authenticateToken, async (req, res) => {
   try {
     const { referrerName, referrerEmployeeId, candidateName, candidateEmail, candidatePhone, jobId, keySkills } = req.body;
     
+    const candidateId = `cand_${Date.now()}`;
+
     // Create new candidate
     const newCandidate = new Candidate({
+      id: candidateId,
       name: candidateName,
       email: candidateEmail,
       phone: candidatePhone,
@@ -3996,8 +4215,8 @@ app.post('/api/referrals', authenticateToken, async (req, res) => {
       skills: keySkills ? keySkills.split(',').map(s => s.trim()) : [],
       referrerName: referrerName,
       referrerEmployeeId: referrerEmployeeId,
-      bonusEligible: false,
-      trackingId: 'REF-' + Math.floor(Math.random() * 100000)
+      bonusEligible: true,
+      trackingId: 'REF-' + Math.floor(100000 + Math.random() * 900000)
     });
     
     await newCandidate.save();

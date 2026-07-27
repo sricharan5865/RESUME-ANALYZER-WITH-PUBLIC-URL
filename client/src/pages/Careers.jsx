@@ -8,23 +8,42 @@ export default function Careers({ backendUrl }) {
   const [search, setSearch] = useState('');
   const navigate = useNavigate();
 
+  // Fallback sample openings if backend jobs are empty
+  const defaultSampleJobs = [
+    { id: 'sample-1', title: 'GIS Technical Manager', requiredExperience: '10+ years', location: 'India (Remote)', department: 'Geospatial Solutions' },
+    { id: 'sample-2', title: 'Carbon Accounting Specialist', requiredExperience: '8+ years', location: 'Hyderabad', department: 'Environmental Tech' },
+    { id: 'sample-3', title: 'Business Analyst', requiredExperience: '4+ years', location: 'India (Remote)', department: 'Business Analysis' },
+    { id: 'sample-4', title: 'GIS Project Manager (PMP Certified)', requiredExperience: '8+ years', location: 'UAE/Bahrain', department: 'Project Management' },
+    { id: 'sample-5', title: 'Full Stack Team Lead – Development Centre', requiredExperience: '7+ Years', location: 'Ongole', department: 'Engineering' },
+    { id: 'sample-6', title: 'GIS Enterprise Administrator', requiredExperience: '8+ years', location: 'UAE', department: 'Infrastructure & GIS' },
+    { id: 'sample-7', title: 'Voice / Collaboration Engineer', requiredExperience: '8+ years', location: 'Hyderabad, India', department: 'IT Infrastructure' }
+  ];
+
   useEffect(() => {
     fetch(`${backendUrl}/api/public/jobs`)
       .then(r => r.json())
       .then(data => {
-        setJobs(Array.isArray(data) ? data : []);
+        if (Array.isArray(data) && data.length > 0) {
+          setJobs(data);
+        } else {
+          setJobs(defaultSampleJobs);
+        }
         setLoading(false);
       })
       .catch(err => {
         console.error('Failed to fetch public jobs:', err);
+        setJobs(defaultSampleJobs);
         setLoading(false);
       });
   }, [backendUrl]);
 
-  const filtered = jobs.filter(j => 
+  const displayJobs = jobs.length > 0 ? jobs : defaultSampleJobs;
+
+  const filtered = displayJobs.filter(j => 
     (j.title || '').toLowerCase().includes(search.toLowerCase()) || 
     (j.department || '').toLowerCase().includes(search.toLowerCase()) ||
-    (j.location || '').toLowerCase().includes(search.toLowerCase())
+    (j.location || '').toLowerCase().includes(search.toLowerCase()) ||
+    (j.requiredExperience || '').toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -46,13 +65,6 @@ export default function Careers({ backendUrl }) {
           {/* Top Quick Actions */}
           <div style={{ display: 'flex', gap: '12px' }}>
             <button 
-              onClick={() => navigate('/apply')}
-              className="btn-brand"
-              style={{ fontSize: '13px', padding: '10px 18px', borderRadius: '8px', fontWeight: '600' }}
-            >
-              Job Application Form
-            </button>
-            <button 
               onClick={() => navigate('/status')}
               className="btn-secondary-brand"
               style={{ fontSize: '13px', padding: '10px 18px', borderRadius: '8px' }}
@@ -65,7 +77,7 @@ export default function Careers({ backendUrl }) {
       </nav>
 
       {/* 2. Hero Section */}
-      <section style={{ padding: '60px 24px', background: 'linear-gradient(180deg, rgba(99, 102, 241, 0.12) 0%, rgba(7, 11, 20, 0) 100%)', textAlign: 'center' }}>
+      <section style={{ padding: '60px 24px 40px', background: 'linear-gradient(180deg, rgba(99, 102, 241, 0.12) 0%, rgba(7, 11, 20, 0) 100%)', textAlign: 'center' }}>
         <div style={{ maxWidth: '900px', margin: '0 auto' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 16px', borderRadius: '20px', backgroundColor: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.3)', color: '#38bdf8', fontSize: '13px', fontWeight: '600', marginBottom: '20px' }}>
             <Globe size={14} /> Global Enterprise GIS & AI Technology Leader
@@ -86,87 +98,136 @@ export default function Careers({ backendUrl }) {
         </div>
       </section>
 
-      {/* 3. Open Positions Section */}
-      <section style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 24px 60px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
-          <div>
-            <h2 style={{ fontSize: '24px', fontWeight: '700', color: '#ffffff', margin: 0 }}>Active Job Openings</h2>
-            <p style={{ fontSize: '14px', color: '#94a3b8', margin: '4px 0 0 0' }}>Explore current career opportunities at iSpatialTec</p>
-          </div>
+      {/* 3. CURRENT OPENINGS Tabular Section (Matching Image 2) */}
+      <section style={{ maxWidth: '1100px', margin: '0 auto', padding: '20px 24px 70px' }}>
+        
+        {/* Header Title */}
+        <h2 style={{ fontSize: '26px', fontWeight: '800', color: '#ffffff', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '32px' }}>
+          CURRENT OPENINGS
+        </h2>
 
-          {/* Search Box */}
-          <div style={{ position: 'relative', width: '320px' }}>
-            <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+        {/* Search Input Bar */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '20px' }}>
+          <div style={{ position: 'relative', width: '300px' }}>
+            <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
             <input 
               type="text" 
-              placeholder="Search by title, dept, location..." 
+              placeholder="Search by title, location..." 
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="input-field"
-              style={{ width: '100%', paddingLeft: '40px', paddingRight: '16px', height: '42px', fontSize: '14px', borderRadius: '8px', backgroundColor: '#0f172a', border: '1px solid #334155', color: '#ffffff' }}
+              style={{
+                width: '100%',
+                paddingLeft: '38px',
+                paddingRight: '14px',
+                height: '38px',
+                fontSize: '13px',
+                borderRadius: '8px',
+                backgroundColor: 'rgba(15, 23, 42, 0.8)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                color: '#ffffff',
+                outline: 'none'
+              }}
             />
           </div>
         </div>
 
-        {loading ? (
-          <div className="portal-card" style={{ textAlign: 'center', padding: '50px', color: '#94a3b8' }}>
-            Loading active positions...
+        {/* Tabular Form Container */}
+        <div style={{
+          backgroundColor: '#0f172a',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          borderRadius: '10px',
+          overflow: 'hidden',
+          boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)'
+        }}>
+          {/* Table Header Row */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '3fr 1.5fr 2fr 1fr',
+            padding: '16px 24px',
+            backgroundColor: '#161f36',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+            color: '#ffffff',
+            fontWeight: '700',
+            fontSize: '14px'
+          }}>
+            <div>Job Title</div>
+            <div>Experience</div>
+            <div>Location</div>
+            <div style={{ textAlign: 'right' }}></div>
           </div>
-        ) : filtered.length === 0 ? (
-          <div className="portal-card" style={{ textAlign: 'center', padding: '50px', color: '#94a3b8' }}>
-            No open positions found matching your search.
-          </div>
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '20px' }}>
-            {filtered.map(job => (
+
+          {/* Table Body Rows */}
+          {loading ? (
+            <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>
+              Loading current openings...
+            </div>
+          ) : filtered.length === 0 ? (
+            <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>
+              No open positions found matching your search.
+            </div>
+          ) : (
+            filtered.map((job, index) => (
               <div 
-                key={job.id} 
-                className="portal-card" 
-                style={{ 
-                  padding: '24px', 
-                  display: 'flex', 
-                  flexDirection: 'column', 
-                  justify: 'space-between', 
-                  border: '1px solid rgba(255, 255, 255, 0.08)', 
-                  backgroundColor: '#0f172a',
-                  borderRadius: '12px',
-                  transition: 'all 0.2s ease'
+                key={job.id || index}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '3fr 1.5fr 2fr 1fr',
+                  padding: '18px 24px',
+                  alignItems: 'center',
+                  borderBottom: index === filtered.length - 1 ? 'none' : '1px solid rgba(255, 255, 255, 0.07)',
+                  backgroundColor: index % 2 === 0 ? 'transparent' : 'rgba(255, 255, 255, 0.015)'
                 }}
               >
-                <div>
-                  <div style={{ display: 'inline-block', padding: '4px 10px', borderRadius: '6px', backgroundColor: 'rgba(99, 102, 241, 0.15)', color: '#818cf8', fontSize: '12px', fontWeight: '600', marginBottom: '12px' }}>
-                    {job.department || 'Engineering'}
-                  </div>
-                  <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#ffffff', marginBottom: '12px' }}>{job.title}</h3>
-                  
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px', color: '#94a3b8', marginBottom: '20px' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <MapPin size={14} style={{ color: '#38bdf8' }} /> {job.location || 'Hyderabad, India / Remote'}
-                    </span>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <Briefcase size={14} style={{ color: '#38bdf8' }} /> {job.workMode || 'Full-time / On-site'}
-                    </span>
-                  </div>
+                {/* Job Title */}
+                <div style={{ fontSize: '15px', fontWeight: '500', color: '#ffffff' }}>
+                  {job.title}
                 </div>
 
-                <div style={{ paddingTop: '16px', borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                {/* Experience */}
+                <div style={{ fontSize: '14px', color: '#cbd5e1' }}>
+                  {job.requiredExperience || '4+ years'}
+                </div>
+
+                {/* Location */}
+                <div style={{ fontSize: '14px', color: '#cbd5e1' }}>
+                  {job.location || 'India (Remote)'}
+                </div>
+
+                {/* Action Button */}
+                <div style={{ textAlign: 'right' }}>
                   <button 
                     onClick={() => navigate(`/apply/${job.id}`)}
-                    className="btn-brand"
-                    style={{ width: '100%', padding: '10px 16px', fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                    style={{
+                      padding: '8px 22px',
+                      backgroundColor: 'transparent',
+                      border: '1px solid rgba(56, 189, 248, 0.5)',
+                      borderRadius: '6px',
+                      color: '#ffffff',
+                      fontSize: '13px',
+                      fontWeight: '500',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#38bdf8';
+                      e.currentTarget.style.color = '#0f172a';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.color = '#ffffff';
+                    }}
                   >
-                    Know More / Apply <ArrowRight size={14} />
+                    Know More
                   </button>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
+            ))
+          )}
+        </div>
+
       </section>
 
       {/* 4. Global Offices Footer */}
-
-      {/* 5. Global Offices Footer */}
       <footer style={{ backgroundColor: '#030712', borderTop: '1px solid rgba(255, 255, 255, 0.08)', padding: '60px 24px 30px' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
           

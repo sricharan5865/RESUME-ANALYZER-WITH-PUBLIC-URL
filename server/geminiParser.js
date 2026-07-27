@@ -953,10 +953,10 @@ function mapAnalysisToQuestions(parsedData, isJdMatch = false) {
       { question: "What is your official notice period and earliest joining date?", answer: "Verify candidate's current contractual notice period and availability.", importance: "CRITICAL" },
       { question: "What are your salary expectations (Current CTC vs Expected CTC)?", answer: "Confirm current compensation and expected package.", importance: "CRITICAL" },
       { question: "Are you comfortable with the job location and work mode (Onsite/Hybrid/Remote)?", answer: "Confirm location preference or willingness to relocate.", importance: "IMPORTANT" },
-      { question: "Tell me about your background and how it prepares you for this role?", answer: "I have a solid foundation in my field and have delivered key projects in my previous roles.", importance: "OPTIONAL" },
-      { question: "Why are you interested in joining our company?", answer: "I admire your company's scale and culture, and my skills align with your goals.", importance: "OPTIONAL" },
-      { question: "Describe a challenging situation at work and how you resolved it.", answer: "I analyzed the root cause, collaborated with the team, and deployed a resolution under pressure.", importance: "OPTIONAL" },
-      { question: "Do you have any questions for us?", answer: "What are the biggest challenges the team is facing, and what does success look like?", importance: "OPTIONAL" }
+      { question: "Tell me about your background and how it prepares you for this role?", answer: "Evaluate candidate's explanation of their background and preparation.", importance: "OPTIONAL" },
+      { question: "Why are you interested in joining our company?", answer: "Assess candidate's motivation and alignment with company goals.", importance: "OPTIONAL" },
+      { question: "Describe a challenging situation at work and how you resolved it.", answer: "Evaluate candidate's problem-solving approach and resilience under pressure.", importance: "OPTIONAL" },
+      { question: "Do you have any questions for us?", answer: "Observe candidate's engagement and curiosity about the role.", importance: "OPTIONAL" }
     ];
     let idx = 0;
     while (slicedPersonalized.length < 7 && idx < defaultHr.length) {
@@ -972,13 +972,13 @@ function mapAnalysisToQuestions(parsedData, isJdMatch = false) {
     technicalQuestions = technicalQuestions.slice(0, 7);
   } else {
     const defaultTech = [
-      { question: "What is your primary technical stack and how do you decide which technology to use?", answer: "I prioritize technology based on scalability, maintainability, team familiarity, and the specific needs of the project.", importance: "OPTIONAL" },
-      { question: "How do you ensure code quality and prevent bugs in production?", answer: "I write comprehensive unit tests, perform thorough code reviews, use CI/CD pipelines, and monitor system telemetry.", importance: "OPTIONAL" },
-      { question: "Explain the difference between SQL and NoSQL databases, and when to use each.", answer: "Use SQL for structured, relational data with ACID compliance; use NoSQL for unstructured, high-throughput, horizontally scalable data.", importance: "OPTIONAL" },
-      { question: "How do you optimize a slow database query or application bottleneck?", answer: "I profile execution plans, add appropriate database indexes, implement caching, and optimize algorithmic complexity.", importance: "OPTIONAL" },
-      { question: "What is your approach to designing microservices or modular systems?", answer: "I design around domain-boundaries, ensure loose coupling, use asynchronous messaging, and prioritize API contract versioning.", importance: "OPTIONAL" },
-      { question: "Describe your experience with cloud services and infrastructure-as-code.", answer: "I use AWS/GCP services for hosting, compute, and storage, and automate provisioning using tools like Terraform or CloudFormation.", importance: "OPTIONAL" },
-      { question: "How do you stay up-to-date with new technologies and industry trends?", answer: "I read technical blogs, contribute to open source projects, build personal side-projects, and participate in developer communities.", importance: "OPTIONAL" }
+      { question: "What is your primary technical stack and how do you decide which technology to use?", answer: "Evaluate candidate's decision making on tech stack selection.", importance: "OPTIONAL" },
+      { question: "How do you ensure code quality and prevent bugs in production?", answer: "Assess candidate's experience with testing, code reviews, and CI/CD.", importance: "OPTIONAL" },
+      { question: "Explain the difference between SQL and NoSQL databases, and when to use each.", answer: "Evaluate database architecture and data modeling knowledge.", importance: "OPTIONAL" },
+      { question: "How do you optimize a slow database query or application bottleneck?", answer: "Assess profiling, indexing, caching, and performance tuning skills.", importance: "OPTIONAL" },
+      { question: "What is your approach to designing microservices or modular systems?", answer: "Evaluate modular architecture, domain boundaries, and API design.", importance: "OPTIONAL" },
+      { question: "Describe your experience with cloud services and infrastructure-as-code.", answer: "Verify cloud platform hands-on experience and deployment practices.", importance: "OPTIONAL" },
+      { question: "How do you stay up-to-date with new technologies and industry trends?", answer: "Observe continuous learning habits and passion for tech.", importance: "OPTIONAL" }
     ];
     let idx = 0;
     while (technicalQuestions.length < 7 && idx < defaultTech.length) {
@@ -990,13 +990,13 @@ function mapAnalysisToQuestions(parsedData, isJdMatch = false) {
   }
 
   const fixedScreening = [
-    { question: "Are you looking for a job?", answer: "Yes, I am actively exploring new career opportunities that align with my skillset and growth goals.", importance: "SCREENING" },
-    { question: "How many years of experience do you have?", answer: "I have professional experience as detailed in my resume, spanning my key roles.", importance: "SCREENING" },
-    { question: "What is the reason for your job change?", answer: "I am seeking a new challenge where I can contribute to impactful projects and continue growing professionally.", importance: "SCREENING" },
-    { question: "What is your current CTC?", answer: "My current compensation is aligned with the industry standard for my level, and I can discuss details as we proceed.", importance: "SCREENING" },
-    { question: "What is your expected CTC?", answer: "I am looking for a competitive offer that reflects the role's responsibilities and my experience.", importance: "SCREENING" },
-    { question: "What is your notice period?", answer: "My notice period is standard, but I will check if there is any flexibility for an early release.", importance: "SCREENING" },
-    { question: "Is your notice period negotiable? (If the notice period is 30, 60, or 90 days)", answer: "I am open to negotiating the notice period or using accrued leaves to facilitate a smooth and faster transition.", importance: "SCREENING" }
+    { question: "Are you looking for a job?", answer: "Verify candidate active job search status.", importance: "SCREENING" },
+    { question: "How many years of experience do you have?", answer: "Verify candidate total years of relevant experience.", importance: "SCREENING" },
+    { question: "What is the reason for your job change?", answer: "Assess candidate motivation for switching roles.", importance: "SCREENING" },
+    { question: "What is your current CTC?", answer: "Confirm current base and variable compensation.", importance: "SCREENING" },
+    { question: "What is your expected CTC?", answer: "Confirm expected compensation expectations.", importance: "SCREENING" },
+    { question: "What is your notice period?", answer: "Verify notice period duration.", importance: "SCREENING" },
+    { question: "Is your notice period negotiable? (If the notice period is 30, 60, or 90 days)", answer: "Check notice period buyout or early release feasibility.", importance: "SCREENING" }
   ];
 
   const hrQuestions = isJdMatch ? slicedPersonalized : [...fixedScreening, ...slicedPersonalized];
@@ -1008,7 +1008,8 @@ function mapAnalysisToQuestions(parsedData, isJdMatch = false) {
 function getRecruiterSystemInstruction(aiProvider) {
   const todayDateString = new Date().toDateString();
   const baseInstruction = `Senior recruiter bot. Date: ${todayDateString}. Analyze resume facts. Output structured JSON. Ground all claims/dates strictly in resume text. Fix OCR typos in links (e.g. iinkedin->linkedin).
-CRITICAL: All generated interview questions must be extremely short, direct, and punchy (MAXIMUM 15 words). They MUST be written in plain English so that a non-technical HR recruiter can easily read and ask them out loud without stumbling over complex technical jargon. All generated sample/model answers/templates must be very brief and concise (MAXIMUM 30 words). Do not write long paragraphs or multiple sentences.
+CRITICAL: Extract ONLY facts present in the resume. If experience, projects, education, or skills are missing in the resume text, return empty arrays []. DO NOT invent, hallucinate, or insert fake companies, job titles, or projects.
+All generated interview questions must be extremely short, direct, and punchy (MAXIMUM 15 words). All generated sample answers/templates must be brief evaluator guidance (MAXIMUM 30 words).
 Sections:
 1. Gaps: Flag gaps >= 2 months. Include date range, duration, probing question (max 15 words), and sample answer (max 30 words).
 2. Technical Audit: List all skills. Judge if backed by specifics (versions, scale, outcomes) or name-dropped. Write probe questions (max 15 words) + answer templates (max 30 words) for shallow skills.
@@ -1206,6 +1207,14 @@ export async function parseResume(resumeText, pdfBase64 = null) {
       noticePeriod: {
         type: 'STRING',
         description: 'Mentioned notice period (e.g. Immediate, 30 days). Return empty string if not found.'
+      },
+      currentCtc: {
+        type: 'STRING',
+        description: 'Mentioned current salary/CTC (e.g. 12 LPA, $90,000). Return empty string if not found.'
+      },
+      expectedCtc: {
+        type: 'STRING',
+        description: 'Mentioned expected salary/CTC (e.g. 16 LPA, $110,000). Return empty string if not found.'
       }
     },
     required: ['name', 'email', 'skills', 'experience', 'education', 'seniorityLevel', 'interviewQuestions', 'career_gaps', 'technical_depth_audit', 'domain_question_bank', 'project_deep_dive', 'hr_questions', 'red_flags', 'must_prepare_topics', 'fit_summary', 'projects', 'currentLocation', 'totalYearsExperience', 'noticePeriod']

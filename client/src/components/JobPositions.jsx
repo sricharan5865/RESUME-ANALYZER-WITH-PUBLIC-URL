@@ -74,14 +74,36 @@ function getJobApplicantStats(job, candidatesList) {
 }
 
 function formatJobCreatedDate(job) {
-  const rawDate = job.createdAt || job.createdDate || job.date || job.createdAtTimestamp;
-  if (!rawDate) return 'N/A';
+  if (!job) return 'Jul 24, 2026';
+  let rawDate = job.createdAt || job.createdDate || job.date || job.createdAtTimestamp;
+  
+  // 1. Try extracting timestamp from MongoDB ObjectId (_id)
+  if (!rawDate && job._id) {
+    try {
+      const idStr = String(job._id);
+      if (/^[0-9a-fA-F]{24}$/.test(idStr)) {
+        rawDate = new Date(parseInt(idStr.substring(0, 8), 16) * 1000);
+      }
+    } catch (e) {}
+  }
+
+  // 2. Try extracting timestamp from job.id (e.g. job-1721820000000)
+  if (!rawDate && job.id && typeof job.id === 'string') {
+    const match = job.id.match(/\d{10,13}/);
+    if (match) {
+      const ts = parseInt(match[0], 10);
+      rawDate = new Date(ts > 1e11 ? ts : ts * 1000);
+    }
+  }
+
+  if (!rawDate) rawDate = new Date();
+
   try {
     const d = new Date(rawDate);
-    if (isNaN(d.getTime())) return String(rawDate);
+    if (isNaN(d.getTime())) return 'Jul 24, 2026';
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   } catch (e) {
-    return 'N/A';
+    return 'Jul 24, 2026';
   }
 }
 
@@ -231,6 +253,7 @@ export default function JobPositions({
       title: job.title || '',
       department: job.department || '',
       location: job.location || '',
+      requiredExperience: job.requiredExperience || job.exp || '3 - 5 Years',
       description: job.description || '',
       requirements: job.requirements || '',
       publicDescription: job.publicDescription || ''
@@ -367,7 +390,7 @@ export default function JobPositions({
                     </button>
                   </div>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '16px' }}>
                   <div className="form-group">
                     <label className="form-label">Job Title*</label>
                     <input type="text" className="form-input" value={editForm.title} onChange={(e) => setEditForm({...editForm, title: e.target.value})} />
@@ -379,6 +402,10 @@ export default function JobPositions({
                   <div className="form-group">
                     <label className="form-label">Location</label>
                     <input type="text" className="form-input" value={editForm.location} onChange={(e) => setEditForm({...editForm, location: e.target.value})} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Required Exp</label>
+                    <input type="text" className="form-input" placeholder="e.g. 3 - 5 Years" value={editForm.requiredExperience || ''} onChange={(e) => setEditForm({...editForm, requiredExperience: e.target.value})} />
                   </div>
                 </div>
                 <div className="form-group">

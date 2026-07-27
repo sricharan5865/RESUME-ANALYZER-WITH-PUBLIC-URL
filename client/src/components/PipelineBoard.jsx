@@ -857,17 +857,6 @@ export default function PipelineBoard({
                                 <Mail size={12} /> Contact
                               </button>
 
-                              {onOpenOfferModal && (
-                                <button 
-                                  className="btn btn-secondary" 
-                                  style={{ padding: '4px 8px', fontSize: '10px', color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.3)' }}
-                                  onClick={() => onOpenOfferModal(candidate)}
-                                  title="Generate & Send Offer Letter"
-                                >
-                                  <FileText size={12} /> Offer
-                                </button>
-                              )}
-
                               <button 
                                 className="btn btn-danger" 
                                 style={{ padding: '4px 8px', fontSize: '10px' }}

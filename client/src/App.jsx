@@ -27,6 +27,7 @@ import Careers from './pages/Careers';
 import PublicApply from './pages/PublicApply';
 import StatusTracker from './pages/StatusTracker';
 import ReferForm from './pages/ReferForm';
+import ReferralGenerator from './pages/ReferralGenerator';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '';
 
@@ -381,11 +382,17 @@ export default function App() {
       <div className="public-app">
         <Routes>
           <Route path="/careers" element={<Careers backendUrl={BACKEND_URL} />} />
+          <Route path="/careers/:jobId" element={<PublicApply backendUrl={BACKEND_URL} />} />
+          <Route path="/careers/:jobId/*" element={<PublicApply backendUrl={BACKEND_URL} />} />
           <Route path="/apply" element={<PublicApply backendUrl={BACKEND_URL} />} />
           <Route path="/apply/:jobId" element={<PublicApply backendUrl={BACKEND_URL} />} />
+          <Route path="/apply/:jobId/*" element={<PublicApply backendUrl={BACKEND_URL} />} />
           <Route path="/status/:trackingId?" element={<StatusTracker backendUrl={BACKEND_URL} />} />
           <Route path="/status" element={<StatusTracker backendUrl={BACKEND_URL} />} />
           <Route path="/refer" element={<ReferForm backendUrl={BACKEND_URL} />} />
+          <Route path="/referral" element={<ReferralGenerator backendUrl={BACKEND_URL} />} />
+          <Route path="/referral/*" element={<ReferralGenerator backendUrl={BACKEND_URL} />} />
+          <Route path="*" element={<Careers backendUrl={BACKEND_URL} />} />
         </Routes>
       </div>
     );

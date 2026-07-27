@@ -12,6 +12,9 @@ const candidateSchema = new mongoose.Schema({
   email: { type: String },
   phone: { type: String },
   linkedinUrl: { type: String },
+  currentCtc: { type: String, default: '' },
+  expectedCtc: { type: String, default: '' },
+  noticePeriod: { type: String, default: '' },
   skills: [String],
   experience: [
     {
@@ -200,6 +203,7 @@ const jobSchema = new mongoose.Schema({
   workMode: { type: String, default: 'On-site' },
   requiredExperience: { type: String },
   closingDate: { type: Date },
+  createdAt: { type: Date, default: Date.now },
   customFields: [
     {
       id: String,
@@ -210,7 +214,7 @@ const jobSchema = new mongoose.Schema({
       placeholder: String
     }
   ]
-});
+}, { timestamps: true });
 
 const settingsSchema = new mongoose.Schema({
   _id: { type: String, default: 'global' }, // Singleton

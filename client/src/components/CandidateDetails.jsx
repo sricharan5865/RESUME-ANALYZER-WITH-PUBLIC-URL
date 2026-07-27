@@ -161,6 +161,8 @@ export default function CandidateDetails({ candidate: propCandidate, job, jobs =
     fieldsToRender.push(
       { id: 'loc', label: 'Location', fieldType: 'ShortText' },
       { id: 'exp', label: 'Experience', fieldType: 'ShortText' },
+      { id: 'cctc', label: 'Current CTC', fieldType: 'ShortText' },
+      { id: 'ectc', label: 'Expected CTC', fieldType: 'ShortText' },
       { id: 'not', label: 'Notice Period', fieldType: 'ShortText' }
     );
   }
@@ -262,6 +264,8 @@ export default function CandidateDetails({ candidate: propCandidate, job, jobs =
       const locationKey = Object.keys(editedAnswers).find(k => k.toLowerCase().includes('location')) || 'Current Location';
       const experienceKey = Object.keys(editedAnswers).find(k => k.toLowerCase().includes('experience')) || 'Total Years of Experience';
       const noticeKey = Object.keys(editedAnswers).find(k => k.toLowerCase().includes('notice')) || 'Notice Period';
+      const currentCtcKey = Object.keys(editedAnswers).find(k => k.toLowerCase().includes('current ctc') || k.toLowerCase() === 'ctc') || 'Current CTC';
+      const expectedCtcKey = Object.keys(editedAnswers).find(k => k.toLowerCase().includes('expected ctc')) || 'Expected CTC';
 
       const res = await fetch(`${backendUrl}/api/candidates/${candidate.id}/extracted-data`, {
         method: 'PATCH',
@@ -273,6 +277,8 @@ export default function CandidateDetails({ candidate: propCandidate, job, jobs =
           currentLocation: editedAnswers[locationKey] || '',
           totalYearsExperience: editedAnswers[experienceKey] || '',
           noticePeriod: editedAnswers[noticeKey] || '',
+          currentCtc: editedAnswers[currentCtcKey] || candidate.currentCtc || '',
+          expectedCtc: editedAnswers[expectedCtcKey] || candidate.expectedCtc || '',
           formAnswers: formAnswers
         })
       });
@@ -971,8 +977,8 @@ export default function CandidateDetails({ candidate: propCandidate, job, jobs =
                       {fieldsToRender.map(f => (
                         <div key={f.id || f.label} style={{ background: 'rgba(255,255,255,0.01)', padding: '6px 8px', borderRadius: '4px', border: '1px dashed var(--glass-border)', minWidth: '80px', overflow: 'hidden' }}>
                           <span style={{ display: 'block', fontSize: '10px', color: 'var(--text-secondary)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }} title={f.label}>{f.label}</span>
-                          <strong style={{ fontSize: '12px', color: 'var(--text-primary)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }} title={editedAnswers[f.label]}>
-                            {editedAnswers[f.label] || '—'}
+                          <strong style={{ fontSize: '12px', color: editedAnswers[f.label] ? 'var(--text-primary)' : 'var(--text-muted)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }} title={editedAnswers[f.label] || 'Not provided / No field found'}>
+                            {editedAnswers[f.label] || 'Not provided'}
                           </strong>
                         </div>
                       ))}
@@ -1579,19 +1585,19 @@ export default function CandidateDetails({ candidate: propCandidate, job, jobs =
                   </div>
                 ))
               ) : (
-                <div style={{ color: 'var(--text-secondary)', fontSize: '13px', fontStyle: 'italic' }}>
-                  No experience details extracted.
+                <div style={{ color: 'var(--text-muted)', fontSize: '13px', fontStyle: 'italic', padding: '12px 14px', background: 'rgba(255,255,255,0.02)', borderRadius: '6px', border: '1px dashed var(--glass-border)' }}>
+                  No work experience details found in resume.
                 </div>
               )}
             </div>
           </div>
 
           {/* Projects */}
-          {candidate.projects && candidate.projects.length > 0 && (
-            <div>
-              <h3 style={{ fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                <Sparkles size={16} style={{ color: 'var(--accent-secondary)' }} /> Projects
-              </h3>
+          <div>
+            <h3 style={{ fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+              <Sparkles size={16} style={{ color: 'var(--accent-secondary)' }} /> Projects
+            </h3>
+            {candidate.projects && candidate.projects.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {candidate.projects.map((proj, idx) => (
                   <div key={idx} className="glass" style={{ padding: '16px', borderRadius: 'var(--radius-md)', background: 'rgba(99, 102, 241, 0.01)', border: '1px solid var(--glass-border)' }}>
@@ -1613,8 +1619,12 @@ export default function CandidateDetails({ candidate: propCandidate, job, jobs =
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            ) : (
+              <div style={{ color: 'var(--text-muted)', fontSize: '13px', fontStyle: 'italic', padding: '12px 14px', background: 'rgba(255,255,255,0.02)', borderRadius: '6px', border: '1px dashed var(--glass-border)' }}>
+                No project details found in resume.
+              </div>
+            )}
+          </div>
 
           {/* Education */}
           <div>
@@ -1637,8 +1647,8 @@ export default function CandidateDetails({ candidate: propCandidate, job, jobs =
                   </div>
                 ))
               ) : (
-                <div style={{ color: 'var(--text-secondary)', fontSize: '13px', fontStyle: 'italic' }}>
-                  No education details extracted.
+                <div style={{ color: 'var(--text-muted)', fontSize: '13px', fontStyle: 'italic', padding: '12px 14px', background: 'rgba(255,255,255,0.02)', borderRadius: '6px', border: '1px dashed var(--glass-border)' }}>
+                  No education details found in resume.
                 </div>
               )}
             </div>

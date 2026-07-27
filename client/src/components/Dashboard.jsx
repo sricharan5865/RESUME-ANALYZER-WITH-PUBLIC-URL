@@ -1,11 +1,12 @@
 import React from 'react';
 import { Users, FileText, Mail, CheckCircle2, XCircle, ArrowUpRight, TrendingUp } from 'lucide-react';
 
-export default function Dashboard({ candidates, jobs, unreadCount, setActiveTab, rankAccordingToJob, emailProvider, currentRole }) {
+export default function Dashboard({ candidates = [], jobs = [], unreadCount = 0, setActiveTab, rankAccordingToJob, emailProvider, currentRole }) {
   // Compute analytics
   const totalCandidates = candidates.length;
   const stageCounts = candidates.reduce((acc, c) => {
-    acc[c.stage.toLowerCase()] = (acc[c.stage.toLowerCase()] || 0) + 1;
+    const st = (c.stage || 'inbox').toLowerCase();
+    acc[st] = (acc[st] || 0) + 1;
     return acc;
   }, {});
 
@@ -15,18 +16,13 @@ export default function Dashboard({ candidates, jobs, unreadCount, setActiveTab,
   const offeredCount = stageCounts['offered'] || 0;
   const rejectedCount = stageCounts['rejected'] || 0;
 
-  // Helper to get active score based on ranking mode
-  const getCandidateScore = (c) => {
-    return c.matchScore || 0;
-  };
+  const getCandidateScore = (c) => c.matchScore || 0;
 
-  // Average compatibility score of candidates
   const scoredCandidates = candidates.filter(c => getCandidateScore(c) > 0);
   const avgScore = scoredCandidates.length 
     ? Math.round(scoredCandidates.reduce((acc, c) => acc + getCandidateScore(c), 0) / scoredCandidates.length) 
     : 0;
 
-  // Get recent candidates
   const recentCandidates = [...candidates]
     .sort((a, b) => {
       const dateA = a.history?.[0]?.date ? new Date(a.history[0].date) : new Date(0);
@@ -36,6 +32,33 @@ export default function Dashboard({ candidates, jobs, unreadCount, setActiveTab,
     .slice(0, 5);
 
   const isManager = currentRole === 'Hiring Manager';
+
+  // 1. Total CVs received per day
+  const dailyCvMap = {};
+  candidates.forEach(c => {
+    const d = c.createdAt ? new Date(c.createdAt).toISOString().split('T')[0] : 'Today';
+    dailyCvMap[d] = (dailyCvMap[d] || 0) + 1;
+  });
+  const sortedDates = Object.keys(dailyCvMap).sort().slice(-7); // Last 7 active days
+  const maxDailyCount = Math.max(...Object.values(dailyCvMap), 1);
+
+  // 2. Number of CVs received for each position
+  // 3. Number of CVs routed to each position folder
+  const positionStatsMap = {};
+  jobs.forEach(j => {
+    positionStatsMap[j.id] = { id: j.id, title: j.title, totalReceived: 0, totalRouted: 0 };
+  });
+  positionStatsMap['general'] = { id: 'general', title: 'General / Unassigned', totalReceived: 0, totalRouted: 0 };
+
+  candidates.forEach(c => {
+    const key = c.jobId && positionStatsMap[c.jobId] ? c.jobId : 'general';
+    if (positionStatsMap[key]) {
+      positionStatsMap[key].totalReceived += 1;
+      positionStatsMap[key].totalRouted += 1;
+    }
+  });
+
+  const positionStatsList = Object.values(positionStatsMap).filter(p => p.totalReceived > 0 || jobs.some(j => j.id === p.id));
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
@@ -144,6 +167,76 @@ export default function Dashboard({ candidates, jobs, unreadCount, setActiveTab,
           </div>
           <h3 style={{ fontSize: '38px', marginBottom: '6px', fontFamily: 'var(--font-display)', fontWeight: '700' }}>{avgScore}%</h3>
           <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Parsed compatibility check</span>
+        </div>
+      </div>
+
+      {/* HR Feedback Enhancement Tracking Panel */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '32px' }}>
+        {/* CVs Received Per Day Chart */}
+        <div className="glass" style={{ padding: '32px', borderRadius: 'var(--radius-lg)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+            <div>
+              <h3 style={{ fontSize: '18px', fontFamily: 'var(--font-display)', fontWeight: '700' }}>Total CVs Received Per Day</h3>
+              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>Daily applicant flow timeline</p>
+            </div>
+            <span style={{ fontSize: '12px', background: 'rgba(99, 102, 241, 0.15)', color: 'var(--accent-primary)', padding: '4px 10px', borderRadius: '12px', fontWeight: '600' }}>
+              {totalCandidates} Total CVs
+            </span>
+          </div>
+          
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '16px', height: '160px', padding: '16px 8px 0 8px', borderBottom: '1px solid var(--glass-border)' }}>
+            {sortedDates.length === 0 ? (
+              <div style={{ textTransform: 'uppercase', fontSize: '12px', color: 'var(--text-secondary)', margin: 'auto' }}>No daily CV data recorded</div>
+            ) : (
+              sortedDates.map(dateStr => {
+                const count = dailyCvMap[dateStr] || 0;
+                const heightPct = Math.max((count / maxDailyCount) * 100, 15);
+                return (
+                  <div key={dateStr} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', height: '100%', justifyContent: 'flex-end' }}>
+                    <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--accent-primary)' }}>{count}</span>
+                    <div style={{ 
+                      width: '100%', 
+                      height: `${heightPct}%`, 
+                      background: 'linear-gradient(180deg, var(--accent-primary) 0%, rgba(99, 102, 241, 0.3) 100%)', 
+                      borderRadius: '6px 6px 0 0',
+                      transition: 'height 0.3s ease'
+                    }} />
+                    <span style={{ fontSize: '10px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{dateStr.slice(5)}</span>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* Position Folder Intake & Routing */}
+        <div className="glass" style={{ padding: '32px', borderRadius: 'var(--radius-lg)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+            <div>
+              <h3 style={{ fontSize: '18px', fontFamily: 'var(--font-display)', fontWeight: '700' }}>CVs Received & Routed per Position</h3>
+              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>Intake by position folder</p>
+            </div>
+            <button className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => setActiveTab('jobs')}>
+              View Folders
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxHeight: '220px', overflowY: 'auto', paddingRight: '4px' }}>
+            {positionStatsList.map(pos => {
+              const pct = totalCandidates > 0 ? Math.round((pos.totalReceived / totalCandidates) * 100) : 0;
+              return (
+                <div key={pos.id} style={{ padding: '12px 14px', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--glass-border)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: '600', marginBottom: '6px' }}>
+                    <span>{pos.title}</span>
+                    <span style={{ color: 'var(--accent-primary)' }}>{pos.totalReceived} CVs ({pos.totalRouted} routed)</span>
+                  </div>
+                  <div style={{ height: '6px', background: 'rgba(255,255,255,0.08)', borderRadius: '3px', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${pct}%`, background: 'linear-gradient(90deg, #6366f1, #8b5cf6)', borderRadius: '3px' }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 
