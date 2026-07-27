@@ -164,10 +164,15 @@ Tel: +91 40 2354 4535 | Email: hr@ispatialtec.com | Web: www.ispatialtec.com`;
 
   const handleGoToPreview = (e) => {
     e.preventDefault();
-    if (!joiningDate) return alert('Please specify the Joining Date.');
-    if (!offeredSalary) return alert('Please enter the Offered Salary / CTC.');
-    generateOfferLetterText();
-    setStep(2);
+    try {
+      if (!joiningDate) return alert('Please specify the Joining Date.');
+      if (!offeredSalary) return alert('Please enter the Offered Salary / CTC.');
+      generateOfferLetterText();
+      setStep(2);
+    } catch (err) {
+      console.error('Error generating preview:', err);
+      alert('Failed to generate preview: ' + err.message);
+    }
   };
 
   const handleSendOffer = async (sendEmailNow = true) => {
