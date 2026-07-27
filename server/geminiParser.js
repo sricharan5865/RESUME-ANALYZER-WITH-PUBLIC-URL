@@ -1009,7 +1009,7 @@ function mapAnalysisToQuestions(parsedData, isJdMatch = false) {
 function getRecruiterSystemInstruction(aiProvider) {
   const todayDateString = new Date().toDateString();
   const baseInstruction = `Senior recruiter bot. Date: ${todayDateString}. Analyze resume facts. Output structured JSON. Ground all claims/dates strictly in resume text. Fix OCR typos in links (e.g. iinkedin->linkedin).
-CRITICAL: Extract ONLY facts present in the resume. If experience, projects, education, or skills are missing in the resume text, return empty arrays []. DO NOT invent, hallucinate, or insert fake companies, job titles, or projects.
+CRITICAL: Extract ONLY facts present in the resume. Extract EVERY single skill, technology, framework, database, or tool mentioned (especially in lists like 'Tech:' or 'Tools:' or within work/project details) individually without omission. If experience, projects, education, or skills are missing in the resume text, return empty arrays []. DO NOT invent, hallucinate, or insert fake companies, job titles, or projects.
 All generated interview questions must be extremely short, direct, and punchy (MAXIMUM 15 words). All generated sample answers/templates must be brief evaluator guidance (MAXIMUM 30 words).
 Sections:
 1. Gaps: Flag gaps >= 2 months. Include date range, duration, probing question (max 15 words), and sample answer (max 30 words).
@@ -1228,8 +1228,13 @@ export async function parseResume(resumeText, pdfBase64 = null) {
   const canUsePdfDirectly = isDirectGemini || (isClaude && !isOpenRouter);
 
   const prompt = (pdfBase64 && canUsePdfDirectly)
-    ? `Analyze the attached PDF resume and perform the recruiter seven-part analysis.`
-    : `Parse this resume text and perform the recruiter seven-part analysis:\n\n${resumeText}`;
+    ? `Analyze the attached PDF resume and perform the recruiter seven-part analysis.
+CRITICAL SKILLS EXTRACTION: Extract EVERY single technical skill, tool, technology, software, framework, programming language, database, or competency mentioned anywhere in the resume (including under headers like 'Tech', 'Technologies', 'Tools', 'Skills', or mentioned in work experience/projects). Do not miss, group, or omit any of them (e.g. if 'ArcGIS Pro, QGIS, Erdas, ENVI' are listed, extract each one individually).`
+    : `Parse this resume text and perform the recruiter seven-part analysis.
+CRITICAL SKILLS EXTRACTION: Extract EVERY single technical skill, tool, technology, software, framework, programming language, database, or competency mentioned anywhere in the resume (including under headers like 'Tech', 'Technologies', 'Tools', 'Skills', or mentioned in work experience/projects). Do not miss, group, or omit any of them (e.g. if 'ArcGIS Pro, QGIS, Erdas, ENVI' are listed, extract each one individually).
+
+Resume Text:
+${resumeText}`;
   const parsedData = await callAIProvider(prompt, systemInstruction, schema, canUsePdfDirectly ? pdfBase64 : null);
   
   if (parsedData) {
