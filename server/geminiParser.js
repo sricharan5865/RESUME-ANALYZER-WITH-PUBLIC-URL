@@ -1742,7 +1742,7 @@ CRITICAL INTERVIEW QUESTION LOGIC:
    - If candidate LACKS matching experience: Write a claim like "Missing experience in [Concept]" and generate a short two-part question: "Have you done any projects with [Concept]? If yes, briefly describe it. If no, how would you approach learning it?" Provide a concise model answer.`;
 
   const parsedData = await callAIProvider(prompt, systemInstruction, schema);
-  mapAnalysisToQuestions(parsedData, true);
+  mapAnalysisToQuestions(parsedData, !!jobDescription);
   return parsedData;
 }
 

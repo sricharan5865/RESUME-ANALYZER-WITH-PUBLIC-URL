@@ -193,6 +193,9 @@ const jobSchema = new mongoose.Schema({
   description: { type: String },
   requirements: { type: String },
   publicDescription: { type: String },
+  jobResponsibility: { type: String },
+  qualificationRequirement: { type: String },
+  benefits: { type: String },
   requirementsChecklist: [String],
   postings: {
     linkedIn: { type: Boolean, default: false },

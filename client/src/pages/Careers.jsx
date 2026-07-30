@@ -134,7 +134,7 @@ export default function Careers({ backendUrl }) {
           {/* Table Header Row */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: '3fr 1.5fr 2fr 1fr',
+            gridTemplateColumns: '3fr 2fr 2fr 1fr',
             padding: '16px 24px',
             backgroundColor: '#161f36',
             borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
@@ -143,7 +143,7 @@ export default function Careers({ backendUrl }) {
             fontSize: '14px'
           }}>
             <div>Job Title</div>
-            <div>Experience</div>
+            <div>Department</div>
             <div>Location</div>
             <div style={{ textAlign: 'right' }}></div>
           </div>
@@ -163,7 +163,7 @@ export default function Careers({ backendUrl }) {
                 key={job.id || index}
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: '3fr 1.5fr 2fr 1fr',
+                  gridTemplateColumns: '3fr 2fr 2fr 1fr',
                   padding: '18px 24px',
                   alignItems: 'center',
                   borderBottom: index === filtered.length - 1 ? 'none' : '1px solid rgba(255, 255, 255, 0.07)',
@@ -175,9 +175,9 @@ export default function Careers({ backendUrl }) {
                   {job.title}
                 </div>
 
-                {/* Experience */}
+                {/* Department */}
                 <div style={{ fontSize: '14px', color: '#cbd5e1' }}>
-                  {job.requiredExperience || '4+ years'}
+                  {job.department || 'Software Development'}
                 </div>
 
                 {/* Location */}

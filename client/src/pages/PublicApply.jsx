@@ -433,13 +433,10 @@ export default function PublicApply({ backendUrl }) {
                 
                 <div style={{ display: 'flex', gap: '20px', fontSize: '14px', color: '#cbd5e1', flexWrap: 'wrap' }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <MapPin size={16} style={{ color: '#38bdf8' }} /> {job.location || 'India (Remote / Hybrid)'}
+                    <MapPin size={16} style={{ color: '#38bdf8' }} /> {job.location || 'Hyderabad, India'}
                   </span>
                   <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <Briefcase size={16} style={{ color: '#38bdf8' }} /> {job.workMode || 'Full-time'}
-                  </span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Award size={16} style={{ color: '#38bdf8' }} /> Experience: {job.requiredExperience || '3 - 5 Years'}
                   </span>
                 </div>
               </div>
@@ -460,43 +457,88 @@ export default function PublicApply({ backendUrl }) {
             /* Job Specifications View */
             <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px', marginBottom: '40px' }}>
               
-              {/* Qualification Requirement */}
-              <div className="portal-card" style={{ padding: '32px', backgroundColor: '#0f172a', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '16px' }}>
-                <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#ffffff', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <Award size={20} style={{ color: '#38bdf8' }} /> Qualification Requirement
-                </h3>
-                <ul style={{ margin: 0, paddingLeft: '20px', color: '#94a3b8', fontSize: '15px', lineHeight: 1.8 }}>
-                  <li style={{ marginBottom: '8px' }}>Bachelor’s or Master’s degree in Geoinformatics, Computer Science, Geography, Engineering, or related discipline.</li>
-                  <li style={{ marginBottom: '8px' }}>ESRI Technical Certifications (e.g., Enterprise Administration, Web Application Developer, ArcGIS Pro) are a strong advantage.</li>
-                  <li style={{ marginBottom: '8px' }}>Proven experience working with Smart City, Urban Planning, Infrastructure, Utilities, or Oil & Gas domains.</li>
-                  <li style={{ marginBottom: '8px' }}>Strong communication skills with ability to engage with technical teams and business stakeholders effectively.</li>
-                </ul>
-              </div>
-
               {/* Job Responsibility */}
               <div className="portal-card" style={{ padding: '32px', backgroundColor: '#0f172a', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '16px' }}>
                 <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#ffffff', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <Briefcase size={20} style={{ color: '#38bdf8' }} /> Job Responsibility
                 </h3>
-                <ul style={{ margin: 0, paddingLeft: '20px', color: '#94a3b8', fontSize: '15px', lineHeight: 1.8 }}>
-                  {parseResponsibilities(job.jobDescription).map((resp, idx) => (
-                    <li key={idx} style={{ marginBottom: '8px' }}>{resp}</li>
-                  ))}
-                </ul>
+                {job.jobResponsibility ? (
+                  <div style={{ color: '#94a3b8', fontSize: '15px', lineHeight: 1.8, whiteSpace: 'pre-line' }}>
+                    {job.jobResponsibility.split('\n').map((line, idx) => line.trim() && (
+                      <div key={idx} style={{ marginBottom: '6px', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                        <span style={{ color: '#38bdf8' }}>•</span>
+                        <span>{line.replace(/^[•\-\*]\s*/, '')}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ color: '#94a3b8', fontSize: '15px', lineHeight: 1.8 }}>
+                    {job.jobDescription || 'Detailed job responsibilities will be shared during the interview process.'}
+                  </div>
+                )}
               </div>
+
+              {/* Qualification Requirement */}
+              <div className="portal-card" style={{ padding: '32px', backgroundColor: '#0f172a', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '16px' }}>
+                <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#ffffff', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Award size={20} style={{ color: '#38bdf8' }} /> Qualification Requirement
+                </h3>
+                {job.qualificationRequirement ? (
+                  <div style={{ color: '#94a3b8', fontSize: '15px', lineHeight: 1.8 }}>
+                    {job.qualificationRequirement.split('\n').map((line, idx) => line.trim() && (
+                      <div key={idx} style={{ marginBottom: '6px', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                        <span style={{ color: '#38bdf8' }}>•</span>
+                        <span>{line.replace(/^[•\-\*]\s*/, '')}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <ul style={{ margin: 0, paddingLeft: '20px', color: '#94a3b8', fontSize: '15px', lineHeight: 1.8 }}>
+                    <li style={{ marginBottom: '8px' }}>Bachelor’s or Master’s degree in Computer Science, Engineering, Information Technology, Business Administration, or related field.</li>
+                    <li style={{ marginBottom: '8px' }}>Relevant domain experience and technical capability for the role.</li>
+                  </ul>
+                )}
+              </div>
+
+              {/* Requirements Criteria */}
+              {job.requirements && (
+                <div className="portal-card" style={{ padding: '32px', backgroundColor: '#0f172a', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '16px' }}>
+                  <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#ffffff', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <CheckCircle2 size={20} style={{ color: '#38bdf8' }} /> Requirements Criteria
+                  </h3>
+                  <div style={{ color: '#94a3b8', fontSize: '15px', lineHeight: 1.8 }}>
+                    {job.requirements.split('\n').map((line, idx) => line.trim() && (
+                      <div key={idx} style={{ marginBottom: '6px', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                        <span style={{ color: '#38bdf8' }}>✓</span>
+                        <span>{line.replace(/^[•\-\*]\s*/, '')}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Benefits & Perks */}
               <div className="portal-card" style={{ padding: '32px', backgroundColor: '#0f172a', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '16px' }}>
                 <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#ffffff', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <Sparkles size={20} style={{ color: '#38bdf8' }} /> Why Join iSpatialTec? (Benefits & Culture)
+                  <Sparkles size={20} style={{ color: '#38bdf8' }} /> Benefits & Culture
                 </h3>
-                <ul style={{ margin: 0, paddingLeft: '20px', color: '#94a3b8', fontSize: '15px', lineHeight: 1.8, marginBottom: '24px' }}>
-                  <li style={{ marginBottom: '8px' }}><strong>Competitive Compensation</strong>: Market-leading salary package based on experience and industry standards.</li>
-                  <li style={{ marginBottom: '8px' }}><strong>Flexible Work Model</strong>: Support for hybrid and remote work options tailored to project requirements and operational needs.</li>
-                  <li style={{ marginBottom: '8px' }}><strong>Medical Insurance</strong>: Comprehensive health coverage for employee, spouse, and dependent children.</li>
-                  <li style={{ marginBottom: '8px' }}><strong>Quarterly Appraisals & Rewards</strong>: Yearly performance bonus, quarterly engagement activities, and career growth tracks.</li>
-                  <li style={{ marginBottom: '8px' }}><strong>Learning & Development</strong>: Access to specialized ESRI certification programs and advanced Spatial AI workshops.</li>
-                </ul>
+                {job.benefits ? (
+                  <div style={{ color: '#94a3b8', fontSize: '15px', lineHeight: 1.8 }}>
+                    {job.benefits.split('\n').map((line, idx) => line.trim() && (
+                      <div key={idx} style={{ marginBottom: '6px', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                        <span style={{ color: '#10b981' }}>★</span>
+                        <span>{line.replace(/^[•\-\*]\s*/, '')}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <ul style={{ margin: 0, paddingLeft: '20px', color: '#94a3b8', fontSize: '15px', lineHeight: 1.8 }}>
+                    <li style={{ marginBottom: '8px' }}><strong>Competitive Compensation</strong>: Market-leading salary package.</li>
+                    <li style={{ marginBottom: '8px' }}><strong>Flexible Work Model</strong>: Support for hybrid and remote options.</li>
+                    <li style={{ marginBottom: '8px' }}><strong>Medical Insurance</strong>: Comprehensive coverage.</li>
+                    <li style={{ marginBottom: '8px' }}><strong>Career Growth</strong>: Professional learning & development programs.</li>
+                  </ul>
+                )}
 
                 <div style={{ textAlign: 'center', paddingTop: '16px', borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}>
                   <button 

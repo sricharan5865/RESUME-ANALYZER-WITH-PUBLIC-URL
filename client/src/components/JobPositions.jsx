@@ -4,6 +4,27 @@ import { getCandidateNoticePeriod, getCandidateLocation, getCandidateExperience 
 
 const STAGES = ["Inbox", "Shortlist", "Interview", "Offered", "Rejected"];
 
+const DEPARTMENTS = [
+  "Project Management",
+  "Software Development",
+  "GIS",
+  "Data Science & AI",
+  "Design",
+  "Digital Marketing",
+  "Human Resource (HR)",
+  "Business Development",
+  "Environment & Sustainability",
+  "Consultant",
+  "Admin"
+];
+
+const LOCATIONS = [
+  "Abu Dhabi, UAE",
+  "Hyderabad, India",
+  "Texas, USA",
+  "Remote (Work from Home)"
+];
+
 function getNoticeDays(candidate) {
   const noticeStr = getCandidateNoticePeriod(candidate);
   if (!noticeStr || noticeStr === '—') return null;
@@ -52,24 +73,35 @@ function getJobApplicantsList(job, candidatesList) {
 function getJobApplicantStats(job, candidatesList) {
   const jobApplicants = getJobApplicantsList(job, candidatesList);
 
-  let immediate7 = 0;
-  let joiners14 = 0;
+  const now = new Date();
+  const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+
+  let oldApplicants = 0;
+  let newApplicants = 0;
 
   jobApplicants.forEach(c => {
-    const days = getNoticeDays(c);
-    if (days !== null) {
-      if (days <= 7) {
-        immediate7++;
-      } else if (days <= 14) {
-        joiners14++;
+    let candidateDate = null;
+    if (c.createdAt) candidateDate = new Date(c.createdAt);
+    else if (c.appliedDate) candidateDate = new Date(c.appliedDate);
+    else if (c._id && /^[0-9a-fA-F]{24}$/.test(String(c._id))) {
+      candidateDate = new Date(parseInt(String(c._id).substring(0, 8), 16) * 1000);
+    }
+    
+    if (candidateDate && !isNaN(candidateDate.getTime())) {
+      if (candidateDate >= fourteenDaysAgo) {
+        newApplicants++;
+      } else {
+        oldApplicants++;
       }
+    } else {
+      newApplicants++;
     }
   });
 
   return {
     total: jobApplicants.length,
-    immediate7,
-    joiners14
+    oldApplicants,
+    newApplicants
   };
 }
 
@@ -121,16 +153,26 @@ export default function JobPositions({
   currentRole 
 }) {
   const [jobTitle, setJobTitle] = useState('');
-  const [jobDept, setJobDept] = useState('');
-  const [jobLoc, setJobLoc] = useState('');
-  const [jobDesc, setJobDesc] = useState('');
+  const [jobDept, setJobDept] = useState('Software Development');
+  const [jobLoc, setJobLoc] = useState('Hyderabad, India');
+  const [jobResponsibility, setJobResponsibility] = useState('');
+  const [qualificationRequirement, setQualificationRequirement] = useState('');
   const [jobReqs, setJobReqs] = useState('');
+  const [benefits, setBenefits] = useState('');
   const [jobPublicDesc, setJobPublicDesc] = useState('');
   const [generatingJD, setGeneratingJD] = useState(false);
   const [jdKeywords, setJdKeywords] = useState('');
-  const [jobExp, setJobExp] = useState('3 - 5 Years');
   const [editingJobId, setEditingJobId] = useState(null);
-  const [editForm, setEditForm] = useState({ title: '', department: '', location: '', description: '', requirements: '', publicDescription: '' });
+  const [editForm, setEditForm] = useState({ 
+    title: '', 
+    department: 'Software Development', 
+    location: 'Hyderabad, India', 
+    jobResponsibility: '', 
+    qualificationRequirement: '', 
+    requirements: '', 
+    benefits: '', 
+    publicDescription: '' 
+  });
   const [publishingId, setPublishingId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -154,9 +196,9 @@ export default function JobPositions({
 
   const handleCreateJob = async (e, publishImmediately = true) => {
     if (e) e.preventDefault();
-    if (!jobTitle) return alert('Title is required');
-    if (!jobPublicDesc) return alert('Public Job Description is required');
+    if (!jobTitle) return alert('Role (Job Title) is required');
     try {
+      const computedDesc = jobPublicDesc || `Job Responsibilities:\n${jobResponsibility}\n\nQualifications:\n${qualificationRequirement}\n\nBenefits:\n${benefits}`;
       const res = await fetch(`${backendUrl}/api/jobs`, {
         method: 'POST',
         headers: {
@@ -167,10 +209,12 @@ export default function JobPositions({
           title: jobTitle,
           department: jobDept,
           location: jobLoc,
-          description: jobDesc,
+          jobResponsibility,
+          qualificationRequirement,
           requirements: jobReqs,
-          publicDescription: jobPublicDesc,
-          requiredExperience: jobExp,
+          benefits,
+          description: computedDesc,
+          publicDescription: computedDesc,
           publishToCareers: publishImmediately
         })
       });
@@ -180,12 +224,13 @@ export default function JobPositions({
       onJobCreated(newJob);
       
       setJobTitle('');
-      setJobDept('');
-      setJobLoc('');
-      setJobDesc('');
+      setJobDept('Software Development');
+      setJobLoc('Hyderabad, India');
+      setJobResponsibility('');
+      setQualificationRequirement('');
       setJobReqs('');
+      setBenefits('');
       setJobPublicDesc('');
-      setJobExp('3 - 5 Years');
       setShowCreateModal(false);
 
       if (publishImmediately) {
@@ -254,12 +299,13 @@ export default function JobPositions({
     setEditingJobId(job.id);
     setEditForm({
       title: job.title || '',
-      department: job.department || '',
-      location: job.location || '',
-      requiredExperience: job.requiredExperience || job.exp || '3 - 5 Years',
-      description: job.description || '',
+      department: job.department || 'Software Development',
+      location: job.location || 'Hyderabad, India',
+      jobResponsibility: job.jobResponsibility || '',
+      qualificationRequirement: job.qualificationRequirement || '',
       requirements: job.requirements || '',
-      publicDescription: job.publicDescription || ''
+      benefits: job.benefits || '',
+      publicDescription: job.publicDescription || job.description || ''
     });
   };
 
@@ -269,16 +315,21 @@ export default function JobPositions({
 
   const handleUpdateJob = async (e, id) => {
     e.preventDefault();
-    if (!editForm.title) return alert('Title is required');
-    if (!editForm.publicDescription) return alert('Public Job Description is required');
+    if (!editForm.title) return alert('Role (Job Title) is required');
     try {
+      const computedDesc = editForm.publicDescription || `Job Responsibilities:\n${editForm.jobResponsibility}\n\nQualifications:\n${editForm.qualificationRequirement}\n\nBenefits:\n${editForm.benefits}`;
+      const payload = {
+        ...editForm,
+        description: computedDesc,
+        publicDescription: computedDesc
+      };
       const res = await fetch(`${backendUrl}/api/jobs/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(editForm)
+        body: JSON.stringify(payload)
       });
       if (!res.ok) throw new Error('Failed to update job');
       const updatedJob = await res.json();
@@ -434,35 +485,43 @@ export default function JobPositions({
 
                 {/* Modal Body */}
                 <form onSubmit={(e) => handleUpdateJob(e, editingJobId)} style={{ flexGrow: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '16px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '16px' }}>
                     <div className="form-group">
-                      <label className="form-label">Job Title*</label>
-                      <input type="text" className="form-input" value={editForm.title} onChange={(e) => setEditForm({...editForm, title: e.target.value})} />
+                      <label className="form-label">Role (Job Title)*</label>
+                      <input type="text" className="form-input" value={editForm.title} onChange={(e) => setEditForm({...editForm, title: e.target.value})} placeholder="e.g. Solution Architect" />
                     </div>
                     <div className="form-group">
-                      <label className="form-label">Department</label>
-                      <input type="text" className="form-input" value={editForm.department} onChange={(e) => setEditForm({...editForm, department: e.target.value})} />
+                      <label className="form-label">Department*</label>
+                      <select className="form-input" value={editForm.department} onChange={(e) => setEditForm({...editForm, department: e.target.value})}>
+                        {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+                      </select>
                     </div>
                     <div className="form-group">
-                      <label className="form-label">Location</label>
-                      <input type="text" className="form-input" value={editForm.location} onChange={(e) => setEditForm({...editForm, location: e.target.value})} />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Required Exp</label>
-                      <input type="text" className="form-input" placeholder="e.g. 3 - 5 Years" value={editForm.requiredExperience || ''} onChange={(e) => setEditForm({...editForm, requiredExperience: e.target.value})} />
+                      <label className="form-label">Location*</label>
+                      <select className="form-input" value={editForm.location} onChange={(e) => setEditForm({...editForm, location: e.target.value})}>
+                        {LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}
+                      </select>
                     </div>
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Job Description Summary*</label>
-                    <textarea className="form-input" rows={4} value={editForm.description} onChange={(e) => setEditForm({...editForm, description: e.target.value})} />
+                    <label className="form-label">Job Responsibility</label>
+                    <textarea className="form-input" rows={4} value={editForm.jobResponsibility || ''} onChange={(e) => setEditForm({...editForm, jobResponsibility: e.target.value})} placeholder="List key job responsibilities..." />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Requirements Criteria*</label>
-                    <textarea className="form-input" rows={4} value={editForm.requirements} onChange={(e) => setEditForm({...editForm, requirements: e.target.value})} />
+                    <label className="form-label">Qualification Requirement</label>
+                    <textarea className="form-input" rows={3} value={editForm.qualificationRequirement || ''} onChange={(e) => setEditForm({...editForm, qualificationRequirement: e.target.value})} placeholder="Required degrees, certifications, and background..." />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Public Job Description (For Candidates)*</label>
-                    <textarea className="form-input" rows={4} value={editForm.publicDescription || ''} onChange={(e) => setEditForm({...editForm, publicDescription: e.target.value})} placeholder="Enter description for public careers portal..." />
+                    <label className="form-label">Requirements Criteria* (One per line or comma-separated)</label>
+                    <textarea className="form-input" rows={3} value={editForm.requirements || ''} onChange={(e) => setEditForm({...editForm, requirements: e.target.value})} placeholder="e.g. 5+ years GIS experience&#10;PMP Certification&#10;Agile methodology" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Benefits</label>
+                    <textarea className="form-input" rows={3} value={editForm.benefits || ''} onChange={(e) => setEditForm({...editForm, benefits: e.target.value})} placeholder="Medical Insurance, Flexible Working Model, Appraisals..." />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Public Job Description (For Candidates)</label>
+                    <textarea className="form-input" rows={3} value={editForm.publicDescription || ''} onChange={(e) => setEditForm({...editForm, publicDescription: e.target.value})} placeholder="Full text displayed on careers portal..." />
                   </div>
                 </form>
 
@@ -496,11 +555,13 @@ export default function JobPositions({
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
                   <thead>
                     <tr style={{ background: 'rgba(255, 255, 255, 0.03)', borderBottom: '1px solid var(--glass-border)' }}>
-                      <th style={{ padding: '12px 16px', fontWeight: '600', color: 'var(--text-secondary)', width: '70px', textAlign: 'center' }}>Sl. No</th>
-                      <th style={{ padding: '12px 16px', fontWeight: '600', color: 'var(--text-secondary)' }}>Job Title</th>
-                      <th style={{ padding: '12px 16px', fontWeight: '600', color: 'var(--text-secondary)', textAlign: 'center' }}>No. of applicants</th>
-                      <th style={{ padding: '12px 16px', fontWeight: '600', color: 'var(--text-secondary)', textAlign: 'center' }}>Immediate joiners (7 days)</th>
-                      <th style={{ padding: '12px 16px', fontWeight: '600', color: 'var(--text-secondary)', textAlign: 'center' }}>Joiners with in 14 days</th>
+                      <th style={{ padding: '12px 16px', fontWeight: '600', color: 'var(--text-secondary)', width: '60px', textAlign: 'center' }}>Sl. No</th>
+                      <th style={{ padding: '12px 16px', fontWeight: '600', color: 'var(--text-secondary)' }}>Role (Job Title)</th>
+                      <th style={{ padding: '12px 16px', fontWeight: '600', color: 'var(--text-secondary)' }}>Department</th>
+                      <th style={{ padding: '12px 16px', fontWeight: '600', color: 'var(--text-secondary)' }}>Location</th>
+                      <th style={{ padding: '12px 16px', fontWeight: '600', color: 'var(--text-secondary)', textAlign: 'center' }}>Old Applicants</th>
+                      <th style={{ padding: '12px 16px', fontWeight: '600', color: 'var(--text-secondary)', textAlign: 'center' }}>New Applicants</th>
+                      <th style={{ padding: '12px 16px', fontWeight: '600', color: 'var(--text-secondary)', textAlign: 'center' }}>Total Applicants</th>
                       <th style={{ padding: '12px 16px', fontWeight: '600', color: 'var(--text-secondary)' }}>Created Date</th>
                       <th style={{ padding: '12px 16px', fontWeight: '600', color: 'var(--text-secondary)', textAlign: 'center' }}>Publish and Unpublish</th>
                       {currentRole !== 'Hiring Manager' && (
@@ -529,26 +590,77 @@ export default function JobPositions({
                             {idx + 1}
                           </td>
 
-                          {/* Job Title Cell */}
+                          {/* Role (Job Title) Cell */}
                           <td 
                             style={{ padding: '14px 16px', cursor: 'pointer' }}
                             onClick={() => openApplicantsModal(job, 'all')}
                             title="Click to open candidate applicants list"
                           >
-                            <div>
-                              <div style={{ fontWeight: '600', color: 'var(--text-primary)', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <span>{job.title}</span>
-                                <Users size={13} style={{ color: 'var(--accent-primary)', opacity: 0.8 }} />
-                              </div>
-                              {(job.department || job.location) && (
-                                <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                                  {[job.department, job.location].filter(Boolean).join(' • ')}
-                                </div>
-                              )}
+                            <div style={{ fontWeight: '600', color: 'var(--text-primary)', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span>{job.title}</span>
+                              <Users size={13} style={{ color: 'var(--accent-primary)', opacity: 0.8 }} />
                             </div>
                           </td>
 
-                          {/* No. of applicants Cell */}
+                          {/* Department Cell */}
+                          <td style={{ padding: '14px 16px', color: 'var(--text-secondary)', fontSize: '12px' }}>
+                            <span style={{ padding: '4px 10px', borderRadius: '6px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)' }}>
+                              {job.department || 'Engineering'}
+                            </span>
+                          </td>
+
+                          {/* Location Cell */}
+                          <td style={{ padding: '14px 16px', color: 'var(--text-secondary)', fontSize: '12px' }}>
+                            <span style={{ padding: '4px 10px', borderRadius: '6px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)' }}>
+                              {job.location || 'Hyderabad, India'}
+                            </span>
+                          </td>
+
+                          {/* Old Applicants Cell */}
+                          <td style={{ padding: '14px 16px', textAlign: 'center' }}>
+                            <span 
+                              onClick={() => openApplicantsModal(job, 'all')}
+                              style={{ 
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                padding: '5px 12px',
+                                borderRadius: '12px',
+                                background: stats.oldApplicants > 0 ? 'rgba(148, 163, 184, 0.15)' : 'rgba(255, 255, 255, 0.03)',
+                                color: stats.oldApplicants > 0 ? '#94a3b8' : 'var(--text-muted)',
+                                fontWeight: stats.oldApplicants > 0 ? '700' : '400',
+                                fontSize: '12px',
+                                cursor: 'pointer'
+                              }}
+                              title="Click to view old applicants"
+                            >
+                              <User size={12} /> {stats.oldApplicants}
+                            </span>
+                          </td>
+
+                          {/* New Applicants Cell */}
+                          <td style={{ padding: '14px 16px', textAlign: 'center' }}>
+                            <span 
+                              onClick={() => openApplicantsModal(job, 'all')}
+                              style={{ 
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                padding: '5px 12px',
+                                borderRadius: '12px',
+                                background: stats.newApplicants > 0 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.03)',
+                                color: stats.newApplicants > 0 ? '#10b981' : 'var(--text-muted)',
+                                fontWeight: stats.newApplicants > 0 ? '700' : '400',
+                                fontSize: '12px',
+                                cursor: 'pointer'
+                              }}
+                              title="Click to view new applicants"
+                            >
+                              <Sparkles size={12} /> {stats.newApplicants}
+                            </span>
+                          </td>
+
+                          {/* Total Applicants Cell */}
                           <td style={{ padding: '14px 16px', textAlign: 'center' }}>
                             <span 
                               onClick={() => openApplicantsModal(job, 'all')}
@@ -562,58 +674,11 @@ export default function JobPositions({
                                 color: stats.total > 0 ? 'var(--accent-primary)' : 'var(--text-muted)',
                                 fontWeight: '700',
                                 fontSize: '12px',
-                                cursor: 'pointer',
-                                transition: 'transform 0.15s, background 0.2s'
+                                cursor: 'pointer'
                               }}
-                              title="Click to view all applicants"
+                              title="Click to view total applicants"
                             >
                               <Users size={12} /> {stats.total}
-                            </span>
-                          </td>
-
-                          {/* Immediate joiners (7 days) Cell */}
-                          <td style={{ padding: '14px 16px', textAlign: 'center' }}>
-                            <span 
-                              onClick={() => openApplicantsModal(job, 'immediate7')}
-                              style={{ 
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '4px',
-                                padding: '5px 12px',
-                                borderRadius: '12px',
-                                background: stats.immediate7 > 0 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.03)',
-                                color: stats.immediate7 > 0 ? '#10b981' : 'var(--text-muted)',
-                                fontWeight: stats.immediate7 > 0 ? '700' : '400',
-                                fontSize: '12px',
-                                cursor: 'pointer',
-                                transition: 'transform 0.15s, background 0.2s'
-                              }}
-                              title="Click to view immediate joiners (<= 7 days)"
-                            >
-                              <Clock size={12} /> {stats.immediate7}
-                            </span>
-                          </td>
-
-                          {/* Joiners with in 14 days Cell */}
-                          <td style={{ padding: '14px 16px', textAlign: 'center' }}>
-                            <span 
-                              onClick={() => openApplicantsModal(job, 'joiners14')}
-                              style={{ 
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '4px',
-                                padding: '5px 12px',
-                                borderRadius: '12px',
-                                background: stats.joiners14 > 0 ? 'rgba(59, 130, 246, 0.15)' : 'rgba(255, 255, 255, 0.03)',
-                                color: stats.joiners14 > 0 ? '#3b82f6' : 'var(--text-muted)',
-                                fontWeight: stats.joiners14 > 0 ? '700' : '400',
-                                fontSize: '12px',
-                                cursor: 'pointer',
-                                transition: 'transform 0.15s, background 0.2s'
-                              }}
-                              title="Click to view joiners within 14 days"
-                            >
-                              <UserCheck size={12} /> {stats.joiners14}
                             </span>
                           </td>
 
@@ -750,29 +815,29 @@ export default function JobPositions({
 
             {/* Modal Body */}
             <form onSubmit={handleCreateJob} style={{ flexGrow: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '16px' }}>
                 <div className="form-group">
-                  <label className="form-label">Job Title*</label>
-                  <input type="text" className="form-input" placeholder="e.g. Node Backend Engineer" value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} autoFocus />
+                  <label className="form-label">Role (Job Title)*</label>
+                  <input type="text" className="form-input" placeholder="e.g. Solution Architect" value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} autoFocus />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Department</label>
-                  <input type="text" className="form-input" placeholder="e.g. Engineering" value={jobDept} onChange={(e) => setJobDept(e.target.value)} />
+                  <label className="form-label">Department*</label>
+                  <select className="form-input" value={jobDept} onChange={(e) => setJobDept(e.target.value)}>
+                    {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Location</label>
-                  <input type="text" className="form-input" placeholder="e.g. Remote / Hyderabad" value={jobLoc} onChange={(e) => setJobLoc(e.target.value)} />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Required Exp</label>
-                  <input type="text" className="form-input" placeholder="e.g. 3 - 5 Years" value={jobExp} onChange={(e) => setJobExp(e.target.value)} />
+                  <label className="form-label">Location*</label>
+                  <select className="form-input" value={jobLoc} onChange={(e) => setJobLoc(e.target.value)}>
+                    {LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}
+                  </select>
                 </div>
               </div>
               
               <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-end', background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--glass-border)' }}>
                 <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
                   <label className="form-label">AI Generator Keywords / Core Skills</label>
-                  <input type="text" className="form-input" placeholder="e.g. 5 years Experience, Microservices, AWS" value={jdKeywords} onChange={(e) => setJdKeywords(e.target.value)} />
+                  <input type="text" className="form-input" placeholder="e.g. Microservices, AWS, Docker" value={jdKeywords} onChange={(e) => setJdKeywords(e.target.value)} />
                 </div>
                 <button type="button" className="btn btn-secondary" onClick={handleGenerateJD} disabled={generatingJD} style={{ height: '38px', padding: '0 20px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                   <Sparkles size={14} /> {generatingJD ? 'Generating...' : 'Generate JD with AI'}
@@ -780,16 +845,24 @@ export default function JobPositions({
               </div>
 
               <div className="form-group">
-                <label className="form-label">Job Description Summary*</label>
-                <textarea className="form-input" rows={4} placeholder="Describe the role responsibilities..." value={jobDesc} onChange={(e) => setJobDesc(e.target.value)} />
+                <label className="form-label">Job Responsibility</label>
+                <textarea className="form-input" rows={3} placeholder="List key job responsibilities..." value={jobResponsibility} onChange={(e) => setJobResponsibility(e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Qualification Requirement</label>
+                <textarea className="form-input" rows={3} placeholder="Required degrees, certifications, and background..." value={qualificationRequirement} onChange={(e) => setQualificationRequirement(e.target.value)} />
               </div>
               <div className="form-group">
                 <label className="form-label">Requirements Criteria* (One per line or comma-separated)</label>
-                <textarea className="form-input" rows={4} placeholder="e.g. React.js, Node.js, 3+ years of experience, Docker, AWS..." value={jobReqs} onChange={(e) => setJobReqs(e.target.value)} />
+                <textarea className="form-input" rows={3} placeholder="e.g. 5+ years experience, PMP Certification, Agile methodology" value={jobReqs} onChange={(e) => setJobReqs(e.target.value)} />
               </div>
               <div className="form-group">
-                <label className="form-label">Public Job Description (For Candidates)*</label>
-                <textarea className="form-input" rows={5} placeholder="Enter the description to be displayed on the public careers portal..." value={jobPublicDesc} onChange={(e) => setJobPublicDesc(e.target.value)} />
+                <label className="form-label">Benefits</label>
+                <textarea className="form-input" rows={3} placeholder="Medical Insurance, Flexible Working Model, Appraisals..." value={benefits} onChange={(e) => setBenefits(e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Public Job Description (For Candidates)</label>
+                <textarea className="form-input" rows={3} placeholder="Full description to be displayed on public careers portal..." value={jobPublicDesc} onChange={(e) => setJobPublicDesc(e.target.value)} />
               </div>
 
               {/* Modal Actions */}

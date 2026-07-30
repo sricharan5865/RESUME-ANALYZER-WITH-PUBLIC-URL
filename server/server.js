@@ -2710,7 +2710,7 @@ app.get('/api/jobs', authenticateToken, async (req, res) => {
 
 app.post('/api/jobs', authenticateToken, requireRole(['admin', 'recruiter']), async (req, res) => {
   try {
-    const { id, title, department, location, description, requirements, publicDescription, postings, workMode, requiredExperience, closingDate, customFields, publishToCareers } = req.body;
+    const { id, title, department, location, description, requirements, publicDescription, jobResponsibility, qualificationRequirement, benefits, postings, workMode, requiredExperience, closingDate, customFields, publishToCareers } = req.body;
 
     if (id) {
       const existingJob = await Job.findOne({ id });
@@ -2721,6 +2721,9 @@ app.post('/api/jobs', authenticateToken, requireRole(['admin', 'recruiter']), as
         existingJob.description = description || existingJob.description;
         existingJob.requirements = requirements || existingJob.requirements;
         existingJob.publicDescription = publicDescription || existingJob.publicDescription;
+        existingJob.jobResponsibility = jobResponsibility !== undefined ? jobResponsibility : existingJob.jobResponsibility;
+        existingJob.qualificationRequirement = qualificationRequirement !== undefined ? qualificationRequirement : existingJob.qualificationRequirement;
+        existingJob.benefits = benefits !== undefined ? benefits : existingJob.benefits;
         if (postings) existingJob.postings = postings;
         existingJob.workMode = workMode || existingJob.workMode;
         existingJob.requiredExperience = requiredExperience || existingJob.requiredExperience;
@@ -2762,6 +2765,9 @@ app.post('/api/jobs', authenticateToken, requireRole(['admin', 'recruiter']), as
       description, 
       requirements,
       publicDescription,
+      jobResponsibility,
+      qualificationRequirement,
+      benefits,
       postings: postings || { linkedIn: false, indeed: false, zipRecruiter: false, internalCareer: false },
       workMode,
       requiredExperience,
@@ -2780,7 +2786,7 @@ app.post('/api/jobs', authenticateToken, requireRole(['admin', 'recruiter']), as
 
 app.put('/api/jobs/:id', authenticateToken, requireRole(['admin', 'recruiter']), async (req, res) => {
   try {
-    const { title, jobRole, department, location, description, jobDescription, requirements, publicDescription, postings, workMode, requiredExperience, closingDate, customFields, publishToCareers } = req.body;
+    const { title, jobRole, department, location, description, jobDescription, requirements, publicDescription, jobResponsibility, qualificationRequirement, benefits, postings, workMode, requiredExperience, closingDate, customFields, publishToCareers } = req.body;
     
     // Support bulk update for all jobs when id is 'all'
     if (req.params.id === 'all') {
@@ -2806,6 +2812,9 @@ app.put('/api/jobs/:id', authenticateToken, requireRole(['admin', 'recruiter']),
       description: finalDescription,
       requirements,
       publicDescription,
+      jobResponsibility,
+      qualificationRequirement,
+      benefits,
       workMode,
       requiredExperience,
       closingDate,
@@ -3501,7 +3510,11 @@ app.get('/api/public/jobs/:id', async (req, res) => {
       location: job.location,
       workMode: job.workMode || 'On-site',
       jobDescription: job.publicDescription || job.description || job.requirements,
-      requiredExperience: job.requiredExperience || '3 - 5 Years',
+      jobResponsibility: job.jobResponsibility || '',
+      qualificationRequirement: job.qualificationRequirement || '',
+      requirements: job.requirements || '',
+      benefits: job.benefits || '',
+      requiredExperience: job.requiredExperience || '',
       closingDate: job.closingDate || null,
       customFields: fieldsToReturn
     });

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Briefcase, Mail, Phone, GraduationCap, Building2, Calendar, Sparkles, Check, CheckCircle2, XCircle, AlertCircle, Send, ArrowRight, Tag, Trash2, Eye, FileText, DollarSign, Clock, UserCheck, Download } from 'lucide-react';
+import { X, Briefcase, Mail, Phone, GraduationCap, Building2, Calendar, Sparkles, Check, CheckCircle2, XCircle, AlertCircle, Send, ArrowRight, Tag, Trash2, Eye, FileText, DollarSign, Clock, UserCheck, Download, RefreshCw } from 'lucide-react';
 
 const getQuestionStyles = (importance) => {
   const imp = (importance || '').toUpperCase();
@@ -346,6 +346,7 @@ export default function CandidateDetails({ candidate: propCandidate, job, jobs =
   const [managers, setManagers] = useState([]);
   const [assignedManager, setAssignedManager] = useState(candidate?.assignedTo || '');
   const [loadingJdQuestions, setLoadingJdQuestions] = useState(false);
+  const [loadingQuestions, setLoadingQuestions] = useState(false);
   const reScoreLockRef = useRef(null);
 
   useEffect(() => {
@@ -469,6 +470,28 @@ export default function CandidateDetails({ candidate: propCandidate, job, jobs =
       console.error('Failed to generate JD questions:', err);
     } finally {
       setLoadingJdQuestions(false);
+    }
+  };
+
+  const handleGenerateQuestions = async () => {
+    setLoadingQuestions(true);
+    try {
+      const res = await fetch(`${backendUrl}/api/candidates/${candidate.id}/generate-questions`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (res.ok) {
+        const updatedCandidate = await res.json();
+        setCandidate(updatedCandidate);
+      } else {
+        console.error('Failed to regenerate questions:', res.statusText);
+      }
+    } catch (err) {
+      console.error('Failed to regenerate questions:', err);
+    } finally {
+      setLoadingQuestions(false);
     }
   };
 
@@ -1373,9 +1396,22 @@ export default function CandidateDetails({ candidate: propCandidate, job, jobs =
           {((candidate.hrQuestions && candidate.hrQuestions.length > 0) || 
             (candidate.technicalQuestions && candidate.technicalQuestions.length > 0)) ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <h3 style={{ fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-secondary)' }}>
-                <Sparkles size={16} /> Tailored Interview Questions & Answers
-              </h3>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <h3 style={{ fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-secondary)' }}>
+                  <Sparkles size={16} /> Tailored Interview Questions & Answers
+                </h3>
+                {currentRole !== 'Hiring Manager' && (
+                  <button
+                    className="btn btn-secondary"
+                    onClick={handleGenerateQuestions}
+                    disabled={loadingQuestions}
+                    style={{ fontSize: '12px', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <RefreshCw size={14} className={loadingQuestions ? 'spin' : ''} />
+                    {loadingQuestions ? 'Regenerating...' : 'Regenerate Questions'}
+                  </button>
+                )}
+              </div>
 
               {/* Sub-tab Toggle Buttons */}
               <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid var(--glass-border)', paddingBottom: '12px' }}>
