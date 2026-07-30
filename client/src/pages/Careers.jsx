@@ -8,36 +8,28 @@ export default function Careers({ backendUrl }) {
   const [search, setSearch] = useState('');
   const navigate = useNavigate();
 
-  // Fallback sample openings if backend jobs are empty
-  const defaultSampleJobs = [
-    { id: 'sample-1', title: 'GIS Technical Manager', requiredExperience: '10+ years', location: 'India (Remote)', department: 'Geospatial Solutions' },
-    { id: 'sample-2', title: 'Carbon Accounting Specialist', requiredExperience: '8+ years', location: 'Hyderabad', department: 'Environmental Tech' },
-    { id: 'sample-3', title: 'Business Analyst', requiredExperience: '4+ years', location: 'India (Remote)', department: 'Business Analysis' },
-    { id: 'sample-4', title: 'GIS Project Manager (PMP Certified)', requiredExperience: '8+ years', location: 'UAE/Bahrain', department: 'Project Management' },
-    { id: 'sample-5', title: 'Full Stack Team Lead – Development Centre', requiredExperience: '7+ Years', location: 'Ongole', department: 'Engineering' },
-    { id: 'sample-6', title: 'GIS Enterprise Administrator', requiredExperience: '8+ years', location: 'UAE', department: 'Infrastructure & GIS' },
-    { id: 'sample-7', title: 'Voice / Collaboration Engineer', requiredExperience: '8+ years', location: 'Hyderabad, India', department: 'IT Infrastructure' }
-  ];
-
   useEffect(() => {
     fetch(`${backendUrl}/api/public/jobs`)
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
       .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           setJobs(data);
         } else {
-          setJobs(defaultSampleJobs);
+          setJobs([]);
         }
         setLoading(false);
       })
       .catch(err => {
         console.error('Failed to fetch public jobs:', err);
-        setJobs(defaultSampleJobs);
+        setJobs([]);
         setLoading(false);
       });
   }, [backendUrl]);
 
-  const displayJobs = jobs.length > 0 ? jobs : defaultSampleJobs;
+  const displayJobs = jobs;
 
   const filtered = displayJobs.filter(j => 
     (j.title || '').toLowerCase().includes(search.toLowerCase()) || 
@@ -163,7 +155,7 @@ export default function Careers({ backendUrl }) {
             </div>
           ) : filtered.length === 0 ? (
             <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>
-              No open positions found matching your search.
+              {search ? 'No open positions found matching your search.' : 'No active job openings are currently published. Please check back soon or send your CV to careers@ispatialtec.com.'}
             </div>
           ) : (
             filtered.map((job, index) => (

@@ -23,7 +23,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { fetchIMAPEmails, markIMAPEmailAsRead, getIMAPAttachmentData } from './imapSourcing.js';
 import { parseResume, scoreCandidate, scoreCandidateByOwnCategory, generateTags, generateJobDescription, generateQuestionsForCandidate, scoreCandidateAgainstChecklist, extractChecklistFromJob } from './geminiParser.js';
-import { generateOfferLetterPDFBuffer } from './offerPdfGenerator.js';
+import { generateOfferLetterBuffer } from './offerGenerator.js';
 import { extractTextFromPDF, extractTextFromFile, convertDocxToHtml } from './parser.js';
 import { searchIndex } from './searchIndex.js';
 import { Candidate, Job, Settings, ProcessedEmail, IngestionLog, User, ResumeChunk, CandidateProfile, JobMatch } from './models.js';
@@ -264,6 +264,22 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://admin:password@localhost:27
       console.error('Error seeding default users:', err.message);
     }
 
+    // Seed iSpatialTec Job Roles from jds.json
+    try {
+      const jsonPath = path.join(__dirname, 'jds.json');
+      if (fs.existsSync(jsonPath)) {
+        const jdsData = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+        let addedCount = 0;
+        for (const jobData of jdsData) {
+          const res = await Job.updateOne({ id: jobData.id }, { $setOnInsert: jobData }, { upsert: true });
+          if (res.upsertedCount > 0) addedCount++;
+        }
+        console.log(`iSpatialTec Job Roles Sync: ${jdsData.length} roles total (${addedCount} new roles initialized).`);
+      }
+    } catch (err) {
+      console.error('Error auto-seeding job roles:', err.message);
+    }
+
     // Migrate existing candidate resumeUrls from /uploads/ to /api/uploads/
     try {
       const candidatesToUpdate = await Candidate.find({ resumeUrl: { $regex: /^\/uploads\// } });
@@ -468,16 +484,16 @@ async function sendAutomaticEmail(candidate, triggerType, extraParams = {}) {
     let attachments = extraParams.attachments || [];
     if ((triggerType === 'offer' || (candidate.stage || '').toLowerCase().includes('offer')) && attachments.length === 0) {
       try {
-        console.log(`[AutoEmail] Generating official Offer Letter PDF attachment for ${candidate.name}...`);
-        const pdfBuffer = await generateOfferLetterPDFBuffer(candidate, extraParams);
+        console.log(`[AutoEmail] Generating official Offer Letter attachment for ${candidate.name}...`);
+        const docxBuffer = await generateOfferLetterBuffer(candidate, extraParams);
         const safeName = (candidate.name || 'Candidate').replace(/[^a-zA-Z0-9_\-]/g, '_');
         attachments.push({
-          filename: `Offer_Letter_${safeName}.pdf`,
-          content: pdfBuffer,
-          contentType: 'application/pdf'
+          filename: `Offer_Letter_${candidate.name.replace(/\s+/g, '_')}.docx`,
+          content: docxBuffer,
+          contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
         });
-      } catch (pdfErr) {
-        console.error('[AutoEmail] Failed to generate offer letter PDF attachment:', pdfErr.message);
+      } catch (err) {
+        console.error('[AutoEmail] Failed to generate offer letter attachment:', err.message);
       }
     }
 
@@ -645,7 +661,7 @@ app.post('/api/admin/users/:id/reset-password', authenticateToken, requireRole([
       return res.status(404).json({ error: 'User not found' });
     }
     userToUpdate.password = await bcrypt.hash(newPassword, 10);
-    await userToUpdate.save();
+    userToUpdate.save();
     res.json({ success: true, message: 'Password reset successfully' });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -2409,7 +2425,7 @@ app.post('/api/candidates/:id/send-email', authenticateToken, requireRole(['admi
   if (!candidate) return res.status(404).json({ error: 'Not found.' });
   if (!candidate.email) return res.status(400).json({ error: 'No email specified.' });
 
-  // Determine if offer letter PDF should be attached automatically
+  // Determine if offer letter attachment should be attached automatically
   const isOfferedStage = candidate.stage && candidate.stage.toLowerCase() === 'offered';
   const isOfferSubject = subject && /offer/i.test(subject);
   const shouldAttachOffer = attachOfferPdf !== false && (attachOfferPdf === true || isOfferedStage || isOfferSubject);
@@ -2417,16 +2433,16 @@ app.post('/api/candidates/:id/send-email', authenticateToken, requireRole(['admi
   let attachments = [];
   if (shouldAttachOffer) {
     try {
-      const pdfBuffer = await generateOfferLetterPDFBuffer(candidate, candidate.offerDetails || {});
-      const pdfFilename = `Offer_Letter_${(candidate.name || 'Candidate').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+      const docxBuffer = await generateOfferLetterBuffer(candidate, candidate.offerDetails || {});
+      const docxFilename = `Offer_Letter_${(candidate.name || 'Candidate').replace(/[^a-zA-Z0-9]/g, '_')}.docx`;
       attachments.push({
-        filename: pdfFilename,
-        content: pdfBuffer,
-        contentType: 'application/pdf'
+        filename: docxFilename,
+        content: docxBuffer,
+        contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
       });
-      console.log(`[SendEmail] Attached Offer Letter PDF: ${pdfFilename}`);
-    } catch (pdfErr) {
-      console.error('[SendEmail] Failed to generate offer PDF attachment:', pdfErr);
+      console.log(`[SendEmail] Attached Offer Letter: ${docxFilename}`);
+    } catch (err) {
+      console.error('[SendEmail] Failed to generate offer attachment:', err);
     }
   }
 
@@ -2459,18 +2475,18 @@ app.post('/api/candidates/:id/send-offer-letter', authenticateToken, requireRole
     let emailSent = false;
     let emailReason = '';
 
-    // Generate official PDF Attachment
+    // Generate official Docx Attachment
     let attachments = [];
     try {
-      const pdfBuffer = await generateOfferLetterPDFBuffer(candidate, offerDetails);
-      const pdfFilename = `Offer_Letter_${candidate.name.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+      const docxBuffer = await generateOfferLetterBuffer(candidate, offerDetails);
+      const filename = `Offer_Letter_${candidate.name.replace(/[^a-zA-Z0-9]/g, '_')}.docx`;
       attachments.push({
-        filename: pdfFilename,
-        content: pdfBuffer,
-        contentType: 'application/pdf'
+        filename: filename,
+        content: docxBuffer,
+        contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
       });
-    } catch (pdfErr) {
-      console.error('Failed to generate offer PDF:', pdfErr);
+    } catch (err) {
+      console.error('Failed to generate offer docx:', err);
     }
 
     if (shouldSendEmail && subject && body && candidate.email) {
@@ -2510,7 +2526,7 @@ app.post('/api/candidates/:id/send-offer-letter', authenticateToken, requireRole
       date: new Date().toISOString(),
       type: 'Offer Extended',
       text: shouldSendEmail 
-        ? (emailSent ? `Official Offer Letter PDF sent via email (Joining Date: ${joiningDate}, Offered Salary: ${salary})` : `Offer saved to profile (Email delivery failed: ${emailReason})`)
+        ? (emailSent ? `Official Offer Letter sent via email (Joining Date: ${joiningDate}, Offered Salary: ${salary})` : `Offer saved to profile (Email delivery failed: ${emailReason})`)
         : `Offer saved to candidate profile (Email scheduled for later)`
     });
 
@@ -2518,9 +2534,9 @@ app.post('/api/candidates/:id/send-offer-letter', authenticateToken, requireRole
 
     let userMessage = '';
     if (!shouldSendEmail) {
-      userMessage = `Offer details for ${candidate.name} saved! Official PDF generated & email set to be sent later.`;
+      userMessage = `Offer details for ${candidate.name} saved! Official Docx generated & email set to be sent later.`;
     } else if (emailSent) {
-      userMessage = `🎉 Official Offer Letter PDF successfully sent to ${candidate.name}!`;
+      userMessage = `🎉 Official Offer Letter successfully sent to ${candidate.name}!`;
     } else {
       userMessage = `Offer saved for ${candidate.name}. (${emailReason || 'Email not sent'})`;
     }
@@ -2539,19 +2555,19 @@ app.post('/api/candidates/:id/send-offer-letter', authenticateToken, requireRole
   }
 });
 
-app.get('/api/candidates/:id/offer-letter-pdf', authenticateToken, async (req, res) => {
+app.get('/api/candidates/:id/offer-letter-download', authenticateToken, async (req, res) => {
   try {
     const candidate = await Candidate.findOne({ id: req.params.id });
     if (!candidate) return res.status(404).json({ error: 'Candidate not found.' });
 
-    const pdfBuffer = await generateOfferLetterPDFBuffer(candidate, candidate.offerDetails || {});
-    const filename = `Offer_Letter_${candidate.name.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+    const docxBuffer = await generateOfferLetterBuffer(candidate, candidate.offerDetails || {});
+    const filename = `Offer_Letter_${candidate.name.replace(/[^a-zA-Z0-9]/g, '_')}.docx`;
 
-    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
     res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
-    res.send(pdfBuffer);
+    res.send(docxBuffer);
   } catch (err) {
-    console.error('Failed to stream offer PDF:', err);
+    console.error('Failed to stream offer docx:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -2859,9 +2875,12 @@ app.post('/api/jobs/:id/publish', async (req, res) => {
     const { publishToCareers } = req.body;
     job.publishToCareers = publishToCareers !== undefined ? publishToCareers : !job.publishToCareers;
 
-    if (job.publishToCareers && !job.publicSlug) {
-      const baseSlug = (job.title || 'job').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-      job.publicSlug = `${baseSlug}-${Date.now().toString(36)}`;
+    if (job.publishToCareers) {
+      job.status = 'Active';
+      if (!job.publicSlug) {
+        const baseSlug = (job.title || 'job').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        job.publicSlug = `${baseSlug}-${Date.now().toString(36)}`;
+      }
     }
 
     await job.save();
@@ -3407,15 +3426,22 @@ app.get('/api/ingestion-logs', authenticateToken, requireRole(['admin', 'recruit
 
 app.get('/api/public/jobs', async (req, res) => {
   try {
-    const jobs = await Job.find({ status: 'Active', publishToCareers: true });
-    // Strip sensitive fields if any, map to simple format
+    const jobs = await Job.find({
+      publishToCareers: true,
+      $or: [{ status: 'Active' }, { status: { $exists: false } }, { status: null }, { status: '' }]
+    });
     const mapped = jobs.map(j => ({
       id: j.id,
       title: j.title,
       jobRole: j.title,
       department: j.department,
       location: j.location,
-      workMode: 'On-site' // Defaulting since it wasn't in original Job schema
+      workMode: j.workMode || 'On-site',
+      requiredExperience: j.requiredExperience || 'N/A',
+      publicSlug: j.publicSlug || j.id,
+      description: j.publicDescription || j.description,
+      requirements: j.requirements,
+      createdAt: j.createdAt
     }));
     res.json(mapped);
   } catch (err) {
@@ -3426,11 +3452,15 @@ app.get('/api/public/jobs', async (req, res) => {
 app.get('/api/public/jobs/:id', async (req, res) => {
   try {
     const idOrSlug = req.params.id;
-    let job = await Job.findOne({ id: idOrSlug, status: 'Active', publishToCareers: true });
+    const queryCondition = {
+      publishToCareers: true,
+      $or: [{ status: 'Active' }, { status: { $exists: false } }, { status: null }, { status: '' }]
+    };
+    let job = await Job.findOne({ id: idOrSlug, ...queryCondition });
     
     if (!job) {
       // Fuzzy / slug search in DB
-      const allActiveJobs = await Job.find({ status: 'Active', publishToCareers: true });
+      const allActiveJobs = await Job.find(queryCondition);
       job = allActiveJobs.find(j => 
         j.id === idOrSlug ||
         j.publicSlug === idOrSlug ||
@@ -3455,21 +3485,7 @@ app.get('/api/public/jobs/:id', async (req, res) => {
     ];
 
     if (!job) {
-      // Dynamic fallback for generated referral URLs (e.g. arcgis-pro-specialist, business-analyst)
-      const titleWords = idOrSlug.split(/[-_]/).map(w => w.charAt(0).toUpperCase() + w.slice(1));
-      const formattedTitle = titleWords.join(' ');
-      return res.json({
-        id: idOrSlug,
-        title: formattedTitle,
-        jobRole: formattedTitle,
-        department: 'Engineering & Geospatial Solutions',
-        location: 'Hyderabad / Remote',
-        workMode: 'On-site',
-        jobDescription: `We are looking for a skilled ${formattedTitle} to join our technology team at iSpatialTec. Responsible for end-to-end execution, client stakeholder consultations, requirement gathering, and enterprise system delivery.`,
-        requiredExperience: '3 - 5 Years',
-        closingDate: null,
-        customFields: defaultFields
-      });
+      return res.status(404).json({ error: 'Job position not found or no longer active' });
     }
 
     let fieldsToReturn = job.customFields;

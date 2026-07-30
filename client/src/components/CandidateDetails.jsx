@@ -1107,14 +1107,14 @@ export default function CandidateDetails({ candidate: propCandidate, job, jobs =
                 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <a 
-                    href={`${backendUrl}/api/candidates/${candidate.id}/offer-letter-pdf`}
+                    href={`${backendUrl}/api/candidates/${candidate.id}/offer-letter-download`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="btn btn-secondary"
                     style={{ padding: '4px 10px', fontSize: '11px', color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.3)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                    title="Download / View official offer letter PDF"
+                    title="Download / View official offer letter Docx"
                   >
-                    <Download size={12} /> Download PDF
+                    <Download size={12} /> Download Docx
                   </a>
 
                   {/* Email Delivery Status Badge */}

@@ -403,7 +403,7 @@ export default function PublicApply({ backendUrl }) {
         <div style={{ maxWidth: '1100px', margin: '0 auto', fontSize: '13px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ cursor: 'pointer' }} onClick={() => navigate('/careers')}>Careers</span>
           <span>/</span>
-          <span style={{ color: '#38bdf8', fontWeight: '600' }}>{job ? job.title : 'GIS Technical Manager'}</span>
+          <span style={{ color: '#38bdf8', fontWeight: '600' }}>{job ? job.title : 'Position Details'}</span>
         </div>
       </div>
 

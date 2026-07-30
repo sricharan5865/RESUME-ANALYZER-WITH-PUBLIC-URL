@@ -290,6 +290,17 @@ fi
 echo ""
 
 # ============================================================
+# STEP 11.5: Seed iSpatialTec Job Roles
+# ============================================================
+info "Syncing iSpatialTec Job Roles into MongoDB..."
+if [ -f "$SERVER_DIR/seed-jds.js" ]; then
+  (cd "$SERVER_DIR" && node seed-jds.js) 2>/dev/null || warn "Job auto-seeding will complete upon backend connection."
+  ok "Job roles sync script verified."
+fi
+
+echo ""
+
+# ============================================================
 # STEP 12: Start servers
 # ============================================================
 echo "=============================================="

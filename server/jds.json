@@ -1,0 +1,2187 @@
+[
+  {
+    "id": "job-project-manager",
+    "title": "Project Manager",
+    "department": "Project Management",
+    "location": "Hyderabad, India",
+    "requiredExperience": "8+ years",
+    "description": "iSpatial Techno Solutions\nProject Manager\nDepartment: Project Management\nExperience: 8+ years     Location: Hyderabad, India\nQualification Requirement\nBachelor's degree in Computer Science, Engineering, Information Technology, Business Administration, or a related field.\nPMP, PRINCE2, or equivalent project management certification is an advantage.\nProven experience managing the full project lifecycle across IT/software or GIS delivery projects.\nStrong working knowledge of Agile, Scrum, and Waterfall methodologies.\nProficiency with project management tools (e.g., MS Project, Jira, Azure DevOps).\nExcellent leadership, stakeholder management, and communication skills.\nJob Responsibility\nPlan, execute, and close projects within defined scope, schedule, budget, and quality targets.\nDevelop project charters, plans, schedules, risk registers, and communication plans.\nCoordinate cross-functional teams including developers, analysts, and QA.\nTrack project performance using KPIs and provide status reports to leadership.\nManage stakeholder expectations and serve as the primary point of contact.\nIdentify, assess, and mitigate project risks and issues proactively.\nEnsure adherence to organizational standards, best practices, and compliance requirements.\nMentor team members and promote continuous improvement.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Project Management\nExperience:  8+ years\nLocation:  Hyderabad, India",
+    "publicDescription": "iSpatial Techno Solutions\nProject Manager\nDepartment: Project Management\nExperience: 8+ years     Location: Hyderabad, India\nQualification Requirement\nBachelor's degree in Computer Science, Engineering, Information Technology, Business Administration, or a related field.\nPMP, PRINCE2, or equivalent project management certification is an advantage.\nProven experience managing the full project lifecycle across IT/software or GIS delivery projects.\nStrong working knowledge of Agile, Scrum, and Waterfall methodologies.\nProficiency with project management tools (e.g., MS Project, Jira, Azure DevOps).\nExcellent leadership, stakeholder management, and communication skills.\nJob Responsibility\nPlan, execute, and close projects within defined scope, schedule, budget, and quality targets.\nDevelop project charters, plans, schedules, risk registers, and communication plans.\nCoordinate cross-functional teams including developers, analysts, and QA.\nTrack project performance using KPIs and provide status reports to leadership.\nManage stakeholder expectations and serve as the primary point of contact.\nIdentify, assess, and mitigate project risks and issues proactively.\nEnsure adherence to organizational standards, best practices, and compliance requirements.\nMentor team members and promote continuous improvement.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Project Management\nExperience:  8+ years\nLocation:  Hyderabad, India",
+    "requirements": "iSpatial Techno Solutions\nProject Manager\nDepartment: Project Management\nExperience: 8+ years     Location: Hyderabad, India\nQualification Requirement\nBachelor's degree in Computer Science, Engineering, Information Technology, Business Administration, or a related field.\nPMP, PRINCE2, or equivalent project management certification is an advantage.\nProven experience managing the full project lifecycle across IT/software or GIS delivery projects.\nStrong working knowledge of Agile, Scrum, and Waterfall methodologies.\nProficiency with project management tools (e.g., MS Project, Jira, Azure DevOps).\nExcellent leadership, stakeholder management, and communication skills.\nJob Responsibility\nPlan, execute, and close projects within defined scope, schedule, budget, and quality targets.\nDevelop project charters, plans, schedules, risk registers, and communication plans.\nCoordinate cross-functional teams including developers, analysts, and QA.\nTrack project performance using KPIs and provide status reports to leadership.\nManage stakeholder expectations and serve as the primary point of contact.\nIdentify, assess, and mitigate project risks and issues proactively.\nEnsure adherence to organizational standards, best practices, and compliance requirements.\nMentor team members and promote continuous improvement.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Project Management\nExperience:  8+ years\nLocation:  Hyderabad, India",
+    "publishToCareers": true,
+    "status": "Active",
+    "workMode": "On-site",
+    "publicSlug": "project-manager",
+    "customFields": [
+      {
+        "id": "fn",
+        "label": "First Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ln",
+        "label": "Last Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "em",
+        "label": "Email",
+        "fieldType": "Email",
+        "isRequired": true
+      },
+      {
+        "id": "ph",
+        "label": "Phone Number",
+        "fieldType": "Phone",
+        "isRequired": true
+      },
+      {
+        "id": "cl",
+        "label": "Current Location",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ex",
+        "label": "Total Years of Experience",
+        "fieldType": "Number",
+        "isRequired": true
+      },
+      {
+        "id": "np",
+        "label": "Notice Period",
+        "fieldType": "Dropdown",
+        "options": "Immediate, 15 days, 30 days, 45 days, 60 days, 90 days, More than 90 days",
+        "isRequired": true
+      },
+      {
+        "id": "jd",
+        "label": "Earliest Joining Date",
+        "fieldType": "Date",
+        "isRequired": true
+      },
+      {
+        "id": "eq",
+        "label": "Education Qualification",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ks",
+        "label": "Key Skills",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "li",
+        "label": "LinkedIn Profile",
+        "fieldType": "Url",
+        "isRequired": true
+      },
+      {
+        "id": "cv",
+        "label": "Upload CV",
+        "fieldType": "CvUpload",
+        "isRequired": true
+      }
+    ],
+    "postings": {
+      "linkedIn": true,
+      "indeed": true,
+      "zipRecruiter": false,
+      "internalCareer": true
+    }
+  },
+  {
+    "id": "job-environment-engineer",
+    "title": "Environment Engineer",
+    "department": "Environment & Sustainability",
+    "location": "Abu Dhabi, UAE",
+    "requiredExperience": "4+ years",
+    "description": "iSpatial Techno Solutions\nEnvironment Engineer\nDepartment: Environment & Sustainability\nExperience: 4+ years     Location: Abu Dhabi, UAE\nQualification Requirement\nBachelor's or Master's degree in Environmental Engineering, Environmental Science, or a related discipline.\nKnowledge of environmental regulations, standards, and compliance frameworks.\nExperience with environmental impact assessment (EIA) and monitoring programs.\nFamiliarity with air, water, and soil quality monitoring and pollution control systems.\nProficiency in data analysis and technical report preparation.\nStrong analytical, problem-solving, and communication skills.\nJob Responsibility\nDesign, implement, and monitor environmental management and compliance programs.\nConduct environmental impact assessments and prepare technical reports.\nMonitor air, water, and soil quality and recommend corrective actions.\nEnsure compliance with local and international environmental regulations.\nSupport pollution control, waste management, and sustainability initiatives.\nCollaborate with project teams on environmental aspects of solution delivery.\nMaintain documentation for audits, permits, and regulatory submissions.\nAdvise stakeholders on environmental best practices and risk mitigation.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Environment & Sustainability\nExperience:  4+ years\nLocation:  Abu Dhabi, UAE",
+    "publicDescription": "iSpatial Techno Solutions\nEnvironment Engineer\nDepartment: Environment & Sustainability\nExperience: 4+ years     Location: Abu Dhabi, UAE\nQualification Requirement\nBachelor's or Master's degree in Environmental Engineering, Environmental Science, or a related discipline.\nKnowledge of environmental regulations, standards, and compliance frameworks.\nExperience with environmental impact assessment (EIA) and monitoring programs.\nFamiliarity with air, water, and soil quality monitoring and pollution control systems.\nProficiency in data analysis and technical report preparation.\nStrong analytical, problem-solving, and communication skills.\nJob Responsibility\nDesign, implement, and monitor environmental management and compliance programs.\nConduct environmental impact assessments and prepare technical reports.\nMonitor air, water, and soil quality and recommend corrective actions.\nEnsure compliance with local and international environmental regulations.\nSupport pollution control, waste management, and sustainability initiatives.\nCollaborate with project teams on environmental aspects of solution delivery.\nMaintain documentation for audits, permits, and regulatory submissions.\nAdvise stakeholders on environmental best practices and risk mitigation.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Environment & Sustainability\nExperience:  4+ years\nLocation:  Abu Dhabi, UAE",
+    "requirements": "iSpatial Techno Solutions\nEnvironment Engineer\nDepartment: Environment & Sustainability\nExperience: 4+ years     Location: Abu Dhabi, UAE\nQualification Requirement\nBachelor's or Master's degree in Environmental Engineering, Environmental Science, or a related discipline.\nKnowledge of environmental regulations, standards, and compliance frameworks.\nExperience with environmental impact assessment (EIA) and monitoring programs.\nFamiliarity with air, water, and soil quality monitoring and pollution control systems.\nProficiency in data analysis and technical report preparation.\nStrong analytical, problem-solving, and communication skills.\nJob Responsibility\nDesign, implement, and monitor environmental management and compliance programs.\nConduct environmental impact assessments and prepare technical reports.\nMonitor air, water, and soil quality and recommend corrective actions.\nEnsure compliance with local and international environmental regulations.\nSupport pollution control, waste management, and sustainability initiatives.\nCollaborate with project teams on environmental aspects of solution delivery.\nMaintain documentation for audits, permits, and regulatory submissions.\nAdvise stakeholders on environmental best practices and risk mitigation.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Environment & Sustainability\nExperience:  4+ years\nLocation:  Abu Dhabi, UAE",
+    "publishToCareers": true,
+    "status": "Active",
+    "workMode": "On-site",
+    "publicSlug": "environment-engineer",
+    "customFields": [
+      {
+        "id": "fn",
+        "label": "First Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ln",
+        "label": "Last Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "em",
+        "label": "Email",
+        "fieldType": "Email",
+        "isRequired": true
+      },
+      {
+        "id": "ph",
+        "label": "Phone Number",
+        "fieldType": "Phone",
+        "isRequired": true
+      },
+      {
+        "id": "cl",
+        "label": "Current Location",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ex",
+        "label": "Total Years of Experience",
+        "fieldType": "Number",
+        "isRequired": true
+      },
+      {
+        "id": "np",
+        "label": "Notice Period",
+        "fieldType": "Dropdown",
+        "options": "Immediate, 15 days, 30 days, 45 days, 60 days, 90 days, More than 90 days",
+        "isRequired": true
+      },
+      {
+        "id": "jd",
+        "label": "Earliest Joining Date",
+        "fieldType": "Date",
+        "isRequired": true
+      },
+      {
+        "id": "eq",
+        "label": "Education Qualification",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ks",
+        "label": "Key Skills",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "li",
+        "label": "LinkedIn Profile",
+        "fieldType": "Url",
+        "isRequired": true
+      },
+      {
+        "id": "cv",
+        "label": "Upload CV",
+        "fieldType": "CvUpload",
+        "isRequired": true
+      }
+    ],
+    "postings": {
+      "linkedIn": true,
+      "indeed": true,
+      "zipRecruiter": false,
+      "internalCareer": true
+    }
+  },
+  {
+    "id": "job-bench-sales-recruiter",
+    "title": "Bench Sales Recruiter",
+    "department": "HR",
+    "location": "Hyderabad, India",
+    "requiredExperience": "3+ years",
+    "description": "iSpatial Techno Solutions\nBench Sales Recruiter\nDepartment: HR\nExperience: 3+ years     Location: Hyderabad, India\nQualification Requirement\nBachelor's degree in Business, HR, or a related field.\nProven experience in US IT bench sales and staffing.\nStrong understanding of US tax terms (W2, C2C, 1099) and visa classifications (H1B, GC, OPT, etc.).\nExperience working with prime vendors, implementation partners, and job portals.\nExcellent negotiation, networking, and communication skills.\nAbility to work in US time zones.\nJob Responsibility\nMarket bench consultants to prime vendors, implementation partners, and direct clients.\nSource and respond to requirements through job portals, vendor lists, and networking.\nNegotiate rates and contract terms in line with company and consultant expectations.\nBuild and maintain strong relationships with vendors and clients.\nCoordinate interviews, follow-ups, and placement logistics for consultants.\nMaintain accurate records of submissions, interviews, and placements.\nKeep consultants engaged and updated throughout the marketing cycle.\nAchieve placement targets and contribute to revenue goals.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  HR\nExperience:  3+ years\nLocation:  Hyderabad, India",
+    "publicDescription": "iSpatial Techno Solutions\nBench Sales Recruiter\nDepartment: HR\nExperience: 3+ years     Location: Hyderabad, India\nQualification Requirement\nBachelor's degree in Business, HR, or a related field.\nProven experience in US IT bench sales and staffing.\nStrong understanding of US tax terms (W2, C2C, 1099) and visa classifications (H1B, GC, OPT, etc.).\nExperience working with prime vendors, implementation partners, and job portals.\nExcellent negotiation, networking, and communication skills.\nAbility to work in US time zones.\nJob Responsibility\nMarket bench consultants to prime vendors, implementation partners, and direct clients.\nSource and respond to requirements through job portals, vendor lists, and networking.\nNegotiate rates and contract terms in line with company and consultant expectations.\nBuild and maintain strong relationships with vendors and clients.\nCoordinate interviews, follow-ups, and placement logistics for consultants.\nMaintain accurate records of submissions, interviews, and placements.\nKeep consultants engaged and updated throughout the marketing cycle.\nAchieve placement targets and contribute to revenue goals.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  HR\nExperience:  3+ years\nLocation:  Hyderabad, India",
+    "requirements": "iSpatial Techno Solutions\nBench Sales Recruiter\nDepartment: HR\nExperience: 3+ years     Location: Hyderabad, India\nQualification Requirement\nBachelor's degree in Business, HR, or a related field.\nProven experience in US IT bench sales and staffing.\nStrong understanding of US tax terms (W2, C2C, 1099) and visa classifications (H1B, GC, OPT, etc.).\nExperience working with prime vendors, implementation partners, and job portals.\nExcellent negotiation, networking, and communication skills.\nAbility to work in US time zones.\nJob Responsibility\nMarket bench consultants to prime vendors, implementation partners, and direct clients.\nSource and respond to requirements through job portals, vendor lists, and networking.\nNegotiate rates and contract terms in line with company and consultant expectations.\nBuild and maintain strong relationships with vendors and clients.\nCoordinate interviews, follow-ups, and placement logistics for consultants.\nMaintain accurate records of submissions, interviews, and placements.\nKeep consultants engaged and updated throughout the marketing cycle.\nAchieve placement targets and contribute to revenue goals.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  HR\nExperience:  3+ years\nLocation:  Hyderabad, India",
+    "publishToCareers": true,
+    "status": "Active",
+    "workMode": "On-site",
+    "publicSlug": "bench-sales-recruiter",
+    "customFields": [
+      {
+        "id": "fn",
+        "label": "First Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ln",
+        "label": "Last Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "em",
+        "label": "Email",
+        "fieldType": "Email",
+        "isRequired": true
+      },
+      {
+        "id": "ph",
+        "label": "Phone Number",
+        "fieldType": "Phone",
+        "isRequired": true
+      },
+      {
+        "id": "cl",
+        "label": "Current Location",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ex",
+        "label": "Total Years of Experience",
+        "fieldType": "Number",
+        "isRequired": true
+      },
+      {
+        "id": "np",
+        "label": "Notice Period",
+        "fieldType": "Dropdown",
+        "options": "Immediate, 15 days, 30 days, 45 days, 60 days, 90 days, More than 90 days",
+        "isRequired": true
+      },
+      {
+        "id": "jd",
+        "label": "Earliest Joining Date",
+        "fieldType": "Date",
+        "isRequired": true
+      },
+      {
+        "id": "eq",
+        "label": "Education Qualification",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ks",
+        "label": "Key Skills",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "li",
+        "label": "LinkedIn Profile",
+        "fieldType": "Url",
+        "isRequired": true
+      },
+      {
+        "id": "cv",
+        "label": "Upload CV",
+        "fieldType": "CvUpload",
+        "isRequired": true
+      }
+    ],
+    "postings": {
+      "linkedIn": true,
+      "indeed": true,
+      "zipRecruiter": false,
+      "internalCareer": true
+    }
+  },
+  {
+    "id": "job-bid-manager",
+    "title": "Bid Manager",
+    "department": "Business Development",
+    "location": "Abu Dhabi, UAE",
+    "requiredExperience": "5+ years",
+    "description": "iSpatial Techno Solutions\nBid Manager\nDepartment: Business Development\nExperience: 5+ years     Location: Abu Dhabi, UAE\nQualification Requirement\nBachelor's degree in Business, Engineering, IT, or a related field.\nProven experience managing bids, tenders, RFPs, and RFQs.\nStrong understanding of proposal development and bid governance processes.\nExcellent writing, editing, and document management skills.\nProficiency in MS Office and proposal management tools.\nStrong coordination, time management, and stakeholder management skills.\nJob Responsibility\nManage the end-to-end bid lifecycle from qualification to submission.\nAnalyze RFP/RFQ documents and develop compliant, compelling proposals.\nCoordinate inputs from technical, commercial, legal, and delivery teams.\nDevelop bid plans, schedules, and win strategies with stakeholders.\nEnsure proposals meet client requirements, quality standards, and deadlines.\nMaintain a repository of proposal content, templates, and case studies.\nSupport pricing strategy and commercial reviews with leadership.\nConduct post-bid reviews and capture lessons learned.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Business Development\nExperience:  5+ years\nLocation:  Abu Dhabi, UAE",
+    "publicDescription": "iSpatial Techno Solutions\nBid Manager\nDepartment: Business Development\nExperience: 5+ years     Location: Abu Dhabi, UAE\nQualification Requirement\nBachelor's degree in Business, Engineering, IT, or a related field.\nProven experience managing bids, tenders, RFPs, and RFQs.\nStrong understanding of proposal development and bid governance processes.\nExcellent writing, editing, and document management skills.\nProficiency in MS Office and proposal management tools.\nStrong coordination, time management, and stakeholder management skills.\nJob Responsibility\nManage the end-to-end bid lifecycle from qualification to submission.\nAnalyze RFP/RFQ documents and develop compliant, compelling proposals.\nCoordinate inputs from technical, commercial, legal, and delivery teams.\nDevelop bid plans, schedules, and win strategies with stakeholders.\nEnsure proposals meet client requirements, quality standards, and deadlines.\nMaintain a repository of proposal content, templates, and case studies.\nSupport pricing strategy and commercial reviews with leadership.\nConduct post-bid reviews and capture lessons learned.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Business Development\nExperience:  5+ years\nLocation:  Abu Dhabi, UAE",
+    "requirements": "iSpatial Techno Solutions\nBid Manager\nDepartment: Business Development\nExperience: 5+ years     Location: Abu Dhabi, UAE\nQualification Requirement\nBachelor's degree in Business, Engineering, IT, or a related field.\nProven experience managing bids, tenders, RFPs, and RFQs.\nStrong understanding of proposal development and bid governance processes.\nExcellent writing, editing, and document management skills.\nProficiency in MS Office and proposal management tools.\nStrong coordination, time management, and stakeholder management skills.\nJob Responsibility\nManage the end-to-end bid lifecycle from qualification to submission.\nAnalyze RFP/RFQ documents and develop compliant, compelling proposals.\nCoordinate inputs from technical, commercial, legal, and delivery teams.\nDevelop bid plans, schedules, and win strategies with stakeholders.\nEnsure proposals meet client requirements, quality standards, and deadlines.\nMaintain a repository of proposal content, templates, and case studies.\nSupport pricing strategy and commercial reviews with leadership.\nConduct post-bid reviews and capture lessons learned.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Business Development\nExperience:  5+ years\nLocation:  Abu Dhabi, UAE",
+    "publishToCareers": true,
+    "status": "Active",
+    "workMode": "On-site",
+    "publicSlug": "bid-manager",
+    "customFields": [
+      {
+        "id": "fn",
+        "label": "First Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ln",
+        "label": "Last Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "em",
+        "label": "Email",
+        "fieldType": "Email",
+        "isRequired": true
+      },
+      {
+        "id": "ph",
+        "label": "Phone Number",
+        "fieldType": "Phone",
+        "isRequired": true
+      },
+      {
+        "id": "cl",
+        "label": "Current Location",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ex",
+        "label": "Total Years of Experience",
+        "fieldType": "Number",
+        "isRequired": true
+      },
+      {
+        "id": "np",
+        "label": "Notice Period",
+        "fieldType": "Dropdown",
+        "options": "Immediate, 15 days, 30 days, 45 days, 60 days, 90 days, More than 90 days",
+        "isRequired": true
+      },
+      {
+        "id": "jd",
+        "label": "Earliest Joining Date",
+        "fieldType": "Date",
+        "isRequired": true
+      },
+      {
+        "id": "eq",
+        "label": "Education Qualification",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ks",
+        "label": "Key Skills",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "li",
+        "label": "LinkedIn Profile",
+        "fieldType": "Url",
+        "isRequired": true
+      },
+      {
+        "id": "cv",
+        "label": "Upload CV",
+        "fieldType": "CvUpload",
+        "isRequired": true
+      }
+    ],
+    "postings": {
+      "linkedIn": true,
+      "indeed": true,
+      "zipRecruiter": false,
+      "internalCareer": true
+    }
+  },
+  {
+    "id": "job-business-development-executive",
+    "title": "Business Development Executive",
+    "department": "Business Development",
+    "location": "Abu Dhabi, UAE",
+    "requiredExperience": "2+ years",
+    "description": "iSpatial Techno Solutions\nBusiness Development Executive\nDepartment: Business Development\nExperience: 2+ years     Location: Abu Dhabi, UAE\nQualification Requirement\nBachelor's degree in Business, Marketing, IT, or a related field.\nExperience in B2B sales, lead generation, or business development, preferably in technology/GIS.\nStrong understanding of the sales cycle and CRM tools.\nExcellent communication, presentation, and negotiation skills.\nSelf-motivated with a results-driven approach.\nAbility to build and maintain client relationships.\nJob Responsibility\nIdentify and generate new business opportunities through research and outreach.\nBuild and maintain a strong pipeline of qualified leads and prospects.\nConduct client meetings, presentations, and product demonstrations.\nUnderstand client needs and propose suitable solutions.\nSupport proposal preparation and follow up to close deals.\nMaintain accurate records of activities and opportunities in CRM.\nMeet or exceed assigned sales and revenue targets.\nCollaborate with technical and marketing teams to drive growth.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Business Development\nExperience:  2+ years\nLocation:  Abu Dhabi, UAE",
+    "publicDescription": "iSpatial Techno Solutions\nBusiness Development Executive\nDepartment: Business Development\nExperience: 2+ years     Location: Abu Dhabi, UAE\nQualification Requirement\nBachelor's degree in Business, Marketing, IT, or a related field.\nExperience in B2B sales, lead generation, or business development, preferably in technology/GIS.\nStrong understanding of the sales cycle and CRM tools.\nExcellent communication, presentation, and negotiation skills.\nSelf-motivated with a results-driven approach.\nAbility to build and maintain client relationships.\nJob Responsibility\nIdentify and generate new business opportunities through research and outreach.\nBuild and maintain a strong pipeline of qualified leads and prospects.\nConduct client meetings, presentations, and product demonstrations.\nUnderstand client needs and propose suitable solutions.\nSupport proposal preparation and follow up to close deals.\nMaintain accurate records of activities and opportunities in CRM.\nMeet or exceed assigned sales and revenue targets.\nCollaborate with technical and marketing teams to drive growth.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Business Development\nExperience:  2+ years\nLocation:  Abu Dhabi, UAE",
+    "requirements": "iSpatial Techno Solutions\nBusiness Development Executive\nDepartment: Business Development\nExperience: 2+ years     Location: Abu Dhabi, UAE\nQualification Requirement\nBachelor's degree in Business, Marketing, IT, or a related field.\nExperience in B2B sales, lead generation, or business development, preferably in technology/GIS.\nStrong understanding of the sales cycle and CRM tools.\nExcellent communication, presentation, and negotiation skills.\nSelf-motivated with a results-driven approach.\nAbility to build and maintain client relationships.\nJob Responsibility\nIdentify and generate new business opportunities through research and outreach.\nBuild and maintain a strong pipeline of qualified leads and prospects.\nConduct client meetings, presentations, and product demonstrations.\nUnderstand client needs and propose suitable solutions.\nSupport proposal preparation and follow up to close deals.\nMaintain accurate records of activities and opportunities in CRM.\nMeet or exceed assigned sales and revenue targets.\nCollaborate with technical and marketing teams to drive growth.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Business Development\nExperience:  2+ years\nLocation:  Abu Dhabi, UAE",
+    "publishToCareers": true,
+    "status": "Active",
+    "workMode": "On-site",
+    "publicSlug": "business-development-executive",
+    "customFields": [
+      {
+        "id": "fn",
+        "label": "First Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ln",
+        "label": "Last Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "em",
+        "label": "Email",
+        "fieldType": "Email",
+        "isRequired": true
+      },
+      {
+        "id": "ph",
+        "label": "Phone Number",
+        "fieldType": "Phone",
+        "isRequired": true
+      },
+      {
+        "id": "cl",
+        "label": "Current Location",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ex",
+        "label": "Total Years of Experience",
+        "fieldType": "Number",
+        "isRequired": true
+      },
+      {
+        "id": "np",
+        "label": "Notice Period",
+        "fieldType": "Dropdown",
+        "options": "Immediate, 15 days, 30 days, 45 days, 60 days, 90 days, More than 90 days",
+        "isRequired": true
+      },
+      {
+        "id": "jd",
+        "label": "Earliest Joining Date",
+        "fieldType": "Date",
+        "isRequired": true
+      },
+      {
+        "id": "eq",
+        "label": "Education Qualification",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ks",
+        "label": "Key Skills",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "li",
+        "label": "LinkedIn Profile",
+        "fieldType": "Url",
+        "isRequired": true
+      },
+      {
+        "id": "cv",
+        "label": "Upload CV",
+        "fieldType": "CvUpload",
+        "isRequired": true
+      }
+    ],
+    "postings": {
+      "linkedIn": true,
+      "indeed": true,
+      "zipRecruiter": false,
+      "internalCareer": true
+    }
+  },
+  {
+    "id": "job-business-development-team-lead",
+    "title": "Business Development Team Lead",
+    "department": "Business Development",
+    "location": "Abu Dhabi, UAE",
+    "requiredExperience": "7+ years",
+    "description": "iSpatial Techno Solutions\nBusiness Development Team Lead\nDepartment: Business Development\nExperience: 7+ years     Location: Abu Dhabi, UAE\nQualification Requirement\nBachelor's degree in Business, Marketing, IT, or a related field; MBA preferred.\nProven experience in business development with a track record of leading teams.\nStrong understanding of sales strategy, pipeline management, and CRM systems.\nExcellent leadership, communication, and negotiation skills.\nExperience in technology, GIS, or enterprise solutions sales is an advantage.\nAbility to set targets and drive team performance.\nJob Responsibility\nLead, mentor, and manage the business development team to meet targets.\nDevelop and execute sales strategies to drive revenue growth.\nOversee lead generation, pipeline management, and deal closure.\nBuild and maintain relationships with key clients and partners.\nMonitor team performance and provide coaching and feedback.\nCollaborate with marketing, pre-sales, and delivery teams.\nPrepare sales forecasts, reports, and market analysis for leadership.\nIdentify new markets, segments, and growth opportunities.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Business Development\nExperience:  7+ years\nLocation:  Abu Dhabi, UAE",
+    "publicDescription": "iSpatial Techno Solutions\nBusiness Development Team Lead\nDepartment: Business Development\nExperience: 7+ years     Location: Abu Dhabi, UAE\nQualification Requirement\nBachelor's degree in Business, Marketing, IT, or a related field; MBA preferred.\nProven experience in business development with a track record of leading teams.\nStrong understanding of sales strategy, pipeline management, and CRM systems.\nExcellent leadership, communication, and negotiation skills.\nExperience in technology, GIS, or enterprise solutions sales is an advantage.\nAbility to set targets and drive team performance.\nJob Responsibility\nLead, mentor, and manage the business development team to meet targets.\nDevelop and execute sales strategies to drive revenue growth.\nOversee lead generation, pipeline management, and deal closure.\nBuild and maintain relationships with key clients and partners.\nMonitor team performance and provide coaching and feedback.\nCollaborate with marketing, pre-sales, and delivery teams.\nPrepare sales forecasts, reports, and market analysis for leadership.\nIdentify new markets, segments, and growth opportunities.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Business Development\nExperience:  7+ years\nLocation:  Abu Dhabi, UAE",
+    "requirements": "iSpatial Techno Solutions\nBusiness Development Team Lead\nDepartment: Business Development\nExperience: 7+ years     Location: Abu Dhabi, UAE\nQualification Requirement\nBachelor's degree in Business, Marketing, IT, or a related field; MBA preferred.\nProven experience in business development with a track record of leading teams.\nStrong understanding of sales strategy, pipeline management, and CRM systems.\nExcellent leadership, communication, and negotiation skills.\nExperience in technology, GIS, or enterprise solutions sales is an advantage.\nAbility to set targets and drive team performance.\nJob Responsibility\nLead, mentor, and manage the business development team to meet targets.\nDevelop and execute sales strategies to drive revenue growth.\nOversee lead generation, pipeline management, and deal closure.\nBuild and maintain relationships with key clients and partners.\nMonitor team performance and provide coaching and feedback.\nCollaborate with marketing, pre-sales, and delivery teams.\nPrepare sales forecasts, reports, and market analysis for leadership.\nIdentify new markets, segments, and growth opportunities.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Business Development\nExperience:  7+ years\nLocation:  Abu Dhabi, UAE",
+    "publishToCareers": true,
+    "status": "Active",
+    "workMode": "On-site",
+    "publicSlug": "business-development-team-lead",
+    "customFields": [
+      {
+        "id": "fn",
+        "label": "First Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ln",
+        "label": "Last Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "em",
+        "label": "Email",
+        "fieldType": "Email",
+        "isRequired": true
+      },
+      {
+        "id": "ph",
+        "label": "Phone Number",
+        "fieldType": "Phone",
+        "isRequired": true
+      },
+      {
+        "id": "cl",
+        "label": "Current Location",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ex",
+        "label": "Total Years of Experience",
+        "fieldType": "Number",
+        "isRequired": true
+      },
+      {
+        "id": "np",
+        "label": "Notice Period",
+        "fieldType": "Dropdown",
+        "options": "Immediate, 15 days, 30 days, 45 days, 60 days, 90 days, More than 90 days",
+        "isRequired": true
+      },
+      {
+        "id": "jd",
+        "label": "Earliest Joining Date",
+        "fieldType": "Date",
+        "isRequired": true
+      },
+      {
+        "id": "eq",
+        "label": "Education Qualification",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ks",
+        "label": "Key Skills",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "li",
+        "label": "LinkedIn Profile",
+        "fieldType": "Url",
+        "isRequired": true
+      },
+      {
+        "id": "cv",
+        "label": "Upload CV",
+        "fieldType": "CvUpload",
+        "isRequired": true
+      }
+    ],
+    "postings": {
+      "linkedIn": true,
+      "indeed": true,
+      "zipRecruiter": false,
+      "internalCareer": true
+    }
+  },
+  {
+    "id": "job-senior-gis-application-developer",
+    "title": "Senior GIS Application Developer",
+    "department": "GIS",
+    "location": "India (Remote)",
+    "requiredExperience": "6+ years",
+    "description": "iSpatial Techno Solutions\nSenior GIS Application Developer\nDepartment: GIS\nExperience: 6+ years     Location: India (Remote)\nQualification Requirement\nBachelor's or Master's degree in Computer Science, GIS, Geoinformatics, or a related field.\nStrong experience developing GIS applications using ESRI technologies.\nProficiency in ArcGIS Maps SDK for JavaScript, ArcGIS API, and ArcGIS Pro SDK.\nHands-on experience with HTML, CSS, JavaScript, TypeScript, and REST APIs.\nKnowledge of Python/ArcPy for GIS automation.\nExperience with SQL and enterprise geodatabases.\nJob Responsibility\nDesign, develop, and maintain enterprise GIS web and mobile applications.\nBuild and customize solutions using ArcGIS Enterprise and ESRI APIs/SDKs.\nIntegrate GIS applications with third-party systems, databases, and services.\nDevelop and manage feature services, web maps, and geoprocessing workflows.\nOptimize application performance, scalability, and security.\nMentor junior developers and enforce coding best practices.\nSupport deployment, testing, and documentation activities.\nCollaborate with analysts, architects, and project stakeholders.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  GIS\nExperience:  6+ years\nLocation:  India (Remote)",
+    "publicDescription": "iSpatial Techno Solutions\nSenior GIS Application Developer\nDepartment: GIS\nExperience: 6+ years     Location: India (Remote)\nQualification Requirement\nBachelor's or Master's degree in Computer Science, GIS, Geoinformatics, or a related field.\nStrong experience developing GIS applications using ESRI technologies.\nProficiency in ArcGIS Maps SDK for JavaScript, ArcGIS API, and ArcGIS Pro SDK.\nHands-on experience with HTML, CSS, JavaScript, TypeScript, and REST APIs.\nKnowledge of Python/ArcPy for GIS automation.\nExperience with SQL and enterprise geodatabases.\nJob Responsibility\nDesign, develop, and maintain enterprise GIS web and mobile applications.\nBuild and customize solutions using ArcGIS Enterprise and ESRI APIs/SDKs.\nIntegrate GIS applications with third-party systems, databases, and services.\nDevelop and manage feature services, web maps, and geoprocessing workflows.\nOptimize application performance, scalability, and security.\nMentor junior developers and enforce coding best practices.\nSupport deployment, testing, and documentation activities.\nCollaborate with analysts, architects, and project stakeholders.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  GIS\nExperience:  6+ years\nLocation:  India (Remote)",
+    "requirements": "iSpatial Techno Solutions\nSenior GIS Application Developer\nDepartment: GIS\nExperience: 6+ years     Location: India (Remote)\nQualification Requirement\nBachelor's or Master's degree in Computer Science, GIS, Geoinformatics, or a related field.\nStrong experience developing GIS applications using ESRI technologies.\nProficiency in ArcGIS Maps SDK for JavaScript, ArcGIS API, and ArcGIS Pro SDK.\nHands-on experience with HTML, CSS, JavaScript, TypeScript, and REST APIs.\nKnowledge of Python/ArcPy for GIS automation.\nExperience with SQL and enterprise geodatabases.\nJob Responsibility\nDesign, develop, and maintain enterprise GIS web and mobile applications.\nBuild and customize solutions using ArcGIS Enterprise and ESRI APIs/SDKs.\nIntegrate GIS applications with third-party systems, databases, and services.\nDevelop and manage feature services, web maps, and geoprocessing workflows.\nOptimize application performance, scalability, and security.\nMentor junior developers and enforce coding best practices.\nSupport deployment, testing, and documentation activities.\nCollaborate with analysts, architects, and project stakeholders.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  GIS\nExperience:  6+ years\nLocation:  India (Remote)",
+    "publishToCareers": true,
+    "status": "Active",
+    "workMode": "Remote",
+    "publicSlug": "senior-gis-application-developer",
+    "customFields": [
+      {
+        "id": "fn",
+        "label": "First Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ln",
+        "label": "Last Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "em",
+        "label": "Email",
+        "fieldType": "Email",
+        "isRequired": true
+      },
+      {
+        "id": "ph",
+        "label": "Phone Number",
+        "fieldType": "Phone",
+        "isRequired": true
+      },
+      {
+        "id": "cl",
+        "label": "Current Location",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ex",
+        "label": "Total Years of Experience",
+        "fieldType": "Number",
+        "isRequired": true
+      },
+      {
+        "id": "np",
+        "label": "Notice Period",
+        "fieldType": "Dropdown",
+        "options": "Immediate, 15 days, 30 days, 45 days, 60 days, 90 days, More than 90 days",
+        "isRequired": true
+      },
+      {
+        "id": "jd",
+        "label": "Earliest Joining Date",
+        "fieldType": "Date",
+        "isRequired": true
+      },
+      {
+        "id": "eq",
+        "label": "Education Qualification",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ks",
+        "label": "Key Skills",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "li",
+        "label": "LinkedIn Profile",
+        "fieldType": "Url",
+        "isRequired": true
+      },
+      {
+        "id": "cv",
+        "label": "Upload CV",
+        "fieldType": "CvUpload",
+        "isRequired": true
+      }
+    ],
+    "postings": {
+      "linkedIn": true,
+      "indeed": true,
+      "zipRecruiter": false,
+      "internalCareer": true
+    }
+  },
+  {
+    "id": "job-gis-project-manager",
+    "title": "GIS Project Manager",
+    "department": "Project Management",
+    "location": "UAE / Bahrain",
+    "requiredExperience": "6+ years",
+    "description": "iSpatial Techno Solutions\nGIS Project Manager\nDepartment: Project Management\nExperience: 6+ years     Location: UAE / Bahrain\nQualification Requirement\nBachelor's degree in GIS, Geography, Computer Science, Engineering, or a related field.\nProven experience managing GIS projects end-to-end.\nStrong understanding of GIS concepts, spatial data models, and geodatabases.\nExperience with ESRI ArcGIS (Enterprise, Pro, Online) or similar platforms.\nExperience managing budgets, schedules, and cross-functional teams.\nExcellent communication and stakeholder management skills.\nJob Responsibility\nLead the GIS project lifecycle from initiation through closure.\nDevelop project plans, schedules, budgets, and risk registers.\nManage scope, timelines, cost, quality, and stakeholder expectations.\nOversee design, development, and deployment of GIS solutions.\nCoordinate spatial data collection, analysis, migration, and integration.\nEnsure data quality, metadata standards, and policy compliance.\nServe as primary point of contact for internal and external stakeholders.\nMentor project team members and promote GIS best practices.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Project Management\nExperience:  6+ years\nLocation:  UAE / Bahrain",
+    "publicDescription": "iSpatial Techno Solutions\nGIS Project Manager\nDepartment: Project Management\nExperience: 6+ years     Location: UAE / Bahrain\nQualification Requirement\nBachelor's degree in GIS, Geography, Computer Science, Engineering, or a related field.\nProven experience managing GIS projects end-to-end.\nStrong understanding of GIS concepts, spatial data models, and geodatabases.\nExperience with ESRI ArcGIS (Enterprise, Pro, Online) or similar platforms.\nExperience managing budgets, schedules, and cross-functional teams.\nExcellent communication and stakeholder management skills.\nJob Responsibility\nLead the GIS project lifecycle from initiation through closure.\nDevelop project plans, schedules, budgets, and risk registers.\nManage scope, timelines, cost, quality, and stakeholder expectations.\nOversee design, development, and deployment of GIS solutions.\nCoordinate spatial data collection, analysis, migration, and integration.\nEnsure data quality, metadata standards, and policy compliance.\nServe as primary point of contact for internal and external stakeholders.\nMentor project team members and promote GIS best practices.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Project Management\nExperience:  6+ years\nLocation:  UAE / Bahrain",
+    "requirements": "iSpatial Techno Solutions\nGIS Project Manager\nDepartment: Project Management\nExperience: 6+ years     Location: UAE / Bahrain\nQualification Requirement\nBachelor's degree in GIS, Geography, Computer Science, Engineering, or a related field.\nProven experience managing GIS projects end-to-end.\nStrong understanding of GIS concepts, spatial data models, and geodatabases.\nExperience with ESRI ArcGIS (Enterprise, Pro, Online) or similar platforms.\nExperience managing budgets, schedules, and cross-functional teams.\nExcellent communication and stakeholder management skills.\nJob Responsibility\nLead the GIS project lifecycle from initiation through closure.\nDevelop project plans, schedules, budgets, and risk registers.\nManage scope, timelines, cost, quality, and stakeholder expectations.\nOversee design, development, and deployment of GIS solutions.\nCoordinate spatial data collection, analysis, migration, and integration.\nEnsure data quality, metadata standards, and policy compliance.\nServe as primary point of contact for internal and external stakeholders.\nMentor project team members and promote GIS best practices.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Project Management\nExperience:  6+ years\nLocation:  UAE / Bahrain",
+    "publishToCareers": true,
+    "status": "Active",
+    "workMode": "On-site",
+    "publicSlug": "gis-project-manager",
+    "customFields": [
+      {
+        "id": "fn",
+        "label": "First Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ln",
+        "label": "Last Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "em",
+        "label": "Email",
+        "fieldType": "Email",
+        "isRequired": true
+      },
+      {
+        "id": "ph",
+        "label": "Phone Number",
+        "fieldType": "Phone",
+        "isRequired": true
+      },
+      {
+        "id": "cl",
+        "label": "Current Location",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ex",
+        "label": "Total Years of Experience",
+        "fieldType": "Number",
+        "isRequired": true
+      },
+      {
+        "id": "np",
+        "label": "Notice Period",
+        "fieldType": "Dropdown",
+        "options": "Immediate, 15 days, 30 days, 45 days, 60 days, 90 days, More than 90 days",
+        "isRequired": true
+      },
+      {
+        "id": "jd",
+        "label": "Earliest Joining Date",
+        "fieldType": "Date",
+        "isRequired": true
+      },
+      {
+        "id": "eq",
+        "label": "Education Qualification",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ks",
+        "label": "Key Skills",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "li",
+        "label": "LinkedIn Profile",
+        "fieldType": "Url",
+        "isRequired": true
+      },
+      {
+        "id": "cv",
+        "label": "Upload CV",
+        "fieldType": "CvUpload",
+        "isRequired": true
+      }
+    ],
+    "postings": {
+      "linkedIn": true,
+      "indeed": true,
+      "zipRecruiter": false,
+      "internalCareer": true
+    }
+  },
+  {
+    "id": "job-solution-architect",
+    "title": "Solution Architect",
+    "department": "Project Management",
+    "location": "Abu Dhabi, UAE",
+    "requiredExperience": "8+ years",
+    "description": "iSpatial Techno Solutions\nSolution Architect\nDepartment: Project Management\nExperience: 8+ years     Location: Abu Dhabi, UAE\nQualification Requirement\nBachelor's or Master's degree in Computer Science, Engineering, or a related field.\nProven experience designing enterprise-scale solution architectures.\nStrong knowledge of cloud platforms (Azure/AWS), microservices, and integration patterns.\nExperience with GIS/ESRI technologies is a strong advantage.\nProficiency in system design, APIs, databases, and security best practices.\nExcellent communication and stakeholder-facing skills.\nJob Responsibility\nDesign end-to-end solution architectures aligned with business and technical requirements.\nTranslate business needs into scalable, secure, and maintainable technical designs.\nDefine technology stacks, integration approaches, and deployment strategies.\nProvide technical leadership and guidance to development teams.\nEvaluate and recommend tools, frameworks, and platforms.\nEnsure adherence to architecture standards, security, and quality.\nSupport pre-sales, solutioning, and proposal efforts.\nReview designs and code to ensure architectural integrity.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Project Management\nExperience:  8+ years\nLocation:  Abu Dhabi, UAE",
+    "publicDescription": "iSpatial Techno Solutions\nSolution Architect\nDepartment: Project Management\nExperience: 8+ years     Location: Abu Dhabi, UAE\nQualification Requirement\nBachelor's or Master's degree in Computer Science, Engineering, or a related field.\nProven experience designing enterprise-scale solution architectures.\nStrong knowledge of cloud platforms (Azure/AWS), microservices, and integration patterns.\nExperience with GIS/ESRI technologies is a strong advantage.\nProficiency in system design, APIs, databases, and security best practices.\nExcellent communication and stakeholder-facing skills.\nJob Responsibility\nDesign end-to-end solution architectures aligned with business and technical requirements.\nTranslate business needs into scalable, secure, and maintainable technical designs.\nDefine technology stacks, integration approaches, and deployment strategies.\nProvide technical leadership and guidance to development teams.\nEvaluate and recommend tools, frameworks, and platforms.\nEnsure adherence to architecture standards, security, and quality.\nSupport pre-sales, solutioning, and proposal efforts.\nReview designs and code to ensure architectural integrity.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Project Management\nExperience:  8+ years\nLocation:  Abu Dhabi, UAE",
+    "requirements": "iSpatial Techno Solutions\nSolution Architect\nDepartment: Project Management\nExperience: 8+ years     Location: Abu Dhabi, UAE\nQualification Requirement\nBachelor's or Master's degree in Computer Science, Engineering, or a related field.\nProven experience designing enterprise-scale solution architectures.\nStrong knowledge of cloud platforms (Azure/AWS), microservices, and integration patterns.\nExperience with GIS/ESRI technologies is a strong advantage.\nProficiency in system design, APIs, databases, and security best practices.\nExcellent communication and stakeholder-facing skills.\nJob Responsibility\nDesign end-to-end solution architectures aligned with business and technical requirements.\nTranslate business needs into scalable, secure, and maintainable technical designs.\nDefine technology stacks, integration approaches, and deployment strategies.\nProvide technical leadership and guidance to development teams.\nEvaluate and recommend tools, frameworks, and platforms.\nEnsure adherence to architecture standards, security, and quality.\nSupport pre-sales, solutioning, and proposal efforts.\nReview designs and code to ensure architectural integrity.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Project Management\nExperience:  8+ years\nLocation:  Abu Dhabi, UAE",
+    "publishToCareers": true,
+    "status": "Active",
+    "workMode": "On-site",
+    "publicSlug": "solution-architect",
+    "customFields": [
+      {
+        "id": "fn",
+        "label": "First Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ln",
+        "label": "Last Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "em",
+        "label": "Email",
+        "fieldType": "Email",
+        "isRequired": true
+      },
+      {
+        "id": "ph",
+        "label": "Phone Number",
+        "fieldType": "Phone",
+        "isRequired": true
+      },
+      {
+        "id": "cl",
+        "label": "Current Location",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ex",
+        "label": "Total Years of Experience",
+        "fieldType": "Number",
+        "isRequired": true
+      },
+      {
+        "id": "np",
+        "label": "Notice Period",
+        "fieldType": "Dropdown",
+        "options": "Immediate, 15 days, 30 days, 45 days, 60 days, 90 days, More than 90 days",
+        "isRequired": true
+      },
+      {
+        "id": "jd",
+        "label": "Earliest Joining Date",
+        "fieldType": "Date",
+        "isRequired": true
+      },
+      {
+        "id": "eq",
+        "label": "Education Qualification",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ks",
+        "label": "Key Skills",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "li",
+        "label": "LinkedIn Profile",
+        "fieldType": "Url",
+        "isRequired": true
+      },
+      {
+        "id": "cv",
+        "label": "Upload CV",
+        "fieldType": "CvUpload",
+        "isRequired": true
+      }
+    ],
+    "postings": {
+      "linkedIn": true,
+      "indeed": true,
+      "zipRecruiter": false,
+      "internalCareer": true
+    }
+  },
+  {
+    "id": "job-solution-engineer",
+    "title": "Solution Engineer",
+    "department": "Project Management",
+    "location": "Hyderabad, India",
+    "requiredExperience": "3+ years",
+    "description": "iSpatial Techno Solutions\nSolution Engineer\nDepartment: Project Management\nExperience: 3+ years     Location: Hyderabad, India\nQualification Requirement\nBachelor's degree in Computer Science, Engineering, IT, or a related field.\nExperience in solution engineering, pre-sales, or technical consulting.\nStrong understanding of enterprise software, APIs, and integrations.\nExperience with GIS/ESRI or SaaS platforms is an advantage.\nExcellent problem-solving and communication skills.\nAbility to translate business requirements into technical solutions.\nJob Responsibility\nUnderstand client requirements and design tailored technical solutions.\nConfigure, demonstrate, and support solution implementations.\nSupport API integrations, workflows, and platform setup.\nAssist pre-sales with product demos, POCs, and technical documentation.\nParticipate in requirements gathering, solution design, and UAT.\nTroubleshoot technical issues and provide timely resolutions.\nCollaborate with delivery, product, and customer teams.\nPrepare configuration guides and solution design artifacts.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Project Management\nExperience:  3+ years\nLocation:  Hyderabad, India",
+    "publicDescription": "iSpatial Techno Solutions\nSolution Engineer\nDepartment: Project Management\nExperience: 3+ years     Location: Hyderabad, India\nQualification Requirement\nBachelor's degree in Computer Science, Engineering, IT, or a related field.\nExperience in solution engineering, pre-sales, or technical consulting.\nStrong understanding of enterprise software, APIs, and integrations.\nExperience with GIS/ESRI or SaaS platforms is an advantage.\nExcellent problem-solving and communication skills.\nAbility to translate business requirements into technical solutions.\nJob Responsibility\nUnderstand client requirements and design tailored technical solutions.\nConfigure, demonstrate, and support solution implementations.\nSupport API integrations, workflows, and platform setup.\nAssist pre-sales with product demos, POCs, and technical documentation.\nParticipate in requirements gathering, solution design, and UAT.\nTroubleshoot technical issues and provide timely resolutions.\nCollaborate with delivery, product, and customer teams.\nPrepare configuration guides and solution design artifacts.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Project Management\nExperience:  3+ years\nLocation:  Hyderabad, India",
+    "requirements": "iSpatial Techno Solutions\nSolution Engineer\nDepartment: Project Management\nExperience: 3+ years     Location: Hyderabad, India\nQualification Requirement\nBachelor's degree in Computer Science, Engineering, IT, or a related field.\nExperience in solution engineering, pre-sales, or technical consulting.\nStrong understanding of enterprise software, APIs, and integrations.\nExperience with GIS/ESRI or SaaS platforms is an advantage.\nExcellent problem-solving and communication skills.\nAbility to translate business requirements into technical solutions.\nJob Responsibility\nUnderstand client requirements and design tailored technical solutions.\nConfigure, demonstrate, and support solution implementations.\nSupport API integrations, workflows, and platform setup.\nAssist pre-sales with product demos, POCs, and technical documentation.\nParticipate in requirements gathering, solution design, and UAT.\nTroubleshoot technical issues and provide timely resolutions.\nCollaborate with delivery, product, and customer teams.\nPrepare configuration guides and solution design artifacts.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Project Management\nExperience:  3+ years\nLocation:  Hyderabad, India",
+    "publishToCareers": true,
+    "status": "Active",
+    "workMode": "On-site",
+    "publicSlug": "solution-engineer",
+    "customFields": [
+      {
+        "id": "fn",
+        "label": "First Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ln",
+        "label": "Last Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "em",
+        "label": "Email",
+        "fieldType": "Email",
+        "isRequired": true
+      },
+      {
+        "id": "ph",
+        "label": "Phone Number",
+        "fieldType": "Phone",
+        "isRequired": true
+      },
+      {
+        "id": "cl",
+        "label": "Current Location",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ex",
+        "label": "Total Years of Experience",
+        "fieldType": "Number",
+        "isRequired": true
+      },
+      {
+        "id": "np",
+        "label": "Notice Period",
+        "fieldType": "Dropdown",
+        "options": "Immediate, 15 days, 30 days, 45 days, 60 days, 90 days, More than 90 days",
+        "isRequired": true
+      },
+      {
+        "id": "jd",
+        "label": "Earliest Joining Date",
+        "fieldType": "Date",
+        "isRequired": true
+      },
+      {
+        "id": "eq",
+        "label": "Education Qualification",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ks",
+        "label": "Key Skills",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "li",
+        "label": "LinkedIn Profile",
+        "fieldType": "Url",
+        "isRequired": true
+      },
+      {
+        "id": "cv",
+        "label": "Upload CV",
+        "fieldType": "CvUpload",
+        "isRequired": true
+      }
+    ],
+    "postings": {
+      "linkedIn": true,
+      "indeed": true,
+      "zipRecruiter": false,
+      "internalCareer": true
+    }
+  },
+  {
+    "id": "job-net-developer-team-lead",
+    "title": ".NET Developer \u2013 Team Lead",
+    "department": "Software Development",
+    "location": "Hyderabad, India",
+    "requiredExperience": "7+ years",
+    "description": "iSpatial Techno Solutions\n.NET Developer \u2013 Team Lead\nDepartment: Software Development\nExperience: 7+ years     Location: Hyderabad, India\nQualification Requirement\nBachelor's degree in Computer Science, IT, or a related field.\nStrong experience in .NET, C#, ASP.NET Core, and Web API development.\nExperience with front-end frameworks (Angular/React) and SQL/NoSQL databases.\nKnowledge of REST APIs, microservices, cloud platforms, and DevOps basics.\nProven experience leading and mentoring development teams.\nStrong communication and problem-solving skills.\nJob Responsibility\nLead and manage a team of .NET developers to deliver quality software.\nDesign, develop, and review scalable applications using the .NET stack.\nAssign tasks, monitor progress, and ensure timely project delivery.\nConduct code reviews and enforce coding standards and best practices.\nCollaborate with architects, QA, and product teams on solution design.\nMentor and guide team members and support their growth.\nEnsure proper documentation, version control, and CI/CD practices.\nTroubleshoot and resolve complex technical issues.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Software Development\nExperience:  7+ years\nLocation:  Hyderabad, India",
+    "publicDescription": "iSpatial Techno Solutions\n.NET Developer \u2013 Team Lead\nDepartment: Software Development\nExperience: 7+ years     Location: Hyderabad, India\nQualification Requirement\nBachelor's degree in Computer Science, IT, or a related field.\nStrong experience in .NET, C#, ASP.NET Core, and Web API development.\nExperience with front-end frameworks (Angular/React) and SQL/NoSQL databases.\nKnowledge of REST APIs, microservices, cloud platforms, and DevOps basics.\nProven experience leading and mentoring development teams.\nStrong communication and problem-solving skills.\nJob Responsibility\nLead and manage a team of .NET developers to deliver quality software.\nDesign, develop, and review scalable applications using the .NET stack.\nAssign tasks, monitor progress, and ensure timely project delivery.\nConduct code reviews and enforce coding standards and best practices.\nCollaborate with architects, QA, and product teams on solution design.\nMentor and guide team members and support their growth.\nEnsure proper documentation, version control, and CI/CD practices.\nTroubleshoot and resolve complex technical issues.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Software Development\nExperience:  7+ years\nLocation:  Hyderabad, India",
+    "requirements": "iSpatial Techno Solutions\n.NET Developer \u2013 Team Lead\nDepartment: Software Development\nExperience: 7+ years     Location: Hyderabad, India\nQualification Requirement\nBachelor's degree in Computer Science, IT, or a related field.\nStrong experience in .NET, C#, ASP.NET Core, and Web API development.\nExperience with front-end frameworks (Angular/React) and SQL/NoSQL databases.\nKnowledge of REST APIs, microservices, cloud platforms, and DevOps basics.\nProven experience leading and mentoring development teams.\nStrong communication and problem-solving skills.\nJob Responsibility\nLead and manage a team of .NET developers to deliver quality software.\nDesign, develop, and review scalable applications using the .NET stack.\nAssign tasks, monitor progress, and ensure timely project delivery.\nConduct code reviews and enforce coding standards and best practices.\nCollaborate with architects, QA, and product teams on solution design.\nMentor and guide team members and support their growth.\nEnsure proper documentation, version control, and CI/CD practices.\nTroubleshoot and resolve complex technical issues.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Software Development\nExperience:  7+ years\nLocation:  Hyderabad, India",
+    "publishToCareers": true,
+    "status": "Active",
+    "workMode": "On-site",
+    "publicSlug": "net-developer-team-lead",
+    "customFields": [
+      {
+        "id": "fn",
+        "label": "First Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ln",
+        "label": "Last Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "em",
+        "label": "Email",
+        "fieldType": "Email",
+        "isRequired": true
+      },
+      {
+        "id": "ph",
+        "label": "Phone Number",
+        "fieldType": "Phone",
+        "isRequired": true
+      },
+      {
+        "id": "cl",
+        "label": "Current Location",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ex",
+        "label": "Total Years of Experience",
+        "fieldType": "Number",
+        "isRequired": true
+      },
+      {
+        "id": "np",
+        "label": "Notice Period",
+        "fieldType": "Dropdown",
+        "options": "Immediate, 15 days, 30 days, 45 days, 60 days, 90 days, More than 90 days",
+        "isRequired": true
+      },
+      {
+        "id": "jd",
+        "label": "Earliest Joining Date",
+        "fieldType": "Date",
+        "isRequired": true
+      },
+      {
+        "id": "eq",
+        "label": "Education Qualification",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ks",
+        "label": "Key Skills",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "li",
+        "label": "LinkedIn Profile",
+        "fieldType": "Url",
+        "isRequired": true
+      },
+      {
+        "id": "cv",
+        "label": "Upload CV",
+        "fieldType": "CvUpload",
+        "isRequired": true
+      }
+    ],
+    "postings": {
+      "linkedIn": true,
+      "indeed": true,
+      "zipRecruiter": false,
+      "internalCareer": true
+    }
+  },
+  {
+    "id": "job-data-scientist",
+    "title": "Data Scientist",
+    "department": "Data Science & AI",
+    "location": "India (Remote)",
+    "requiredExperience": "4+ years",
+    "description": "iSpatial Techno Solutions\nData Scientist\nDepartment: Data Science & AI\nExperience: 4+ years     Location: India (Remote)\nQualification Requirement\nBachelor's or Master's degree in Data Science, Computer Science, Statistics, or a related field.\nProven experience in machine learning, statistical modeling, and data analysis.\nProficiency in Python/R and libraries such as pandas, scikit-learn, TensorFlow, or PyTorch.\nStrong SQL skills and experience with large datasets.\nExperience with data visualization tools (Power BI, Tableau) and cloud platforms.\nStrong analytical, problem-solving, and communication skills.\nJob Responsibility\nDesign, build, and deploy machine learning and statistical models.\nCollect, clean, and preprocess structured and unstructured data.\nPerform exploratory data analysis to uncover insights and trends.\nDevelop and evaluate predictive and prescriptive analytics solutions.\nTranslate business problems into data-driven solutions.\nBuild dashboards and communicate findings to stakeholders.\nCollaborate with engineering teams to productionize models.\nStay current with emerging data science and AI techniques.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Data Science & AI\nExperience:  4+ years\nLocation:  India (Remote)",
+    "publicDescription": "iSpatial Techno Solutions\nData Scientist\nDepartment: Data Science & AI\nExperience: 4+ years     Location: India (Remote)\nQualification Requirement\nBachelor's or Master's degree in Data Science, Computer Science, Statistics, or a related field.\nProven experience in machine learning, statistical modeling, and data analysis.\nProficiency in Python/R and libraries such as pandas, scikit-learn, TensorFlow, or PyTorch.\nStrong SQL skills and experience with large datasets.\nExperience with data visualization tools (Power BI, Tableau) and cloud platforms.\nStrong analytical, problem-solving, and communication skills.\nJob Responsibility\nDesign, build, and deploy machine learning and statistical models.\nCollect, clean, and preprocess structured and unstructured data.\nPerform exploratory data analysis to uncover insights and trends.\nDevelop and evaluate predictive and prescriptive analytics solutions.\nTranslate business problems into data-driven solutions.\nBuild dashboards and communicate findings to stakeholders.\nCollaborate with engineering teams to productionize models.\nStay current with emerging data science and AI techniques.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Data Science & AI\nExperience:  4+ years\nLocation:  India (Remote)",
+    "requirements": "iSpatial Techno Solutions\nData Scientist\nDepartment: Data Science & AI\nExperience: 4+ years     Location: India (Remote)\nQualification Requirement\nBachelor's or Master's degree in Data Science, Computer Science, Statistics, or a related field.\nProven experience in machine learning, statistical modeling, and data analysis.\nProficiency in Python/R and libraries such as pandas, scikit-learn, TensorFlow, or PyTorch.\nStrong SQL skills and experience with large datasets.\nExperience with data visualization tools (Power BI, Tableau) and cloud platforms.\nStrong analytical, problem-solving, and communication skills.\nJob Responsibility\nDesign, build, and deploy machine learning and statistical models.\nCollect, clean, and preprocess structured and unstructured data.\nPerform exploratory data analysis to uncover insights and trends.\nDevelop and evaluate predictive and prescriptive analytics solutions.\nTranslate business problems into data-driven solutions.\nBuild dashboards and communicate findings to stakeholders.\nCollaborate with engineering teams to productionize models.\nStay current with emerging data science and AI techniques.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Data Science & AI\nExperience:  4+ years\nLocation:  India (Remote)",
+    "publishToCareers": true,
+    "status": "Active",
+    "workMode": "Remote",
+    "publicSlug": "data-scientist",
+    "customFields": [
+      {
+        "id": "fn",
+        "label": "First Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ln",
+        "label": "Last Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "em",
+        "label": "Email",
+        "fieldType": "Email",
+        "isRequired": true
+      },
+      {
+        "id": "ph",
+        "label": "Phone Number",
+        "fieldType": "Phone",
+        "isRequired": true
+      },
+      {
+        "id": "cl",
+        "label": "Current Location",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ex",
+        "label": "Total Years of Experience",
+        "fieldType": "Number",
+        "isRequired": true
+      },
+      {
+        "id": "np",
+        "label": "Notice Period",
+        "fieldType": "Dropdown",
+        "options": "Immediate, 15 days, 30 days, 45 days, 60 days, 90 days, More than 90 days",
+        "isRequired": true
+      },
+      {
+        "id": "jd",
+        "label": "Earliest Joining Date",
+        "fieldType": "Date",
+        "isRequired": true
+      },
+      {
+        "id": "eq",
+        "label": "Education Qualification",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ks",
+        "label": "Key Skills",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "li",
+        "label": "LinkedIn Profile",
+        "fieldType": "Url",
+        "isRequired": true
+      },
+      {
+        "id": "cv",
+        "label": "Upload CV",
+        "fieldType": "CvUpload",
+        "isRequired": true
+      }
+    ],
+    "postings": {
+      "linkedIn": true,
+      "indeed": true,
+      "zipRecruiter": false,
+      "internalCareer": true
+    }
+  },
+  {
+    "id": "job-full-stack-developer",
+    "title": "Full Stack Developer",
+    "department": "Software Development",
+    "location": "Ongole / Hyderabad, India",
+    "requiredExperience": "3+ years",
+    "description": "iSpatial Techno Solutions\nFull Stack Developer\nDepartment: Software Development\nExperience: 3+ years     Location: Ongole / Hyderabad, India\nQualification Requirement\nBachelor's degree in Computer Science, IT, or a related field.\nProficiency in front-end technologies (HTML, CSS, JavaScript, React/Angular/Vue).\nExperience in back-end development (Node.js/.NET/Java/Python).\nHands-on experience with SQL/NoSQL databases.\nKnowledge of REST APIs, cloud platforms, and DevOps basics.\nFamiliarity with Agile development methodologies.\nJob Responsibility\nDesign, develop, and maintain scalable web applications (front-end and back-end).\nBuild responsive user interfaces and robust server-side logic.\nDevelop and integrate REST APIs and third-party services.\nWork with databases for data modeling, queries, and optimization.\nWrite clean, maintainable, and well-documented code.\nParticipate in code reviews and follow best coding practices.\nCollaborate with cross-functional teams throughout the SDLC.\nTroubleshoot, debug, and resolve application issues.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Software Development\nExperience:  3+ years\nLocation:  Ongole / Hyderabad, India",
+    "publicDescription": "iSpatial Techno Solutions\nFull Stack Developer\nDepartment: Software Development\nExperience: 3+ years     Location: Ongole / Hyderabad, India\nQualification Requirement\nBachelor's degree in Computer Science, IT, or a related field.\nProficiency in front-end technologies (HTML, CSS, JavaScript, React/Angular/Vue).\nExperience in back-end development (Node.js/.NET/Java/Python).\nHands-on experience with SQL/NoSQL databases.\nKnowledge of REST APIs, cloud platforms, and DevOps basics.\nFamiliarity with Agile development methodologies.\nJob Responsibility\nDesign, develop, and maintain scalable web applications (front-end and back-end).\nBuild responsive user interfaces and robust server-side logic.\nDevelop and integrate REST APIs and third-party services.\nWork with databases for data modeling, queries, and optimization.\nWrite clean, maintainable, and well-documented code.\nParticipate in code reviews and follow best coding practices.\nCollaborate with cross-functional teams throughout the SDLC.\nTroubleshoot, debug, and resolve application issues.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Software Development\nExperience:  3+ years\nLocation:  Ongole / Hyderabad, India",
+    "requirements": "iSpatial Techno Solutions\nFull Stack Developer\nDepartment: Software Development\nExperience: 3+ years     Location: Ongole / Hyderabad, India\nQualification Requirement\nBachelor's degree in Computer Science, IT, or a related field.\nProficiency in front-end technologies (HTML, CSS, JavaScript, React/Angular/Vue).\nExperience in back-end development (Node.js/.NET/Java/Python).\nHands-on experience with SQL/NoSQL databases.\nKnowledge of REST APIs, cloud platforms, and DevOps basics.\nFamiliarity with Agile development methodologies.\nJob Responsibility\nDesign, develop, and maintain scalable web applications (front-end and back-end).\nBuild responsive user interfaces and robust server-side logic.\nDevelop and integrate REST APIs and third-party services.\nWork with databases for data modeling, queries, and optimization.\nWrite clean, maintainable, and well-documented code.\nParticipate in code reviews and follow best coding practices.\nCollaborate with cross-functional teams throughout the SDLC.\nTroubleshoot, debug, and resolve application issues.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Software Development\nExperience:  3+ years\nLocation:  Ongole / Hyderabad, India",
+    "publishToCareers": true,
+    "status": "Active",
+    "workMode": "On-site",
+    "publicSlug": "full-stack-developer",
+    "customFields": [
+      {
+        "id": "fn",
+        "label": "First Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ln",
+        "label": "Last Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "em",
+        "label": "Email",
+        "fieldType": "Email",
+        "isRequired": true
+      },
+      {
+        "id": "ph",
+        "label": "Phone Number",
+        "fieldType": "Phone",
+        "isRequired": true
+      },
+      {
+        "id": "cl",
+        "label": "Current Location",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ex",
+        "label": "Total Years of Experience",
+        "fieldType": "Number",
+        "isRequired": true
+      },
+      {
+        "id": "np",
+        "label": "Notice Period",
+        "fieldType": "Dropdown",
+        "options": "Immediate, 15 days, 30 days, 45 days, 60 days, 90 days, More than 90 days",
+        "isRequired": true
+      },
+      {
+        "id": "jd",
+        "label": "Earliest Joining Date",
+        "fieldType": "Date",
+        "isRequired": true
+      },
+      {
+        "id": "eq",
+        "label": "Education Qualification",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ks",
+        "label": "Key Skills",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "li",
+        "label": "LinkedIn Profile",
+        "fieldType": "Url",
+        "isRequired": true
+      },
+      {
+        "id": "cv",
+        "label": "Upload CV",
+        "fieldType": "CvUpload",
+        "isRequired": true
+      }
+    ],
+    "postings": {
+      "linkedIn": true,
+      "indeed": true,
+      "zipRecruiter": false,
+      "internalCareer": true
+    }
+  },
+  {
+    "id": "job-esri-gis-analyst",
+    "title": "ESRI GIS Analyst",
+    "department": "GIS",
+    "location": "Work From Home",
+    "requiredExperience": "5+ years",
+    "description": "iSpatial Techno Solutions\nESRI GIS Analyst\nDepartment: GIS\nExperience: 5+ years     Location: Work From Home\nQualification Requirement\nBachelor's degree in GIS, Geoinformatics, Geography, Computer Science, Engineering, or a related field.\nStrong experience with ArcGIS Pro.\nExperience with ArcGIS Enterprise.\nKnowledge of Web Maps, Feature Services, and Dashboards.\nExperience in geodatabase design and management.\nUnderstanding of GIS workflows and spatial analysis techniques.\nKnowledge of SQL and data integration concepts.\nGood communication and documentation skills.\nNote: Only Immediate Joiners Can Apply.\nJob Responsibility\nAnalyze and manage spatial and non-spatial datasets.\nCreate, update, and maintain GIS databases and geodatabases.\nPerform spatial analysis and generate thematic maps.\nPublish and manage GIS services using ArcGIS Enterprise.\nConfigure and support ArcGIS web applications and dashboards.\nPrepare technical documentation and reports.\nCoordinate with business users to gather GIS requirements.\nEnsure data quality, integrity, and compliance with GIS standards.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  GIS\nExperience:  5+ years\nLocation:  Work From Home",
+    "publicDescription": "iSpatial Techno Solutions\nESRI GIS Analyst\nDepartment: GIS\nExperience: 5+ years     Location: Work From Home\nQualification Requirement\nBachelor's degree in GIS, Geoinformatics, Geography, Computer Science, Engineering, or a related field.\nStrong experience with ArcGIS Pro.\nExperience with ArcGIS Enterprise.\nKnowledge of Web Maps, Feature Services, and Dashboards.\nExperience in geodatabase design and management.\nUnderstanding of GIS workflows and spatial analysis techniques.\nKnowledge of SQL and data integration concepts.\nGood communication and documentation skills.\nNote: Only Immediate Joiners Can Apply.\nJob Responsibility\nAnalyze and manage spatial and non-spatial datasets.\nCreate, update, and maintain GIS databases and geodatabases.\nPerform spatial analysis and generate thematic maps.\nPublish and manage GIS services using ArcGIS Enterprise.\nConfigure and support ArcGIS web applications and dashboards.\nPrepare technical documentation and reports.\nCoordinate with business users to gather GIS requirements.\nEnsure data quality, integrity, and compliance with GIS standards.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  GIS\nExperience:  5+ years\nLocation:  Work From Home",
+    "requirements": "iSpatial Techno Solutions\nESRI GIS Analyst\nDepartment: GIS\nExperience: 5+ years     Location: Work From Home\nQualification Requirement\nBachelor's degree in GIS, Geoinformatics, Geography, Computer Science, Engineering, or a related field.\nStrong experience with ArcGIS Pro.\nExperience with ArcGIS Enterprise.\nKnowledge of Web Maps, Feature Services, and Dashboards.\nExperience in geodatabase design and management.\nUnderstanding of GIS workflows and spatial analysis techniques.\nKnowledge of SQL and data integration concepts.\nGood communication and documentation skills.\nNote: Only Immediate Joiners Can Apply.\nJob Responsibility\nAnalyze and manage spatial and non-spatial datasets.\nCreate, update, and maintain GIS databases and geodatabases.\nPerform spatial analysis and generate thematic maps.\nPublish and manage GIS services using ArcGIS Enterprise.\nConfigure and support ArcGIS web applications and dashboards.\nPrepare technical documentation and reports.\nCoordinate with business users to gather GIS requirements.\nEnsure data quality, integrity, and compliance with GIS standards.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  GIS\nExperience:  5+ years\nLocation:  Work From Home",
+    "publishToCareers": true,
+    "status": "Active",
+    "workMode": "Remote",
+    "publicSlug": "esri-gis-analyst",
+    "customFields": [
+      {
+        "id": "fn",
+        "label": "First Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ln",
+        "label": "Last Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "em",
+        "label": "Email",
+        "fieldType": "Email",
+        "isRequired": true
+      },
+      {
+        "id": "ph",
+        "label": "Phone Number",
+        "fieldType": "Phone",
+        "isRequired": true
+      },
+      {
+        "id": "cl",
+        "label": "Current Location",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ex",
+        "label": "Total Years of Experience",
+        "fieldType": "Number",
+        "isRequired": true
+      },
+      {
+        "id": "np",
+        "label": "Notice Period",
+        "fieldType": "Dropdown",
+        "options": "Immediate, 15 days, 30 days, 45 days, 60 days, 90 days, More than 90 days",
+        "isRequired": true
+      },
+      {
+        "id": "jd",
+        "label": "Earliest Joining Date",
+        "fieldType": "Date",
+        "isRequired": true
+      },
+      {
+        "id": "eq",
+        "label": "Education Qualification",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ks",
+        "label": "Key Skills",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "li",
+        "label": "LinkedIn Profile",
+        "fieldType": "Url",
+        "isRequired": true
+      },
+      {
+        "id": "cv",
+        "label": "Upload CV",
+        "fieldType": "CvUpload",
+        "isRequired": true
+      }
+    ],
+    "postings": {
+      "linkedIn": true,
+      "indeed": true,
+      "zipRecruiter": false,
+      "internalCareer": true
+    }
+  },
+  {
+    "id": "job-esri-gis-developer",
+    "title": "ESRI GIS Developer",
+    "department": "GIS",
+    "location": "Work From Home",
+    "requiredExperience": "3+ years",
+    "description": "iSpatial Techno Solutions\nESRI GIS Developer\nDepartment: GIS\nExperience: 3+ years     Location: Work From Home\nQualification Requirement\nBachelor's degree in Computer Science, GIS, Geoinformatics, Engineering, or a related field.\nStrong experience with ArcGIS Enterprise.\nExperience with ArcGIS Maps SDK for JavaScript.\nKnowledge of REST APIs and GIS web services.\nExperience with HTML, CSS, JavaScript, and TypeScript.\nKnowledge of Python for GIS automation is preferred.\nExperience with SQL databases.\nUnderstanding of GIS architecture and deployment concepts.\nNote: Only Immediate Joiners Can Apply.\nJob Responsibility\nDevelop and maintain GIS web applications using ESRI technologies.\nConfigure and customize ArcGIS Enterprise solutions.\nDevelop applications using ArcGIS Maps SDKs and APIs.\nIntegrate GIS applications with external systems and databases.\nCreate and manage feature services, web maps, and GIS workflows.\nTroubleshoot and resolve GIS application issues.\nSupport deployment, testing, and documentation activities.\nCollaborate with analysts, business teams, and project stakeholders.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  GIS\nExperience:  3+ years\nLocation:  Work From Home",
+    "publicDescription": "iSpatial Techno Solutions\nESRI GIS Developer\nDepartment: GIS\nExperience: 3+ years     Location: Work From Home\nQualification Requirement\nBachelor's degree in Computer Science, GIS, Geoinformatics, Engineering, or a related field.\nStrong experience with ArcGIS Enterprise.\nExperience with ArcGIS Maps SDK for JavaScript.\nKnowledge of REST APIs and GIS web services.\nExperience with HTML, CSS, JavaScript, and TypeScript.\nKnowledge of Python for GIS automation is preferred.\nExperience with SQL databases.\nUnderstanding of GIS architecture and deployment concepts.\nNote: Only Immediate Joiners Can Apply.\nJob Responsibility\nDevelop and maintain GIS web applications using ESRI technologies.\nConfigure and customize ArcGIS Enterprise solutions.\nDevelop applications using ArcGIS Maps SDKs and APIs.\nIntegrate GIS applications with external systems and databases.\nCreate and manage feature services, web maps, and GIS workflows.\nTroubleshoot and resolve GIS application issues.\nSupport deployment, testing, and documentation activities.\nCollaborate with analysts, business teams, and project stakeholders.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  GIS\nExperience:  3+ years\nLocation:  Work From Home",
+    "requirements": "iSpatial Techno Solutions\nESRI GIS Developer\nDepartment: GIS\nExperience: 3+ years     Location: Work From Home\nQualification Requirement\nBachelor's degree in Computer Science, GIS, Geoinformatics, Engineering, or a related field.\nStrong experience with ArcGIS Enterprise.\nExperience with ArcGIS Maps SDK for JavaScript.\nKnowledge of REST APIs and GIS web services.\nExperience with HTML, CSS, JavaScript, and TypeScript.\nKnowledge of Python for GIS automation is preferred.\nExperience with SQL databases.\nUnderstanding of GIS architecture and deployment concepts.\nNote: Only Immediate Joiners Can Apply.\nJob Responsibility\nDevelop and maintain GIS web applications using ESRI technologies.\nConfigure and customize ArcGIS Enterprise solutions.\nDevelop applications using ArcGIS Maps SDKs and APIs.\nIntegrate GIS applications with external systems and databases.\nCreate and manage feature services, web maps, and GIS workflows.\nTroubleshoot and resolve GIS application issues.\nSupport deployment, testing, and documentation activities.\nCollaborate with analysts, business teams, and project stakeholders.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  GIS\nExperience:  3+ years\nLocation:  Work From Home",
+    "publishToCareers": true,
+    "status": "Active",
+    "workMode": "Remote",
+    "publicSlug": "esri-gis-developer",
+    "customFields": [
+      {
+        "id": "fn",
+        "label": "First Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ln",
+        "label": "Last Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "em",
+        "label": "Email",
+        "fieldType": "Email",
+        "isRequired": true
+      },
+      {
+        "id": "ph",
+        "label": "Phone Number",
+        "fieldType": "Phone",
+        "isRequired": true
+      },
+      {
+        "id": "cl",
+        "label": "Current Location",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ex",
+        "label": "Total Years of Experience",
+        "fieldType": "Number",
+        "isRequired": true
+      },
+      {
+        "id": "np",
+        "label": "Notice Period",
+        "fieldType": "Dropdown",
+        "options": "Immediate, 15 days, 30 days, 45 days, 60 days, 90 days, More than 90 days",
+        "isRequired": true
+      },
+      {
+        "id": "jd",
+        "label": "Earliest Joining Date",
+        "fieldType": "Date",
+        "isRequired": true
+      },
+      {
+        "id": "eq",
+        "label": "Education Qualification",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ks",
+        "label": "Key Skills",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "li",
+        "label": "LinkedIn Profile",
+        "fieldType": "Url",
+        "isRequired": true
+      },
+      {
+        "id": "cv",
+        "label": "Upload CV",
+        "fieldType": "CvUpload",
+        "isRequired": true
+      }
+    ],
+    "postings": {
+      "linkedIn": true,
+      "indeed": true,
+      "zipRecruiter": false,
+      "internalCareer": true
+    }
+  },
+  {
+    "id": "job-gis-technical-manager",
+    "title": "GIS Technical Manager",
+    "department": "GIS",
+    "location": "India (Remote)",
+    "requiredExperience": "10+ years",
+    "description": "iSpatial Techno Solutions\nGIS Technical Manager\nDepartment: GIS\nExperience: 10+ years     Location: India (Remote)\nQualification Requirement\nBachelor's or Master's degree in Geoinformatics, Computer Science, Geography, or a related discipline.\nESRI Technical Certifications (e.g., Enterprise Administration, Web Application Developer) are an advantage.\nExperience working with Smart City, Urban Planning, Infrastructure, or Utilities domains.\nStrong communication skills with the ability to engage both technical teams and business stakeholders.\nJob Responsibility\nLead the design, architecture, and implementation of enterprise GIS solutions based on ESRI technologies.\nManage and mentor a team of GIS developers, analysts, and administrators.\nTranslate business requirements into innovative geospatial solutions and technical plans.\nDevelop high-performance web GIS applications using ArcGIS API for JavaScript, ArcGIS Pro SDK, Python, and ArcPy.\nOversee configuration and deployment of ArcGIS Enterprise (Server, Portal, Data Store).\nIntegrate GIS applications with third-party systems (databases, APIs, external services).\nCollaborate with cross-functional teams for agile solution delivery.\nEnsure adherence to quality standards, best practices, and security policies.\nEvaluate new ESRI products and emerging technologies to drive innovation.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  GIS\nExperience:  10+ years\nLocation:  India (Remote)",
+    "publicDescription": "iSpatial Techno Solutions\nGIS Technical Manager\nDepartment: GIS\nExperience: 10+ years     Location: India (Remote)\nQualification Requirement\nBachelor's or Master's degree in Geoinformatics, Computer Science, Geography, or a related discipline.\nESRI Technical Certifications (e.g., Enterprise Administration, Web Application Developer) are an advantage.\nExperience working with Smart City, Urban Planning, Infrastructure, or Utilities domains.\nStrong communication skills with the ability to engage both technical teams and business stakeholders.\nJob Responsibility\nLead the design, architecture, and implementation of enterprise GIS solutions based on ESRI technologies.\nManage and mentor a team of GIS developers, analysts, and administrators.\nTranslate business requirements into innovative geospatial solutions and technical plans.\nDevelop high-performance web GIS applications using ArcGIS API for JavaScript, ArcGIS Pro SDK, Python, and ArcPy.\nOversee configuration and deployment of ArcGIS Enterprise (Server, Portal, Data Store).\nIntegrate GIS applications with third-party systems (databases, APIs, external services).\nCollaborate with cross-functional teams for agile solution delivery.\nEnsure adherence to quality standards, best practices, and security policies.\nEvaluate new ESRI products and emerging technologies to drive innovation.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  GIS\nExperience:  10+ years\nLocation:  India (Remote)",
+    "requirements": "iSpatial Techno Solutions\nGIS Technical Manager\nDepartment: GIS\nExperience: 10+ years     Location: India (Remote)\nQualification Requirement\nBachelor's or Master's degree in Geoinformatics, Computer Science, Geography, or a related discipline.\nESRI Technical Certifications (e.g., Enterprise Administration, Web Application Developer) are an advantage.\nExperience working with Smart City, Urban Planning, Infrastructure, or Utilities domains.\nStrong communication skills with the ability to engage both technical teams and business stakeholders.\nJob Responsibility\nLead the design, architecture, and implementation of enterprise GIS solutions based on ESRI technologies.\nManage and mentor a team of GIS developers, analysts, and administrators.\nTranslate business requirements into innovative geospatial solutions and technical plans.\nDevelop high-performance web GIS applications using ArcGIS API for JavaScript, ArcGIS Pro SDK, Python, and ArcPy.\nOversee configuration and deployment of ArcGIS Enterprise (Server, Portal, Data Store).\nIntegrate GIS applications with third-party systems (databases, APIs, external services).\nCollaborate with cross-functional teams for agile solution delivery.\nEnsure adherence to quality standards, best practices, and security policies.\nEvaluate new ESRI products and emerging technologies to drive innovation.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  GIS\nExperience:  10+ years\nLocation:  India (Remote)",
+    "publishToCareers": true,
+    "status": "Active",
+    "workMode": "Remote",
+    "publicSlug": "gis-technical-manager",
+    "customFields": [
+      {
+        "id": "fn",
+        "label": "First Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ln",
+        "label": "Last Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "em",
+        "label": "Email",
+        "fieldType": "Email",
+        "isRequired": true
+      },
+      {
+        "id": "ph",
+        "label": "Phone Number",
+        "fieldType": "Phone",
+        "isRequired": true
+      },
+      {
+        "id": "cl",
+        "label": "Current Location",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ex",
+        "label": "Total Years of Experience",
+        "fieldType": "Number",
+        "isRequired": true
+      },
+      {
+        "id": "np",
+        "label": "Notice Period",
+        "fieldType": "Dropdown",
+        "options": "Immediate, 15 days, 30 days, 45 days, 60 days, 90 days, More than 90 days",
+        "isRequired": true
+      },
+      {
+        "id": "jd",
+        "label": "Earliest Joining Date",
+        "fieldType": "Date",
+        "isRequired": true
+      },
+      {
+        "id": "eq",
+        "label": "Education Qualification",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ks",
+        "label": "Key Skills",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "li",
+        "label": "LinkedIn Profile",
+        "fieldType": "Url",
+        "isRequired": true
+      },
+      {
+        "id": "cv",
+        "label": "Upload CV",
+        "fieldType": "CvUpload",
+        "isRequired": true
+      }
+    ],
+    "postings": {
+      "linkedIn": true,
+      "indeed": true,
+      "zipRecruiter": false,
+      "internalCareer": true
+    }
+  },
+  {
+    "id": "job-carbon-accounting-specialist",
+    "title": "Carbon Accounting Specialist",
+    "department": "Environment & Sustainability",
+    "location": "Hyderabad, India",
+    "requiredExperience": "8+ years",
+    "description": "iSpatial Techno Solutions\nCarbon Accounting Specialist\nDepartment: Environment & Sustainability\nExperience: 8+ years     Location: Hyderabad, India\nQualification Requirement\nBachelor's or Master's degree in Environmental Science, Engineering, Sustainability, or a related field.\nProven experience in GHG emissions, reporting, and MRV processes.\nStrong understanding of IPCC guidelines and sectors.\nExcellent analytical and communication skills.\nAbility to work independently and collaboratively in a team environment.\nProficiency in data analysis and report preparation.\n8+ years of experience in GHG accounting, carbon inventories, or MRV systems.\nJob Responsibility\nConduct business analysis for GHG monitoring, reporting, and verification systems using NDC preparation, GHG inventory, national communication, and relevant policies.\nConduct GHG emissions calculations and carbon accounting using IPCC methodologies.\nAnalyze the latest international agreements on MRV mechanisms and ETF requirements for targeted countries.\nReview international best practices in MRV arrangements and processes, including legislation.\nIdentify requirements for MRV system design and development based on bottleneck analysis and global climate negotiation decisions.\nConduct capacity-building workshops with relevant stakeholders.\nDevelop draft roadmaps with key actions for a sustainable MRV system.\nSupport the creation of an online MRV data management and reporting platform and prepare MRV guidelines and templates.\nRecommend ways to strengthen national institutional arrangements and develop an MRV framework aligned with UNFCCC and IPCC guidelines.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Environment & Sustainability\nExperience:  8+ years\nLocation:  Hyderabad, India",
+    "publicDescription": "iSpatial Techno Solutions\nCarbon Accounting Specialist\nDepartment: Environment & Sustainability\nExperience: 8+ years     Location: Hyderabad, India\nQualification Requirement\nBachelor's or Master's degree in Environmental Science, Engineering, Sustainability, or a related field.\nProven experience in GHG emissions, reporting, and MRV processes.\nStrong understanding of IPCC guidelines and sectors.\nExcellent analytical and communication skills.\nAbility to work independently and collaboratively in a team environment.\nProficiency in data analysis and report preparation.\n8+ years of experience in GHG accounting, carbon inventories, or MRV systems.\nJob Responsibility\nConduct business analysis for GHG monitoring, reporting, and verification systems using NDC preparation, GHG inventory, national communication, and relevant policies.\nConduct GHG emissions calculations and carbon accounting using IPCC methodologies.\nAnalyze the latest international agreements on MRV mechanisms and ETF requirements for targeted countries.\nReview international best practices in MRV arrangements and processes, including legislation.\nIdentify requirements for MRV system design and development based on bottleneck analysis and global climate negotiation decisions.\nConduct capacity-building workshops with relevant stakeholders.\nDevelop draft roadmaps with key actions for a sustainable MRV system.\nSupport the creation of an online MRV data management and reporting platform and prepare MRV guidelines and templates.\nRecommend ways to strengthen national institutional arrangements and develop an MRV framework aligned with UNFCCC and IPCC guidelines.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Environment & Sustainability\nExperience:  8+ years\nLocation:  Hyderabad, India",
+    "requirements": "iSpatial Techno Solutions\nCarbon Accounting Specialist\nDepartment: Environment & Sustainability\nExperience: 8+ years     Location: Hyderabad, India\nQualification Requirement\nBachelor's or Master's degree in Environmental Science, Engineering, Sustainability, or a related field.\nProven experience in GHG emissions, reporting, and MRV processes.\nStrong understanding of IPCC guidelines and sectors.\nExcellent analytical and communication skills.\nAbility to work independently and collaboratively in a team environment.\nProficiency in data analysis and report preparation.\n8+ years of experience in GHG accounting, carbon inventories, or MRV systems.\nJob Responsibility\nConduct business analysis for GHG monitoring, reporting, and verification systems using NDC preparation, GHG inventory, national communication, and relevant policies.\nConduct GHG emissions calculations and carbon accounting using IPCC methodologies.\nAnalyze the latest international agreements on MRV mechanisms and ETF requirements for targeted countries.\nReview international best practices in MRV arrangements and processes, including legislation.\nIdentify requirements for MRV system design and development based on bottleneck analysis and global climate negotiation decisions.\nConduct capacity-building workshops with relevant stakeholders.\nDevelop draft roadmaps with key actions for a sustainable MRV system.\nSupport the creation of an online MRV data management and reporting platform and prepare MRV guidelines and templates.\nRecommend ways to strengthen national institutional arrangements and develop an MRV framework aligned with UNFCCC and IPCC guidelines.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Environment & Sustainability\nExperience:  8+ years\nLocation:  Hyderabad, India",
+    "publishToCareers": true,
+    "status": "Active",
+    "workMode": "On-site",
+    "publicSlug": "carbon-accounting-specialist",
+    "customFields": [
+      {
+        "id": "fn",
+        "label": "First Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ln",
+        "label": "Last Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "em",
+        "label": "Email",
+        "fieldType": "Email",
+        "isRequired": true
+      },
+      {
+        "id": "ph",
+        "label": "Phone Number",
+        "fieldType": "Phone",
+        "isRequired": true
+      },
+      {
+        "id": "cl",
+        "label": "Current Location",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ex",
+        "label": "Total Years of Experience",
+        "fieldType": "Number",
+        "isRequired": true
+      },
+      {
+        "id": "np",
+        "label": "Notice Period",
+        "fieldType": "Dropdown",
+        "options": "Immediate, 15 days, 30 days, 45 days, 60 days, 90 days, More than 90 days",
+        "isRequired": true
+      },
+      {
+        "id": "jd",
+        "label": "Earliest Joining Date",
+        "fieldType": "Date",
+        "isRequired": true
+      },
+      {
+        "id": "eq",
+        "label": "Education Qualification",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ks",
+        "label": "Key Skills",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "li",
+        "label": "LinkedIn Profile",
+        "fieldType": "Url",
+        "isRequired": true
+      },
+      {
+        "id": "cv",
+        "label": "Upload CV",
+        "fieldType": "CvUpload",
+        "isRequired": true
+      }
+    ],
+    "postings": {
+      "linkedIn": true,
+      "indeed": true,
+      "zipRecruiter": false,
+      "internalCareer": true
+    }
+  },
+  {
+    "id": "job-business-analyst",
+    "title": "Business Analyst",
+    "department": "Project Management",
+    "location": "India (Remote)",
+    "requiredExperience": "4+ years",
+    "description": "iSpatial Techno Solutions\nBusiness Analyst\nDepartment: Project Management\nExperience: 4+ years     Location: India (Remote)\nQualification Requirement\nBachelor's degree in Business Administration, Computer Science, IT, Finance, or a related field.\n4+ years of experience as a Business Analyst or in a related role.\nStrong analytical, problem-solving, and decision-making skills.\nExcellent written and verbal communication skills.\nProficiency in MS Office (Excel, Word, PowerPoint).\nExperience with requirements gathering and documentation.\nJob Responsibility\nCollaborate with stakeholders to elicit, document, and validate functional and non-functional requirements.\nConduct workshops, interviews, and surveys to understand business needs.\nMap and analyze current business processes; identify gaps and recommend improvements.\nPropose efficient and scalable solutions aligned with business objectives.\nPrepare BRDs, FRDs, Use Cases, User Stories, Process Flows, and SOPs.\nUse data to identify insights, trends, and opportunities for enhancement.\nBuild dashboards or reports using tools such as Excel, Power BI, or Tableau.\nWork closely with IT/Development, Product, Finance, Operations, and QA teams.\nSupport QA with test plans, test cases, and user acceptance testing (UAT).\nAssist in project planning, prioritization, and change management.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Project Management\nExperience:  4+ years\nLocation:  India (Remote)",
+    "publicDescription": "iSpatial Techno Solutions\nBusiness Analyst\nDepartment: Project Management\nExperience: 4+ years     Location: India (Remote)\nQualification Requirement\nBachelor's degree in Business Administration, Computer Science, IT, Finance, or a related field.\n4+ years of experience as a Business Analyst or in a related role.\nStrong analytical, problem-solving, and decision-making skills.\nExcellent written and verbal communication skills.\nProficiency in MS Office (Excel, Word, PowerPoint).\nExperience with requirements gathering and documentation.\nJob Responsibility\nCollaborate with stakeholders to elicit, document, and validate functional and non-functional requirements.\nConduct workshops, interviews, and surveys to understand business needs.\nMap and analyze current business processes; identify gaps and recommend improvements.\nPropose efficient and scalable solutions aligned with business objectives.\nPrepare BRDs, FRDs, Use Cases, User Stories, Process Flows, and SOPs.\nUse data to identify insights, trends, and opportunities for enhancement.\nBuild dashboards or reports using tools such as Excel, Power BI, or Tableau.\nWork closely with IT/Development, Product, Finance, Operations, and QA teams.\nSupport QA with test plans, test cases, and user acceptance testing (UAT).\nAssist in project planning, prioritization, and change management.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Project Management\nExperience:  4+ years\nLocation:  India (Remote)",
+    "requirements": "iSpatial Techno Solutions\nBusiness Analyst\nDepartment: Project Management\nExperience: 4+ years     Location: India (Remote)\nQualification Requirement\nBachelor's degree in Business Administration, Computer Science, IT, Finance, or a related field.\n4+ years of experience as a Business Analyst or in a related role.\nStrong analytical, problem-solving, and decision-making skills.\nExcellent written and verbal communication skills.\nProficiency in MS Office (Excel, Word, PowerPoint).\nExperience with requirements gathering and documentation.\nJob Responsibility\nCollaborate with stakeholders to elicit, document, and validate functional and non-functional requirements.\nConduct workshops, interviews, and surveys to understand business needs.\nMap and analyze current business processes; identify gaps and recommend improvements.\nPropose efficient and scalable solutions aligned with business objectives.\nPrepare BRDs, FRDs, Use Cases, User Stories, Process Flows, and SOPs.\nUse data to identify insights, trends, and opportunities for enhancement.\nBuild dashboards or reports using tools such as Excel, Power BI, or Tableau.\nWork closely with IT/Development, Product, Finance, Operations, and QA teams.\nSupport QA with test plans, test cases, and user acceptance testing (UAT).\nAssist in project planning, prioritization, and change management.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Project Management\nExperience:  4+ years\nLocation:  India (Remote)",
+    "publishToCareers": true,
+    "status": "Active",
+    "workMode": "Remote",
+    "publicSlug": "business-analyst",
+    "customFields": [
+      {
+        "id": "fn",
+        "label": "First Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ln",
+        "label": "Last Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "em",
+        "label": "Email",
+        "fieldType": "Email",
+        "isRequired": true
+      },
+      {
+        "id": "ph",
+        "label": "Phone Number",
+        "fieldType": "Phone",
+        "isRequired": true
+      },
+      {
+        "id": "cl",
+        "label": "Current Location",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ex",
+        "label": "Total Years of Experience",
+        "fieldType": "Number",
+        "isRequired": true
+      },
+      {
+        "id": "np",
+        "label": "Notice Period",
+        "fieldType": "Dropdown",
+        "options": "Immediate, 15 days, 30 days, 45 days, 60 days, 90 days, More than 90 days",
+        "isRequired": true
+      },
+      {
+        "id": "jd",
+        "label": "Earliest Joining Date",
+        "fieldType": "Date",
+        "isRequired": true
+      },
+      {
+        "id": "eq",
+        "label": "Education Qualification",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ks",
+        "label": "Key Skills",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "li",
+        "label": "LinkedIn Profile",
+        "fieldType": "Url",
+        "isRequired": true
+      },
+      {
+        "id": "cv",
+        "label": "Upload CV",
+        "fieldType": "CvUpload",
+        "isRequired": true
+      }
+    ],
+    "postings": {
+      "linkedIn": true,
+      "indeed": true,
+      "zipRecruiter": false,
+      "internalCareer": true
+    }
+  },
+  {
+    "id": "job-gis-project-manager-pmp-certified",
+    "title": "GIS Project Manager (PMP Certified)",
+    "department": "Project Management",
+    "location": "UAE / Bahrain",
+    "requiredExperience": "8+ years",
+    "description": "iSpatial Techno Solutions\nGIS Project Manager (PMP Certified)\nDepartment: Project Management\nExperience: 8+ years     Location: UAE / Bahrain\nQualification Requirement\nBachelor's degree in GIS, Geography, Computer Science, Engineering, or a related field.\nPMP (Project Management Professional) certification \u2013 Required.\nStrong understanding of GIS concepts, spatial data models, and geodatabases.\nExperience with ESRI ArcGIS (Enterprise, Pro, Online) or similar platforms.\nProven experience managing budgets, schedules, and cross-functional teams.\nJob Responsibility\nLead the end-to-end GIS project lifecycle using PMI best practices (initiation, planning, execution, monitoring, closure).\nDevelop project charters, schedules, budgets, risk registers, and communication plans.\nManage scope, timelines, cost, quality, and stakeholder expectations.\nTrack project performance using KPIs and prepare status reports for leadership.\nOversee design, development, and deployment of GIS solutions (ArcGIS, Web GIS, spatial databases).\nCoordinate spatial data collection, analysis, migration, and integration.\nEnsure data quality, metadata standards, and compliance with GIS policies.\nCollaborate with GIS analysts, developers, data engineers, and IT teams.\nServe as primary point of contact for internal and external stakeholders.\nMentor project team members and ensure compliance with data security and regulatory standards.\nSupport procurement processes, RFPs, and contract management.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Project Management\nExperience:  8+ years\nLocation:  UAE / Bahrain",
+    "publicDescription": "iSpatial Techno Solutions\nGIS Project Manager (PMP Certified)\nDepartment: Project Management\nExperience: 8+ years     Location: UAE / Bahrain\nQualification Requirement\nBachelor's degree in GIS, Geography, Computer Science, Engineering, or a related field.\nPMP (Project Management Professional) certification \u2013 Required.\nStrong understanding of GIS concepts, spatial data models, and geodatabases.\nExperience with ESRI ArcGIS (Enterprise, Pro, Online) or similar platforms.\nProven experience managing budgets, schedules, and cross-functional teams.\nJob Responsibility\nLead the end-to-end GIS project lifecycle using PMI best practices (initiation, planning, execution, monitoring, closure).\nDevelop project charters, schedules, budgets, risk registers, and communication plans.\nManage scope, timelines, cost, quality, and stakeholder expectations.\nTrack project performance using KPIs and prepare status reports for leadership.\nOversee design, development, and deployment of GIS solutions (ArcGIS, Web GIS, spatial databases).\nCoordinate spatial data collection, analysis, migration, and integration.\nEnsure data quality, metadata standards, and compliance with GIS policies.\nCollaborate with GIS analysts, developers, data engineers, and IT teams.\nServe as primary point of contact for internal and external stakeholders.\nMentor project team members and ensure compliance with data security and regulatory standards.\nSupport procurement processes, RFPs, and contract management.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Project Management\nExperience:  8+ years\nLocation:  UAE / Bahrain",
+    "requirements": "iSpatial Techno Solutions\nGIS Project Manager (PMP Certified)\nDepartment: Project Management\nExperience: 8+ years     Location: UAE / Bahrain\nQualification Requirement\nBachelor's degree in GIS, Geography, Computer Science, Engineering, or a related field.\nPMP (Project Management Professional) certification \u2013 Required.\nStrong understanding of GIS concepts, spatial data models, and geodatabases.\nExperience with ESRI ArcGIS (Enterprise, Pro, Online) or similar platforms.\nProven experience managing budgets, schedules, and cross-functional teams.\nJob Responsibility\nLead the end-to-end GIS project lifecycle using PMI best practices (initiation, planning, execution, monitoring, closure).\nDevelop project charters, schedules, budgets, risk registers, and communication plans.\nManage scope, timelines, cost, quality, and stakeholder expectations.\nTrack project performance using KPIs and prepare status reports for leadership.\nOversee design, development, and deployment of GIS solutions (ArcGIS, Web GIS, spatial databases).\nCoordinate spatial data collection, analysis, migration, and integration.\nEnsure data quality, metadata standards, and compliance with GIS policies.\nCollaborate with GIS analysts, developers, data engineers, and IT teams.\nServe as primary point of contact for internal and external stakeholders.\nMentor project team members and ensure compliance with data security and regulatory standards.\nSupport procurement processes, RFPs, and contract management.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Project Management\nExperience:  8+ years\nLocation:  UAE / Bahrain",
+    "publishToCareers": true,
+    "status": "Active",
+    "workMode": "On-site",
+    "publicSlug": "gis-project-manager-pmp-certified",
+    "customFields": [
+      {
+        "id": "fn",
+        "label": "First Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ln",
+        "label": "Last Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "em",
+        "label": "Email",
+        "fieldType": "Email",
+        "isRequired": true
+      },
+      {
+        "id": "ph",
+        "label": "Phone Number",
+        "fieldType": "Phone",
+        "isRequired": true
+      },
+      {
+        "id": "cl",
+        "label": "Current Location",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ex",
+        "label": "Total Years of Experience",
+        "fieldType": "Number",
+        "isRequired": true
+      },
+      {
+        "id": "np",
+        "label": "Notice Period",
+        "fieldType": "Dropdown",
+        "options": "Immediate, 15 days, 30 days, 45 days, 60 days, 90 days, More than 90 days",
+        "isRequired": true
+      },
+      {
+        "id": "jd",
+        "label": "Earliest Joining Date",
+        "fieldType": "Date",
+        "isRequired": true
+      },
+      {
+        "id": "eq",
+        "label": "Education Qualification",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ks",
+        "label": "Key Skills",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "li",
+        "label": "LinkedIn Profile",
+        "fieldType": "Url",
+        "isRequired": true
+      },
+      {
+        "id": "cv",
+        "label": "Upload CV",
+        "fieldType": "CvUpload",
+        "isRequired": true
+      }
+    ],
+    "postings": {
+      "linkedIn": true,
+      "indeed": true,
+      "zipRecruiter": false,
+      "internalCareer": true
+    }
+  },
+  {
+    "id": "job-full-stack-team-lead-development-centre-ongole",
+    "title": "Full Stack Team Lead \u2013 Development Centre | Ongole",
+    "department": "Software Development",
+    "location": "Ongole, India",
+    "requiredExperience": "7+ years",
+    "description": "iSpatial Techno Solutions\nFull Stack Team Lead \u2013 Development Centre | Ongole\nDepartment: Software Development\nExperience: 7+ years     Location: Ongole, India\nQualification Requirement\n7+ years of experience in full stack development.\nStrong proficiency in front-end technologies (HTML, CSS, JavaScript frameworks such as React/Angular/Vue).\nExperience in back-end development (Node.js/.NET/Java/Python).\nHands-on experience with databases (SQL/NoSQL).\nKnowledge of REST APIs, cloud platforms, and DevOps basics.\nExperience in Agile development methodologies.\nStrong leadership and mentoring skills.\nExcellent communication and interpersonal skills.\nJob Responsibility\nLead and manage a full stack development team in the Ongole development centre.\nDesign, develop, and review scalable web applications (front-end and back-end).\nAssign tasks, monitor progress, and ensure timely delivery of projects.\nConduct code reviews and enforce best coding standards.\nOrganize technical workshops, training sessions, and knowledge-sharing activities.\nEnsure proper documentation and version control practices.\nFoster a collaborative and productive learning environment.\nMentor, train, and guide interns on real-world software development practices.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Software Development\nExperience:  7+ years\nLocation:  Ongole, India",
+    "publicDescription": "iSpatial Techno Solutions\nFull Stack Team Lead \u2013 Development Centre | Ongole\nDepartment: Software Development\nExperience: 7+ years     Location: Ongole, India\nQualification Requirement\n7+ years of experience in full stack development.\nStrong proficiency in front-end technologies (HTML, CSS, JavaScript frameworks such as React/Angular/Vue).\nExperience in back-end development (Node.js/.NET/Java/Python).\nHands-on experience with databases (SQL/NoSQL).\nKnowledge of REST APIs, cloud platforms, and DevOps basics.\nExperience in Agile development methodologies.\nStrong leadership and mentoring skills.\nExcellent communication and interpersonal skills.\nJob Responsibility\nLead and manage a full stack development team in the Ongole development centre.\nDesign, develop, and review scalable web applications (front-end and back-end).\nAssign tasks, monitor progress, and ensure timely delivery of projects.\nConduct code reviews and enforce best coding standards.\nOrganize technical workshops, training sessions, and knowledge-sharing activities.\nEnsure proper documentation and version control practices.\nFoster a collaborative and productive learning environment.\nMentor, train, and guide interns on real-world software development practices.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Software Development\nExperience:  7+ years\nLocation:  Ongole, India",
+    "requirements": "iSpatial Techno Solutions\nFull Stack Team Lead \u2013 Development Centre | Ongole\nDepartment: Software Development\nExperience: 7+ years     Location: Ongole, India\nQualification Requirement\n7+ years of experience in full stack development.\nStrong proficiency in front-end technologies (HTML, CSS, JavaScript frameworks such as React/Angular/Vue).\nExperience in back-end development (Node.js/.NET/Java/Python).\nHands-on experience with databases (SQL/NoSQL).\nKnowledge of REST APIs, cloud platforms, and DevOps basics.\nExperience in Agile development methodologies.\nStrong leadership and mentoring skills.\nExcellent communication and interpersonal skills.\nJob Responsibility\nLead and manage a full stack development team in the Ongole development centre.\nDesign, develop, and review scalable web applications (front-end and back-end).\nAssign tasks, monitor progress, and ensure timely delivery of projects.\nConduct code reviews and enforce best coding standards.\nOrganize technical workshops, training sessions, and knowledge-sharing activities.\nEnsure proper documentation and version control practices.\nFoster a collaborative and productive learning environment.\nMentor, train, and guide interns on real-world software development practices.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Software Development\nExperience:  7+ years\nLocation:  Ongole, India",
+    "publishToCareers": true,
+    "status": "Active",
+    "workMode": "On-site",
+    "publicSlug": "full-stack-team-lead-development-centre-ongole",
+    "customFields": [
+      {
+        "id": "fn",
+        "label": "First Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ln",
+        "label": "Last Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "em",
+        "label": "Email",
+        "fieldType": "Email",
+        "isRequired": true
+      },
+      {
+        "id": "ph",
+        "label": "Phone Number",
+        "fieldType": "Phone",
+        "isRequired": true
+      },
+      {
+        "id": "cl",
+        "label": "Current Location",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ex",
+        "label": "Total Years of Experience",
+        "fieldType": "Number",
+        "isRequired": true
+      },
+      {
+        "id": "np",
+        "label": "Notice Period",
+        "fieldType": "Dropdown",
+        "options": "Immediate, 15 days, 30 days, 45 days, 60 days, 90 days, More than 90 days",
+        "isRequired": true
+      },
+      {
+        "id": "jd",
+        "label": "Earliest Joining Date",
+        "fieldType": "Date",
+        "isRequired": true
+      },
+      {
+        "id": "eq",
+        "label": "Education Qualification",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ks",
+        "label": "Key Skills",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "li",
+        "label": "LinkedIn Profile",
+        "fieldType": "Url",
+        "isRequired": true
+      },
+      {
+        "id": "cv",
+        "label": "Upload CV",
+        "fieldType": "CvUpload",
+        "isRequired": true
+      }
+    ],
+    "postings": {
+      "linkedIn": true,
+      "indeed": true,
+      "zipRecruiter": false,
+      "internalCareer": true
+    }
+  },
+  {
+    "id": "job-gis-enterprise-administrator",
+    "title": "GIS Enterprise Administrator",
+    "department": "GIS",
+    "location": "UAE",
+    "requiredExperience": "8+ years",
+    "description": "iSpatial Techno Solutions\nGIS Enterprise Administrator\nDepartment: GIS\nExperience: 8+ years     Location: UAE\nQualification Requirement\nBachelor's degree in GIS, Geography, Computer Science, or a related field.\n8+ years of experience in Enterprise GIS administration.\nStrong hands-on experience with ArcGIS Enterprise (Portal, Server, ArcGIS Online), Enterprise Geodatabases, and GIS Web Services & Applications.\nExperience with database management systems (SQL Server, Oracle, PostgreSQL).\nKnowledge of cloud platforms (Azure/AWS) is an advantage.\nExperience in scripting/automation (Python, PowerShell).\nFamiliarity with GIS security, access control, and system monitoring.\nUnderstanding of GIS architecture, spatial data modeling, and ETL processes.\nESRI certifications (e.g., ArcGIS Enterprise Administration Professional).\nJob Responsibility\nInstall, configure, and administer ArcGIS Enterprise (Portal, Server, Data Store, Web Adaptor).\nMonitor system performance, troubleshoot issues, and ensure optimal uptime of GIS infrastructure.\nManage GIS users, roles, permissions, and licensing within enterprise environments.\nPerform system upgrades, patches, and security hardening following best practices.\nDesign and implement backup, recovery, and disaster recovery strategies.\nMaintain and optimize enterprise geodatabases (SQL Server, Oracle, PostgreSQL).\nAutomate GIS workflows and administrative tasks using scripting tools (Python, PowerShell).\nSupport GIS application deployment, integration, and performance tuning.\nEnsure data integrity, governance, and compliance with organizational standards.\nCollaborate with GIS analysts, developers, and IT teams to deliver enterprise GIS solutions.\nMaintain technical documentation for system architecture, configurations, and processes.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  GIS\nExperience:  8+ years\nLocation:  UAE",
+    "publicDescription": "iSpatial Techno Solutions\nGIS Enterprise Administrator\nDepartment: GIS\nExperience: 8+ years     Location: UAE\nQualification Requirement\nBachelor's degree in GIS, Geography, Computer Science, or a related field.\n8+ years of experience in Enterprise GIS administration.\nStrong hands-on experience with ArcGIS Enterprise (Portal, Server, ArcGIS Online), Enterprise Geodatabases, and GIS Web Services & Applications.\nExperience with database management systems (SQL Server, Oracle, PostgreSQL).\nKnowledge of cloud platforms (Azure/AWS) is an advantage.\nExperience in scripting/automation (Python, PowerShell).\nFamiliarity with GIS security, access control, and system monitoring.\nUnderstanding of GIS architecture, spatial data modeling, and ETL processes.\nESRI certifications (e.g., ArcGIS Enterprise Administration Professional).\nJob Responsibility\nInstall, configure, and administer ArcGIS Enterprise (Portal, Server, Data Store, Web Adaptor).\nMonitor system performance, troubleshoot issues, and ensure optimal uptime of GIS infrastructure.\nManage GIS users, roles, permissions, and licensing within enterprise environments.\nPerform system upgrades, patches, and security hardening following best practices.\nDesign and implement backup, recovery, and disaster recovery strategies.\nMaintain and optimize enterprise geodatabases (SQL Server, Oracle, PostgreSQL).\nAutomate GIS workflows and administrative tasks using scripting tools (Python, PowerShell).\nSupport GIS application deployment, integration, and performance tuning.\nEnsure data integrity, governance, and compliance with organizational standards.\nCollaborate with GIS analysts, developers, and IT teams to deliver enterprise GIS solutions.\nMaintain technical documentation for system architecture, configurations, and processes.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  GIS\nExperience:  8+ years\nLocation:  UAE",
+    "requirements": "iSpatial Techno Solutions\nGIS Enterprise Administrator\nDepartment: GIS\nExperience: 8+ years     Location: UAE\nQualification Requirement\nBachelor's degree in GIS, Geography, Computer Science, or a related field.\n8+ years of experience in Enterprise GIS administration.\nStrong hands-on experience with ArcGIS Enterprise (Portal, Server, ArcGIS Online), Enterprise Geodatabases, and GIS Web Services & Applications.\nExperience with database management systems (SQL Server, Oracle, PostgreSQL).\nKnowledge of cloud platforms (Azure/AWS) is an advantage.\nExperience in scripting/automation (Python, PowerShell).\nFamiliarity with GIS security, access control, and system monitoring.\nUnderstanding of GIS architecture, spatial data modeling, and ETL processes.\nESRI certifications (e.g., ArcGIS Enterprise Administration Professional).\nJob Responsibility\nInstall, configure, and administer ArcGIS Enterprise (Portal, Server, Data Store, Web Adaptor).\nMonitor system performance, troubleshoot issues, and ensure optimal uptime of GIS infrastructure.\nManage GIS users, roles, permissions, and licensing within enterprise environments.\nPerform system upgrades, patches, and security hardening following best practices.\nDesign and implement backup, recovery, and disaster recovery strategies.\nMaintain and optimize enterprise geodatabases (SQL Server, Oracle, PostgreSQL).\nAutomate GIS workflows and administrative tasks using scripting tools (Python, PowerShell).\nSupport GIS application deployment, integration, and performance tuning.\nEnsure data integrity, governance, and compliance with organizational standards.\nCollaborate with GIS analysts, developers, and IT teams to deliver enterprise GIS solutions.\nMaintain technical documentation for system architecture, configurations, and processes.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  GIS\nExperience:  8+ years\nLocation:  UAE",
+    "publishToCareers": true,
+    "status": "Active",
+    "workMode": "On-site",
+    "publicSlug": "gis-enterprise-administrator",
+    "customFields": [
+      {
+        "id": "fn",
+        "label": "First Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ln",
+        "label": "Last Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "em",
+        "label": "Email",
+        "fieldType": "Email",
+        "isRequired": true
+      },
+      {
+        "id": "ph",
+        "label": "Phone Number",
+        "fieldType": "Phone",
+        "isRequired": true
+      },
+      {
+        "id": "cl",
+        "label": "Current Location",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ex",
+        "label": "Total Years of Experience",
+        "fieldType": "Number",
+        "isRequired": true
+      },
+      {
+        "id": "np",
+        "label": "Notice Period",
+        "fieldType": "Dropdown",
+        "options": "Immediate, 15 days, 30 days, 45 days, 60 days, 90 days, More than 90 days",
+        "isRequired": true
+      },
+      {
+        "id": "jd",
+        "label": "Earliest Joining Date",
+        "fieldType": "Date",
+        "isRequired": true
+      },
+      {
+        "id": "eq",
+        "label": "Education Qualification",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ks",
+        "label": "Key Skills",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "li",
+        "label": "LinkedIn Profile",
+        "fieldType": "Url",
+        "isRequired": true
+      },
+      {
+        "id": "cv",
+        "label": "Upload CV",
+        "fieldType": "CvUpload",
+        "isRequired": true
+      }
+    ],
+    "postings": {
+      "linkedIn": true,
+      "indeed": true,
+      "zipRecruiter": false,
+      "internalCareer": true
+    }
+  },
+  {
+    "id": "job-implementation-engineer-sprinklr-project",
+    "title": "Implementation Engineer (Sprinklr Project)",
+    "department": "Consultant",
+    "location": "Hyderabad, India",
+    "requiredExperience": "3\u20137 years",
+    "description": "iSpatial Techno Solutions\nImplementation Engineer (Sprinklr Project)\nDepartment: Consultant\nExperience: 3\u20137 years     Location: Hyderabad, India\nQualification Requirement\nBachelor's degree in Computer Engineering, Computer Science, Information Technology, or a related technical field.\nExperience implementing, configuring, or administering enterprise SaaS, CRM, CCaaS, CX, or customer engagement platforms.\nStrong knowledge of API integrations (REST APIs, authentication, webhooks) and integration troubleshooting.\nHands-on experience with system configuration, workflows, business rules, and application setup.\nFamiliarity with JSON, XML, Postman, API testing, and debugging tools.\nExperience with digital engagement channels (Voice, Email, Chat, WhatsApp, Social Media).\nKnowledge of contact center operations, CX, or CRM processes is preferred.\nBasic understanding of SQL, databases, and data mapping/transformation.\nStrong troubleshooting, documentation, communication, and stakeholder management skills.\nPreferred: 3\u20137 years in implementation, integration, solution engineering, or professional services (experience with platforms similar to Sprinklr is an advantage).\nJob Responsibility\nSupport Sprinklr implementation projects.\nConfigure and set up workflows, business rules, and platform configurations.\nSupport API integrations, including REST APIs, authentication mechanisms, and webhooks.\nTranslate business requirements into technical solutions and platform configurations.\nSupport requirements gathering, solution design, testing, UAT, and production deployments.\nWork directly with customers and participate in technical workshops and implementation discussions.\nPrepare requirement documents, configuration guides, and solution design artifacts.\nWork with digital engagement channels such as Voice, Email, Chat, WhatsApp, and Social Media.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Consultant\nExperience:  3\u20137 years\nLocation:  Hyderabad, India",
+    "publicDescription": "iSpatial Techno Solutions\nImplementation Engineer (Sprinklr Project)\nDepartment: Consultant\nExperience: 3\u20137 years     Location: Hyderabad, India\nQualification Requirement\nBachelor's degree in Computer Engineering, Computer Science, Information Technology, or a related technical field.\nExperience implementing, configuring, or administering enterprise SaaS, CRM, CCaaS, CX, or customer engagement platforms.\nStrong knowledge of API integrations (REST APIs, authentication, webhooks) and integration troubleshooting.\nHands-on experience with system configuration, workflows, business rules, and application setup.\nFamiliarity with JSON, XML, Postman, API testing, and debugging tools.\nExperience with digital engagement channels (Voice, Email, Chat, WhatsApp, Social Media).\nKnowledge of contact center operations, CX, or CRM processes is preferred.\nBasic understanding of SQL, databases, and data mapping/transformation.\nStrong troubleshooting, documentation, communication, and stakeholder management skills.\nPreferred: 3\u20137 years in implementation, integration, solution engineering, or professional services (experience with platforms similar to Sprinklr is an advantage).\nJob Responsibility\nSupport Sprinklr implementation projects.\nConfigure and set up workflows, business rules, and platform configurations.\nSupport API integrations, including REST APIs, authentication mechanisms, and webhooks.\nTranslate business requirements into technical solutions and platform configurations.\nSupport requirements gathering, solution design, testing, UAT, and production deployments.\nWork directly with customers and participate in technical workshops and implementation discussions.\nPrepare requirement documents, configuration guides, and solution design artifacts.\nWork with digital engagement channels such as Voice, Email, Chat, WhatsApp, and Social Media.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Consultant\nExperience:  3\u20137 years\nLocation:  Hyderabad, India",
+    "requirements": "iSpatial Techno Solutions\nImplementation Engineer (Sprinklr Project)\nDepartment: Consultant\nExperience: 3\u20137 years     Location: Hyderabad, India\nQualification Requirement\nBachelor's degree in Computer Engineering, Computer Science, Information Technology, or a related technical field.\nExperience implementing, configuring, or administering enterprise SaaS, CRM, CCaaS, CX, or customer engagement platforms.\nStrong knowledge of API integrations (REST APIs, authentication, webhooks) and integration troubleshooting.\nHands-on experience with system configuration, workflows, business rules, and application setup.\nFamiliarity with JSON, XML, Postman, API testing, and debugging tools.\nExperience with digital engagement channels (Voice, Email, Chat, WhatsApp, Social Media).\nKnowledge of contact center operations, CX, or CRM processes is preferred.\nBasic understanding of SQL, databases, and data mapping/transformation.\nStrong troubleshooting, documentation, communication, and stakeholder management skills.\nPreferred: 3\u20137 years in implementation, integration, solution engineering, or professional services (experience with platforms similar to Sprinklr is an advantage).\nJob Responsibility\nSupport Sprinklr implementation projects.\nConfigure and set up workflows, business rules, and platform configurations.\nSupport API integrations, including REST APIs, authentication mechanisms, and webhooks.\nTranslate business requirements into technical solutions and platform configurations.\nSupport requirements gathering, solution design, testing, UAT, and production deployments.\nWork directly with customers and participate in technical workshops and implementation discussions.\nPrepare requirement documents, configuration guides, and solution design artifacts.\nWork with digital engagement channels such as Voice, Email, Chat, WhatsApp, and Social Media.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Consultant\nExperience:  3\u20137 years\nLocation:  Hyderabad, India",
+    "publishToCareers": true,
+    "status": "Active",
+    "workMode": "On-site",
+    "publicSlug": "implementation-engineer-sprinklr-project",
+    "customFields": [
+      {
+        "id": "fn",
+        "label": "First Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ln",
+        "label": "Last Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "em",
+        "label": "Email",
+        "fieldType": "Email",
+        "isRequired": true
+      },
+      {
+        "id": "ph",
+        "label": "Phone Number",
+        "fieldType": "Phone",
+        "isRequired": true
+      },
+      {
+        "id": "cl",
+        "label": "Current Location",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ex",
+        "label": "Total Years of Experience",
+        "fieldType": "Number",
+        "isRequired": true
+      },
+      {
+        "id": "np",
+        "label": "Notice Period",
+        "fieldType": "Dropdown",
+        "options": "Immediate, 15 days, 30 days, 45 days, 60 days, 90 days, More than 90 days",
+        "isRequired": true
+      },
+      {
+        "id": "jd",
+        "label": "Earliest Joining Date",
+        "fieldType": "Date",
+        "isRequired": true
+      },
+      {
+        "id": "eq",
+        "label": "Education Qualification",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ks",
+        "label": "Key Skills",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "li",
+        "label": "LinkedIn Profile",
+        "fieldType": "Url",
+        "isRequired": true
+      },
+      {
+        "id": "cv",
+        "label": "Upload CV",
+        "fieldType": "CvUpload",
+        "isRequired": true
+      }
+    ],
+    "postings": {
+      "linkedIn": true,
+      "indeed": true,
+      "zipRecruiter": false,
+      "internalCareer": true
+    }
+  },
+  {
+    "id": "job-iot-field-technician",
+    "title": "IoT Field Technician",
+    "department": "Environment & Sustainability",
+    "location": "Abu Dhabi, UAE (site visits across the Emirate of Abu Dhabi)",
+    "requiredExperience": "1\u20133 years",
+    "description": "iSpatial Techno Solutions\nIoT Field Technician\nDepartment: Environment & Sustainability\nExperience: 1\u20133 years     Location: Abu Dhabi, UAE (site visits across the Emirate of Abu Dhabi)\nQualification Requirement\nITI, Diploma, or degree in Electronics, Electrical, or a related field (Electronics Engineering preferred).\n1\u20133 years of experience; freshers with a good learning attitude are encouraged.\nBasic coding knowledge (Python, Arduino/C, or similar).\nFamiliarity with checking device/system logs is a plus.\nGood communication skills in English.\nWilling to travel to sites across the Emirate of Abu Dhabi.\nUAE driving license preferred (added advantage).\nJob Responsibility\nInstall and commission IoT devices at customer sites (mounting, power, connectivity).\nCarry out routine maintenance visits \u2014 inspection, calibration, sensor and power checks.\nTroubleshoot device issues in the field: power, Wi-Fi/SIM connectivity, sensor faults.\nCheck device logs and data on the platform to spot and diagnose issues.\nKeep simple records of visits, faults fixed, and spare parts used.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Environment & Sustainability\nExperience:  1\u20133 years\nLocation:  Abu Dhabi, UAE (site visits across the Emirate of Abu Dhabi)",
+    "publicDescription": "iSpatial Techno Solutions\nIoT Field Technician\nDepartment: Environment & Sustainability\nExperience: 1\u20133 years     Location: Abu Dhabi, UAE (site visits across the Emirate of Abu Dhabi)\nQualification Requirement\nITI, Diploma, or degree in Electronics, Electrical, or a related field (Electronics Engineering preferred).\n1\u20133 years of experience; freshers with a good learning attitude are encouraged.\nBasic coding knowledge (Python, Arduino/C, or similar).\nFamiliarity with checking device/system logs is a plus.\nGood communication skills in English.\nWilling to travel to sites across the Emirate of Abu Dhabi.\nUAE driving license preferred (added advantage).\nJob Responsibility\nInstall and commission IoT devices at customer sites (mounting, power, connectivity).\nCarry out routine maintenance visits \u2014 inspection, calibration, sensor and power checks.\nTroubleshoot device issues in the field: power, Wi-Fi/SIM connectivity, sensor faults.\nCheck device logs and data on the platform to spot and diagnose issues.\nKeep simple records of visits, faults fixed, and spare parts used.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Environment & Sustainability\nExperience:  1\u20133 years\nLocation:  Abu Dhabi, UAE (site visits across the Emirate of Abu Dhabi)",
+    "requirements": "iSpatial Techno Solutions\nIoT Field Technician\nDepartment: Environment & Sustainability\nExperience: 1\u20133 years     Location: Abu Dhabi, UAE (site visits across the Emirate of Abu Dhabi)\nQualification Requirement\nITI, Diploma, or degree in Electronics, Electrical, or a related field (Electronics Engineering preferred).\n1\u20133 years of experience; freshers with a good learning attitude are encouraged.\nBasic coding knowledge (Python, Arduino/C, or similar).\nFamiliarity with checking device/system logs is a plus.\nGood communication skills in English.\nWilling to travel to sites across the Emirate of Abu Dhabi.\nUAE driving license preferred (added advantage).\nJob Responsibility\nInstall and commission IoT devices at customer sites (mounting, power, connectivity).\nCarry out routine maintenance visits \u2014 inspection, calibration, sensor and power checks.\nTroubleshoot device issues in the field: power, Wi-Fi/SIM connectivity, sensor faults.\nCheck device logs and data on the platform to spot and diagnose issues.\nKeep simple records of visits, faults fixed, and spare parts used.\nBenefits\nCompetitive compensation based on market standards.\nFlexible working model catering to the diverse needs of our teams (in-person and remote where it aligns with operational requirements; certain roles may specify a working-location requirement).\nFull-time employees receive a competitive total compensation package along with additional benefits below.\nStandard Leave Policy.\nOffice located in the heart of the city should you need to step in for any purpose.\nMedical Insurance (Self + Spouse + 4 Dependent Children).\nQuarterly team engagement activities and rewards & recognitions such as Yearly Performance Bonus and Yearly Appraisals.\nLearning & Development programs to foster professional growth.\nDetails\nDepartment:  Environment & Sustainability\nExperience:  1\u20133 years\nLocation:  Abu Dhabi, UAE (site visits across the Emirate of Abu Dhabi)",
+    "publishToCareers": true,
+    "status": "Active",
+    "workMode": "On-site",
+    "publicSlug": "iot-field-technician",
+    "customFields": [
+      {
+        "id": "fn",
+        "label": "First Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ln",
+        "label": "Last Name",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "em",
+        "label": "Email",
+        "fieldType": "Email",
+        "isRequired": true
+      },
+      {
+        "id": "ph",
+        "label": "Phone Number",
+        "fieldType": "Phone",
+        "isRequired": true
+      },
+      {
+        "id": "cl",
+        "label": "Current Location",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ex",
+        "label": "Total Years of Experience",
+        "fieldType": "Number",
+        "isRequired": true
+      },
+      {
+        "id": "np",
+        "label": "Notice Period",
+        "fieldType": "Dropdown",
+        "options": "Immediate, 15 days, 30 days, 45 days, 60 days, 90 days, More than 90 days",
+        "isRequired": true
+      },
+      {
+        "id": "jd",
+        "label": "Earliest Joining Date",
+        "fieldType": "Date",
+        "isRequired": true
+      },
+      {
+        "id": "eq",
+        "label": "Education Qualification",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "ks",
+        "label": "Key Skills",
+        "fieldType": "ShortText",
+        "isRequired": true
+      },
+      {
+        "id": "li",
+        "label": "LinkedIn Profile",
+        "fieldType": "Url",
+        "isRequired": true
+      },
+      {
+        "id": "cv",
+        "label": "Upload CV",
+        "fieldType": "CvUpload",
+        "isRequired": true
+      }
+    ],
+    "postings": {
+      "linkedIn": true,
+      "indeed": true,
+      "zipRecruiter": false,
+      "internalCareer": true
+    }
+  }
+]
