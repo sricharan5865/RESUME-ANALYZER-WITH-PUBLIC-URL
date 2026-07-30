@@ -378,52 +378,104 @@ export default function JobPositions({
       <div style={{ flexGrow: 1, overflowY: 'auto' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', paddingRight: '12px' }}>
           
-          {/* Edit Modal / Form Card if editingJobId is set */}
+          {/* Edit Modal Popup */}
           {editingJobId && (
-            <div style={{ padding: '20px', background: 'var(--bg-secondary)', border: '1px solid var(--accent-primary)', borderRadius: 'var(--radius-md)', marginBottom: '16px' }}>
-              <form onSubmit={(e) => handleUpdateJob(e, editingJobId)} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <h4 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--accent-primary)' }}>Edit Job Position</h4>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button type="button" className="btn btn-secondary" style={{ padding: '6px 12px' }} onClick={cancelEditing}>
+            <div 
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.75)',
+                backdropFilter: 'blur(4px)',
+                zIndex: 1000,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '24px'
+              }}
+              onClick={cancelEditing}
+            >
+              <div 
+                style={{
+                  width: '95%',
+                  maxWidth: '850px',
+                  maxHeight: '90vh',
+                  background: 'var(--bg-secondary)',
+                  border: '1px solid var(--accent-primary)',
+                  borderRadius: 'var(--radius-lg)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  overflow: 'hidden',
+                  boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)'
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Modal Header */}
+                <div style={{ padding: '18px 24px', borderBottom: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255, 255, 255, 0.02)' }}>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '17px', fontWeight: '700', color: 'var(--text-primary)' }}>
+                      Edit Job Position
+                    </h3>
+                    <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                      Update position details, requirements, and candidate-facing description.
+                    </p>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <button type="button" className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '12px' }} onClick={cancelEditing}>
                       <X size={14} /> Cancel
                     </button>
-                    <button type="submit" className="btn btn-primary" style={{ padding: '6px 14px' }}>
+                    <button type="button" className="btn btn-primary" style={{ padding: '6px 14px', fontSize: '12px' }} onClick={(e) => handleUpdateJob(e, editingJobId)}>
                       <Save size={14} /> Save Changes
                     </button>
                   </div>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '16px' }}>
-                  <div className="form-group">
-                    <label className="form-label">Job Title*</label>
-                    <input type="text" className="form-input" value={editForm.title} onChange={(e) => setEditForm({...editForm, title: e.target.value})} />
+
+                {/* Modal Body */}
+                <form onSubmit={(e) => handleUpdateJob(e, editingJobId)} style={{ flexGrow: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '16px' }}>
+                    <div className="form-group">
+                      <label className="form-label">Job Title*</label>
+                      <input type="text" className="form-input" value={editForm.title} onChange={(e) => setEditForm({...editForm, title: e.target.value})} />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Department</label>
+                      <input type="text" className="form-input" value={editForm.department} onChange={(e) => setEditForm({...editForm, department: e.target.value})} />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Location</label>
+                      <input type="text" className="form-input" value={editForm.location} onChange={(e) => setEditForm({...editForm, location: e.target.value})} />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Required Exp</label>
+                      <input type="text" className="form-input" placeholder="e.g. 3 - 5 Years" value={editForm.requiredExperience || ''} onChange={(e) => setEditForm({...editForm, requiredExperience: e.target.value})} />
+                    </div>
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Department</label>
-                    <input type="text" className="form-input" value={editForm.department} onChange={(e) => setEditForm({...editForm, department: e.target.value})} />
+                    <label className="form-label">Job Description Summary*</label>
+                    <textarea className="form-input" rows={4} value={editForm.description} onChange={(e) => setEditForm({...editForm, description: e.target.value})} />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Location</label>
-                    <input type="text" className="form-input" value={editForm.location} onChange={(e) => setEditForm({...editForm, location: e.target.value})} />
+                    <label className="form-label">Requirements Criteria*</label>
+                    <textarea className="form-input" rows={4} value={editForm.requirements} onChange={(e) => setEditForm({...editForm, requirements: e.target.value})} />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Required Exp</label>
-                    <input type="text" className="form-input" placeholder="e.g. 3 - 5 Years" value={editForm.requiredExperience || ''} onChange={(e) => setEditForm({...editForm, requiredExperience: e.target.value})} />
+                    <label className="form-label">Public Job Description (For Candidates)*</label>
+                    <textarea className="form-input" rows={4} value={editForm.publicDescription || ''} onChange={(e) => setEditForm({...editForm, publicDescription: e.target.value})} placeholder="Enter description for public careers portal..." />
                   </div>
+                </form>
+
+                {/* Modal Footer */}
+                <div style={{ padding: '14px 24px', borderTop: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'flex-end', gap: '10px', background: 'rgba(255, 255, 255, 0.02)' }}>
+                  <button type="button" className="btn btn-secondary" style={{ padding: '8px 16px', fontSize: '13px' }} onClick={cancelEditing}>
+                    Cancel
+                  </button>
+                  <button type="button" className="btn btn-primary" style={{ padding: '8px 18px', fontSize: '13px' }} onClick={(e) => handleUpdateJob(e, editingJobId)}>
+                    <Save size={14} /> Save Changes
+                  </button>
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Job Description Summary*</label>
-                  <textarea className="form-input" rows={4} value={editForm.description} onChange={(e) => setEditForm({...editForm, description: e.target.value})} />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Requirements Criteria*</label>
-                  <textarea className="form-input" rows={4} value={editForm.requirements} onChange={(e) => setEditForm({...editForm, requirements: e.target.value})} />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Public Job Description (For Candidates)*</label>
-                  <textarea className="form-input" rows={4} value={editForm.publicDescription || ''} onChange={(e) => setEditForm({...editForm, publicDescription: e.target.value})} placeholder="Enter description for public careers portal..." />
-                </div>
-              </form>
+              </div>
             </div>
           )}
 
