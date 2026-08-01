@@ -33,6 +33,16 @@ export function prepareCandidateExportData(candidates, baseHeaders) {
       clone.extractedData = {};
     }
 
+    // Format full Resume Link
+    if (c.resumeUrl) {
+      const isFullUrl = /^https?:\/\//i.test(c.resumeUrl);
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      const cleanPath = c.resumeUrl.startsWith('/') ? c.resumeUrl : `/${c.resumeUrl}`;
+      clone.resumeUrl = isFullUrl ? c.resumeUrl : `${origin}${cleanPath}`;
+    } else {
+      clone.resumeUrl = '—';
+    }
+
     if (c.extractedData && Array.isArray(c.extractedData.formAnswers)) {
       let firstName = '';
       let lastName = '';
@@ -81,7 +91,11 @@ export function prepareCandidateExportData(candidates, baseHeaders) {
     return clone;
   });
 
-  const finalHeaders = { ...baseHeaders, ...dynamicHeaders };
+  const finalHeaders = {
+    ...baseHeaders,
+    resumeUrl: baseHeaders.resumeUrl || 'Resume Link',
+    ...dynamicHeaders
+  };
   return { data: clonedData, headers: finalHeaders };
 }
 
@@ -221,7 +235,7 @@ export function exportToExcel(data, fileName, headers) {
  xmlns:o="urn:schemas-microsoft-com:office:office"
  xmlns:x="urn:schemas-microsoft-com:office:excel"
  xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
- <Styles>
+  <Styles>
   <Style ss:ID="HeaderStyle">
    <Font ss:Bold="1" ss:Color="#FFFFFF" ss:FontName="Segoe UI"/>
    <Interior ss:Color="#4F46E5" ss:Pattern="Solid"/>
@@ -231,6 +245,10 @@ export function exportToExcel(data, fileName, headers) {
    <Font ss:FontName="Segoe UI"/>
    <Alignment ss:Vertical="Center"/>
   </Style>
+  <Style ss:ID="LinkStyle">
+   <Font ss:FontName="Segoe UI" ss:Color="#2563EB" ss:Underline="Single"/>
+   <Alignment ss:Vertical="Center"/>
+  </Style>
  </Styles>
  <Worksheet ss:Name="Candidates">
   <Table>
@@ -238,7 +256,7 @@ export function exportToExcel(data, fileName, headers) {
 
   // Column Widths
   headerKeys.forEach(() => {
-    xml += '   <Column ss:AutoFitWidth="1" ss:Width="120"/>\n';
+    xml += '   <Column ss:AutoFitWidth="1" ss:Width="140"/>\n';
   });
 
   // Headers
@@ -254,7 +272,12 @@ export function exportToExcel(data, fileName, headers) {
     xml += '   <Row ss:Height="22">\n';
     for (const key of headerKeys) {
       const cellVal = getRowValue(row, key);
-      xml += `    <Cell ss:StyleID="CellStyle"><Data ss:Type="String">${escapeXml(cellVal)}</Data></Cell>\n`;
+      const isUrl = /^https?:\/\//i.test(cellVal);
+      if (isUrl) {
+        xml += `    <Cell ss:StyleID="LinkStyle" ss:HRef="${escapeXml(cellVal)}"><Data ss:Type="String">${escapeXml(cellVal)}</Data></Cell>\n`;
+      } else {
+        xml += `    <Cell ss:StyleID="CellStyle"><Data ss:Type="String">${escapeXml(cellVal)}</Data></Cell>\n`;
+      }
     }
     xml += '   </Row>\n';
   }

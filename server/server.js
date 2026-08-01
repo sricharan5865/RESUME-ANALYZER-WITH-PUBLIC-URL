@@ -12,6 +12,7 @@ import cors from 'cors';
 import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import nodemailer from 'nodemailer';
@@ -189,7 +190,15 @@ app.use('/uploads', express.static(UPLOADS_DIR));
 app.use('/api/uploads', express.static(UPLOADS_DIR));
 
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, UPLOADS_DIR),
+  destination: (req, file, cb) => {
+    const rawJobId = req.body?.jobId || req.query?.jobId || 'general';
+    const sanitizedJobId = String(rawJobId).replace(/[^a-zA-Z0-9_\-]/g, '_');
+    const jobUploadDir = path.join(UPLOADS_DIR, `job_${sanitizedJobId}`);
+    if (!fs.existsSync(jobUploadDir)) {
+      fs.mkdirSync(jobUploadDir, { recursive: true });
+    }
+    cb(null, jobUploadDir);
+  },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
     // Sanitize filename: replace spaces and special chars with underscores
@@ -1418,8 +1427,8 @@ app.get('/api/candidates/:id/resume-html', authenticateToken, async (req, res) =
       return res.status(404).send('Resume not found.');
     }
 
-    const filePath = path.join(UPLOADS_DIR, path.basename(candidate.resumeUrl));
-    if (!fs.existsSync(filePath)) {
+    const filePath = resolveUploadPath(candidate.resumeUrl);
+    if (!filePath || !fs.existsSync(filePath)) {
       return res.status(404).send('Resume file not found on server.');
     }
 
@@ -1700,7 +1709,7 @@ app.post('/api/candidates/upload', authenticateToken, requireRole(['admin', 'rec
       linkedinUrl: parsedData.linkedinUrl || '',
       skills: parsedData.skills || [], experience: parsedData.experience || [],
       education: parsedData.education || [], tags: generatedTags, stage: 'Inbox',
-      resumeUrl: `/api/uploads/${req.file.filename}`, resumeText: pdfText, 
+      resumeUrl: `/api/uploads/${path.relative(UPLOADS_DIR, req.file.path).replace(/\\/g, '/')}`, resumeText: pdfText, 
       matchScore: scoringResult.score || 0,
       matchingSkills: scoringResult.matchingSkills || [], missingSkills: scoringResult.missingSkills || [],
       matchExplanation: scoringResult.reasoning || '', 
@@ -3523,17 +3532,51 @@ app.get('/api/public/jobs/:id', async (req, res) => {
   }
 });
 
-// A helper to generate tracking IDs
+// A helper to generate tracking IDs using cryptographic randomness
 function generateTrackingId() {
-  return `IST-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`;
+  const randomHex = crypto.randomBytes(6).toString('hex').toUpperCase();
+  return `IST-${new Date().getFullYear()}-${randomHex}`;
+}
+
+// Helper function to safely resolve file references inside UPLOADS_DIR (including project subdirectories)
+function resolveUploadPath(fileRef) {
+  if (!fileRef || typeof fileRef !== 'string') return null;
+  const filename = path.basename(fileRef);
+  const rootUploads = path.resolve(UPLOADS_DIR);
+
+  // If a direct or relative path inside UPLOADS_DIR is provided
+  const directPath = path.resolve(UPLOADS_DIR, fileRef);
+  if (directPath.startsWith(rootUploads) && fs.existsSync(directPath)) {
+    return directPath;
+  }
+
+  // Check root UPLOADS_DIR
+  const rootFile = path.resolve(UPLOADS_DIR, filename);
+  if (fs.existsSync(rootFile)) {
+    return rootFile;
+  }
+
+  // Search job subdirectories
+  if (fs.existsSync(rootUploads)) {
+    const subdirs = fs.readdirSync(rootUploads, { withFileTypes: true });
+    for (const dirent of subdirs) {
+      if (dirent.isDirectory()) {
+        const candidate = path.join(rootUploads, dirent.name, filename);
+        if (fs.existsSync(candidate)) {
+          return candidate;
+        }
+      }
+    }
+  }
+
+  return null;
 }
 
 // Temporary file upload for public routes
 app.post('/api/public/cv', upload.single('file'), (req, res) => {
   if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
-  // For simplicity, we're returning the path. 
-  // In a real app, this should go to a temp bucket and get moved on submit.
-  res.json({ fileRef: req.file.path, fileName: req.file.originalname });
+  // Return file basename only instead of full system path to prevent path traversal
+  res.json({ fileRef: req.file.filename, fileName: req.file.originalname });
 });
 
 // R4: Shared helper — extract a value from ansMap by exact keys or fuzzy substring match
@@ -3738,15 +3781,16 @@ app.post('/api/public/apply', async (req, res) => {
       let generatedTags = [];
 
       try {
-        if (cvFileRef && fs.existsSync(cvFileRef)) {
-          console.log(`Extracting text from public upload: ${cvFileRef}`);
+        const safeCvPath = resolveUploadPath(cvFileRef);
+        if (safeCvPath && fs.existsSync(safeCvPath)) {
+          console.log(`Extracting text from public upload: ${safeCvPath}`);
           try {
-            pdfText = await extractTextFromFile(cvFileRef, cvFileName || path.basename(cvFileRef), null);
+            pdfText = await extractTextFromFile(safeCvPath, cvFileName || path.basename(safeCvPath), null);
           } catch (err) {
             console.warn('Failed to extract text locally for public apply:', err.message);
           }
           
-          const fileBuffer = fs.readFileSync(cvFileRef);
+          const fileBuffer = fs.readFileSync(safeCvPath);
           const pdfBase64 = fileBuffer.toString('base64');
           console.log('Parsing resume with LLM for public apply...');
           parsedData = await parseResume(pdfText, pdfBase64);

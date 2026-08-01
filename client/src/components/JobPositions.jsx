@@ -74,10 +74,13 @@ function getJobApplicantStats(job, candidatesList) {
   const jobApplicants = getJobApplicantsList(job, candidatesList);
 
   const now = new Date();
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
 
   let oldApplicants = 0;
   let newApplicants = 0;
+  let immediate7 = 0;
+  let joiners14 = 0;
 
   jobApplicants.forEach(c => {
     let candidateDate = null;
@@ -87,6 +90,16 @@ function getJobApplicantStats(job, candidatesList) {
       candidateDate = new Date(parseInt(String(c._id).substring(0, 8), 16) * 1000);
     }
     
+    const noticeDays = getNoticeDays(c);
+
+    if ((noticeDays !== null && noticeDays <= 7) || (candidateDate && candidateDate >= sevenDaysAgo)) {
+      immediate7++;
+    }
+
+    if ((noticeDays !== null && noticeDays <= 14) || (candidateDate && candidateDate >= fourteenDaysAgo)) {
+      joiners14++;
+    }
+
     if (candidateDate && !isNaN(candidateDate.getTime())) {
       if (candidateDate >= fourteenDaysAgo) {
         newApplicants++;
@@ -101,7 +114,9 @@ function getJobApplicantStats(job, candidatesList) {
   return {
     total: jobApplicants.length,
     oldApplicants,
-    newApplicants
+    newApplicants,
+    immediate7,
+    joiners14
   };
 }
 
@@ -519,10 +534,6 @@ export default function JobPositions({
                     <label className="form-label">Benefits</label>
                     <textarea className="form-input" rows={3} value={editForm.benefits || ''} onChange={(e) => setEditForm({...editForm, benefits: e.target.value})} placeholder="Medical Insurance, Flexible Working Model, Appraisals..." />
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">Public Job Description (For Candidates)</label>
-                    <textarea className="form-input" rows={3} value={editForm.publicDescription || ''} onChange={(e) => setEditForm({...editForm, publicDescription: e.target.value})} placeholder="Full text displayed on careers portal..." />
-                  </div>
                 </form>
 
                 {/* Modal Footer */}
@@ -556,12 +567,11 @@ export default function JobPositions({
                   <thead>
                     <tr style={{ background: 'rgba(255, 255, 255, 0.03)', borderBottom: '1px solid var(--glass-border)' }}>
                       <th style={{ padding: '12px 16px', fontWeight: '600', color: 'var(--text-secondary)', width: '60px', textAlign: 'center' }}>Sl. No</th>
-                      <th style={{ padding: '12px 16px', fontWeight: '600', color: 'var(--text-secondary)' }}>Role (Job Title)</th>
-                      <th style={{ padding: '12px 16px', fontWeight: '600', color: 'var(--text-secondary)' }}>Department</th>
-                      <th style={{ padding: '12px 16px', fontWeight: '600', color: 'var(--text-secondary)' }}>Location</th>
+                      <th style={{ padding: '12px 16px', fontWeight: '600', color: 'var(--text-secondary)' }}>Job Title</th>
+                      <th style={{ padding: '12px 16px', fontWeight: '600', color: 'var(--text-secondary)', textAlign: 'center' }}>No. of applicants</th>
+                      <th style={{ padding: '12px 16px', fontWeight: '600', color: 'var(--text-secondary)', textAlign: 'center' }}>Immediate joiners (7 days)</th>
+                      <th style={{ padding: '12px 16px', fontWeight: '600', color: 'var(--text-secondary)', textAlign: 'center' }}>Joiners with in 14 days</th>
                       <th style={{ padding: '12px 16px', fontWeight: '600', color: 'var(--text-secondary)', textAlign: 'center' }}>Old Applicants</th>
-                      <th style={{ padding: '12px 16px', fontWeight: '600', color: 'var(--text-secondary)', textAlign: 'center' }}>New Applicants</th>
-                      <th style={{ padding: '12px 16px', fontWeight: '600', color: 'var(--text-secondary)', textAlign: 'center' }}>Total Applicants</th>
                       <th style={{ padding: '12px 16px', fontWeight: '600', color: 'var(--text-secondary)' }}>Created Date</th>
                       <th style={{ padding: '12px 16px', fontWeight: '600', color: 'var(--text-secondary)', textAlign: 'center' }}>Publish and Unpublish</th>
                       {currentRole !== 'Hiring Manager' && (
@@ -600,26 +610,83 @@ export default function JobPositions({
                               <span>{job.title}</span>
                               <Users size={13} style={{ color: 'var(--accent-primary)', opacity: 0.8 }} />
                             </div>
+                            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                              {job.department && job.location 
+                                ? `${job.department} • ${job.location}` 
+                                : (job.department || job.location || '')}
+                            </div>
                           </td>
 
-                          {/* Department Cell */}
-                          <td style={{ padding: '14px 16px', color: 'var(--text-secondary)', fontSize: '12px' }}>
-                            <span style={{ padding: '4px 10px', borderRadius: '6px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)' }}>
-                              {job.department || 'Engineering'}
+                          {/* No. of applicants Cell */}
+                          <td style={{ padding: '14px 16px', textAlign: 'center' }}>
+                            <span 
+                              onClick={() => openApplicantsModal(job, 'all')}
+                              style={{ 
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                padding: '5px 12px',
+                                borderRadius: '12px',
+                                background: stats.total > 0 ? 'rgba(99, 102, 241, 0.15)' : 'rgba(255, 255, 255, 0.03)',
+                                color: stats.total > 0 ? 'var(--accent-primary)' : 'var(--text-muted)',
+                                fontWeight: stats.total > 0 ? '700' : '400',
+                                fontSize: '12px',
+                                cursor: 'pointer'
+                              }}
+                              title="Click to view total applicants"
+                            >
+                              <Users size={12} /> {stats.total}
                             </span>
                           </td>
 
-                          {/* Location Cell */}
-                          <td style={{ padding: '14px 16px', color: 'var(--text-secondary)', fontSize: '12px' }}>
-                            <span style={{ padding: '4px 10px', borderRadius: '6px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)' }}>
-                              {job.location || 'Hyderabad, India'}
+                          {/* Immediate joiners (7 days) Cell */}
+                          <td style={{ padding: '14px 16px', textAlign: 'center' }}>
+                            <span 
+                              onClick={() => openApplicantsModal(job, 'immediate7')}
+                              style={{ 
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                padding: '5px 12px',
+                                borderRadius: '12px',
+                                background: stats.immediate7 > 0 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.03)',
+                                color: stats.immediate7 > 0 ? '#10b981' : 'var(--text-muted)',
+                                fontWeight: stats.immediate7 > 0 ? '700' : '400',
+                                fontSize: '12px',
+                                cursor: 'pointer'
+                              }}
+                              title="Click to view immediate joiners (<= 7 days)"
+                            >
+                              <Clock size={12} /> {stats.immediate7}
+                            </span>
+                          </td>
+
+                          {/* Joiners with in 14 days Cell */}
+                          <td style={{ padding: '14px 16px', textAlign: 'center' }}>
+                            <span 
+                              onClick={() => openApplicantsModal(job, 'joiners14')}
+                              style={{ 
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                padding: '5px 12px',
+                                borderRadius: '12px',
+                                background: stats.joiners14 > 0 ? 'rgba(59, 130, 246, 0.15)' : 'rgba(255, 255, 255, 0.03)',
+                                color: stats.joiners14 > 0 ? '#3b82f6' : 'var(--text-muted)',
+                                fontWeight: stats.joiners14 > 0 ? '700' : '400',
+                                fontSize: '12px',
+                                cursor: 'pointer'
+                              }}
+                              title="Click to view joiners within 14 days"
+                            >
+                              <User size={12} /> {stats.joiners14}
                             </span>
                           </td>
 
                           {/* Old Applicants Cell */}
                           <td style={{ padding: '14px 16px', textAlign: 'center' }}>
                             <span 
-                              onClick={() => openApplicantsModal(job, 'all')}
+                              onClick={() => openApplicantsModal(job, 'old')}
                               style={{ 
                                 display: 'inline-flex',
                                 alignItems: 'center',
@@ -632,53 +699,9 @@ export default function JobPositions({
                                 fontSize: '12px',
                                 cursor: 'pointer'
                               }}
-                              title="Click to view old applicants"
+                              title="Click to view old applicants (> 14 days)"
                             >
                               <User size={12} /> {stats.oldApplicants}
-                            </span>
-                          </td>
-
-                          {/* New Applicants Cell */}
-                          <td style={{ padding: '14px 16px', textAlign: 'center' }}>
-                            <span 
-                              onClick={() => openApplicantsModal(job, 'all')}
-                              style={{ 
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '4px',
-                                padding: '5px 12px',
-                                borderRadius: '12px',
-                                background: stats.newApplicants > 0 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.03)',
-                                color: stats.newApplicants > 0 ? '#10b981' : 'var(--text-muted)',
-                                fontWeight: stats.newApplicants > 0 ? '700' : '400',
-                                fontSize: '12px',
-                                cursor: 'pointer'
-                              }}
-                              title="Click to view new applicants"
-                            >
-                              <Sparkles size={12} /> {stats.newApplicants}
-                            </span>
-                          </td>
-
-                          {/* Total Applicants Cell */}
-                          <td style={{ padding: '14px 16px', textAlign: 'center' }}>
-                            <span 
-                              onClick={() => openApplicantsModal(job, 'all')}
-                              style={{ 
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '4px',
-                                padding: '5px 12px',
-                                borderRadius: '12px',
-                                background: stats.total > 0 ? 'rgba(99, 102, 241, 0.15)' : 'rgba(255, 255, 255, 0.05)',
-                                color: stats.total > 0 ? 'var(--accent-primary)' : 'var(--text-muted)',
-                                fontWeight: '700',
-                                fontSize: '12px',
-                                cursor: 'pointer'
-                              }}
-                              title="Click to view total applicants"
-                            >
-                              <Users size={12} /> {stats.total}
                             </span>
                           </td>
 
@@ -860,10 +883,6 @@ export default function JobPositions({
                 <label className="form-label">Benefits</label>
                 <textarea className="form-input" rows={3} placeholder="Medical Insurance, Flexible Working Model, Appraisals..." value={benefits} onChange={(e) => setBenefits(e.target.value)} />
               </div>
-              <div className="form-group">
-                <label className="form-label">Public Job Description (For Candidates)</label>
-                <textarea className="form-input" rows={3} placeholder="Full description to be displayed on public careers portal..." value={jobPublicDesc} onChange={(e) => setJobPublicDesc(e.target.value)} />
-              </div>
 
               {/* Modal Actions */}
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px', borderTop: '1px solid var(--glass-border)', paddingTop: '16px' }}>
@@ -985,6 +1004,18 @@ export default function JobPositions({
                   const days = getNoticeDays(c);
                   if (days === null || days <= 7 || days > 14) return false;
                 }
+                if (modalFilterTab === 'old') {
+                  let candidateDate = null;
+                  if (c.createdAt) candidateDate = new Date(c.createdAt);
+                  else if (c.appliedDate) candidateDate = new Date(c.appliedDate);
+                  else if (c._id && /^[0-9a-fA-F]{24}$/.test(String(c._id))) {
+                    candidateDate = new Date(parseInt(String(c._id).substring(0, 8), 16) * 1000);
+                  }
+                  const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+                  if (!candidateDate || isNaN(candidateDate.getTime()) || candidateDate >= fourteenDaysAgo) {
+                    return false;
+                  }
+                }
                 // Search query
                 if (modalSearchQuery) {
                   const q = modalSearchQuery.toLowerCase();
@@ -1050,6 +1081,22 @@ export default function JobPositions({
                         }}
                       >
                         📅 Joiners in 14 days ({stats.joiners14})
+                      </button>
+                      <button
+                        type="button"
+                        className="btn"
+                        onClick={() => setModalFilterTab('old')}
+                        style={{
+                          padding: '6px 14px',
+                          fontSize: '12px',
+                          fontWeight: '600',
+                          borderRadius: 'var(--radius-md)',
+                          background: modalFilterTab === 'old' ? '#94a3b8' : 'rgba(255, 255, 255, 0.05)',
+                          color: modalFilterTab === 'old' ? '#ffffff' : 'var(--text-secondary)',
+                          border: 'none'
+                        }}
+                      >
+                        📂 Old Applicants ({stats.oldApplicants})
                       </button>
                     </div>
 
