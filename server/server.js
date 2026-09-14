@@ -32,7 +32,7 @@ import { ImapFlow } from 'imapflow';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { fetchIMAPEmails, markIMAPEmailAsRead, getIMAPAttachmentData } from './imapSourcing.js';
-import { parseResume, scoreCandidate, scoreCandidateByOwnCategory, generateTags, generateJobDescription, generateQuestionsForCandidate, scoreCandidateAgainstChecklist, extractChecklistFromJob } from './geminiParser.js';
+import { parseResume, scoreCandidate, scoreCandidateByOwnCategory, generateTags, generateJobDescription, generateQuestionsForCandidate, scoreCandidateAgainstChecklist, extractChecklistFromJob, extractFallbackProjectsFromText } from './geminiParser.js';
 import { generateOfferLetterBuffer } from './offerGenerator.js';
 import { extractTextFromPDF, extractTextFromFile, convertDocxToHtml } from './parser.js';
 import { searchIndex } from './searchIndex.js';
@@ -2334,10 +2334,18 @@ app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
 });
 
 app.get('/api/candidates', authenticateToken, async (req, res) => {
-  if (req.user.role === 'manager') {
-    return res.json(await Candidate.find({ assignedTo: req.user.email }));
+  const query = req.user.role === 'manager' ? { assignedTo: req.user.email } : {};
+  const candidates = await Candidate.find(query);
+  for (const c of candidates) {
+    if (c.resumeText && (!c.projects || c.projects.length < 2)) {
+      const enriched = extractFallbackProjectsFromText(c.resumeText, c.projects, c.skills);
+      if (enriched && enriched.length > (c.projects?.length || 0)) {
+        c.projects = enriched;
+        await c.save().catch(() => {});
+      }
+    }
   }
-  res.json(await Candidate.find());
+  res.json(candidates);
 });
 
 app.get('/api/candidates/:id', authenticateToken, async (req, res) => {
@@ -2348,6 +2356,15 @@ app.get('/api/candidates/:id', authenticateToken, async (req, res) => {
     // If manager, check assignment
     if (!canAccessCandidate(req, candidate)) {
       return res.status(403).json({ error: 'Forbidden: You do not have access to this candidate.' });
+    }
+
+    // Auto-enrich projects from resume text if any were missed during initial extraction
+    if (candidate.resumeText) {
+      const enriched = extractFallbackProjectsFromText(candidate.resumeText, candidate.projects, candidate.skills);
+      if (enriched && enriched.length > (candidate.projects?.length || 0)) {
+        candidate.projects = enriched;
+        await candidate.save().catch(() => {});
+      }
     }
 
     res.json(candidate);

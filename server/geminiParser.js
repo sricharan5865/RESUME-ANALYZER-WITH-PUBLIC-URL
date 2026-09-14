@@ -754,8 +754,8 @@ async function callAIProvider(prompt, systemInstruction = '', schema = null, pdf
     ];
 
     // Explicit Parameter Tuning based on task complexity
-    let numPredict = 2048; // Complex generation (e.g., resume parsing)
-    let dynamicNumCtx = 8192; 
+    let numPredict = 4096; // Complex generation (e.g., resume parsing with full recruiter analysis)
+    let dynamicNumCtx = 16384; 
 
     if (schema) {
       const isSimpleSchema = schema.properties && Object.keys(schema.properties).length <= 5;
@@ -1032,16 +1032,17 @@ function getRecruiterSystemInstruction(aiProvider) {
   const todayDateString = new Date().toDateString();
   const baseInstruction = `Senior recruiter bot. Date: ${todayDateString}. Analyze resume facts. Output structured JSON. Ground all claims/dates strictly in resume text. Fix OCR typos in links (e.g. iinkedin->linkedin).
 CRITICAL: Extract ONLY facts present in the resume. Extract EVERY single skill, technology, framework, database, or tool mentioned (especially in lists like 'Tech:' or 'Tools:' or within work/project details) individually without omission. If experience, projects, education, or skills are missing in the resume text, return empty arrays []. DO NOT invent, hallucinate, or insert fake companies, job titles, or projects.
+CRITICAL PROJECTS EXTRACTION: You MUST extract EVERY SINGLE project, academic project, research initiative, or case study listed in the resume (especially under sections like 'Projects'). DO NOT stop after extracting only 1 project! If the candidate lists 3 projects, return all 3 projects as individual entries in the 'projects' array with their exact title, description of work, and technologies used.
 All generated interview questions must be extremely short, direct, and punchy (MAXIMUM 15 words). All generated sample answers/templates must be brief evaluator guidance (MAXIMUM 30 words).
 Sections:
-1. Gaps: Flag gaps >= 2 months. Include date range, duration, probing question (max 15 words), and sample answer (max 30 words).
-2. Technical Audit: List all skills. Judge if backed by specifics (versions, scale, outcomes) or name-dropped. Write probe questions (max 15 words) + answer templates (max 30 words) for shallow skills.
-3. Domain Bank: EXACTLY 7 domain/tech questions calibrated to seniority (max 15 words) with model answers (max 30 words).
-4. Project Deep-Dive: Write 1-2 probe questions (max 15 words) on claims/achievements with model answers (max 30 words). Identify and highlight specific projects matching their skills.
-5. HR/Behavioral: EXACTLY 7 candidate-specific personalized questions based on history (exclude generic CTC, notice, relocation questions) (max 15 words) with model answers (max 30 words).
-6. Red Flags: List quality issues (severity, fix suggestion).
-7. Prep & Fit: List 6-10 must-prepare topics and 2-3 sentence "why hire" pitch.
-8. Projects Mapping: List projects (name, description, skills used).`;
+1. Projects Mapping: Extract ALL projects individually with full titles, descriptions, and technologies used.
+2. Gaps: Flag gaps >= 2 months. Include date range, duration, probing question (max 15 words), and sample answer (max 30 words).
+3. Technical Audit: List all skills. Judge if backed by specifics (versions, scale, outcomes) or name-dropped. Write probe questions (max 15 words) + answer templates (max 30 words) for shallow skills.
+4. Domain Bank: EXACTLY 7 domain/tech questions calibrated to seniority (max 15 words) with model answers (max 30 words).
+5. Project Deep-Dive: Write 1-2 probe questions (max 15 words) on claims/achievements with model answers (max 30 words). Identify and highlight specific projects matching their skills.
+6. HR/Behavioral: EXACTLY 7 candidate-specific personalized questions based on history (exclude generic CTC, notice, relocation questions) (max 15 words) with model answers (max 30 words).
+7. Red Flags: List quality issues (severity, fix suggestion).
+8. Prep & Fit: List 6-10 must-prepare topics and 2-3 sentence "why hire" pitch.`;
 
   if (aiProvider === 'ollama') {
     return `${baseInstruction}\nCRITICAL: Do NOT write any thinking process, reasoning, chain-of-thought, or <thinking> tags. Skip thinking entirely. Directly output the raw JSON object.`;
@@ -1104,6 +1105,43 @@ export async function parseResume(resumeText, pdfBase64 = null) {
           },
           required: ['degree', 'institution']
         }
+      },
+      projects: {
+        type: 'ARRAY',
+        items: {
+          type: 'OBJECT',
+          properties: {
+            name: { type: 'STRING', description: 'Name of the project' },
+            description: { type: 'STRING', description: 'Brief description of what the project did and accomplishments' },
+            matchingSkills: {
+              type: 'ARRAY',
+              items: { type: 'STRING' },
+              description: 'Skills or technologies from the candidate\'s skill list used in this project'
+            }
+          },
+          required: ['name', 'description', 'matchingSkills']
+        },
+        description: 'Extract EVERY single project, academic project, or key initiative mentioned in the resume. Return all of them in this array.'
+      },
+      currentLocation: {
+        type: 'STRING',
+        description: 'Candidate\'s current location (e.g. City, State, Country). Return empty string or Unknown if not found.'
+      },
+      totalYearsExperience: {
+        type: 'NUMBER',
+        description: 'Calculated total years of experience as a decimal or number based on their history (e.g. 5 or 8.5). Return 0 if none found.'
+      },
+      noticePeriod: {
+        type: 'STRING',
+        description: 'Mentioned notice period (e.g. Immediate, 30 days). Return empty string if not found.'
+      },
+      currentCtc: {
+        type: 'STRING',
+        description: 'Mentioned current salary/CTC (e.g. 12 LPA, $90,000). Return empty string if not found.'
+      },
+      expectedCtc: {
+        type: 'STRING',
+        description: 'Mentioned expected salary/CTC (e.g. 16 LPA, $110,000). Return empty string if not found.'
       },
       seniorityLevel: {
         type: 'STRING',
@@ -1202,45 +1240,9 @@ export async function parseResume(resumeText, pdfBase64 = null) {
         type: 'ARRAY',
         items: { type: 'STRING' }
       },
-      fit_summary: { type: 'STRING' },
-      projects: {
-        type: 'ARRAY',
-        items: {
-          type: 'OBJECT',
-          properties: {
-            name: { type: 'STRING', description: 'Name of the project' },
-            description: { type: 'STRING', description: 'Brief description of what the project did and accomplishments' },
-            matchingSkills: {
-              type: 'ARRAY',
-              items: { type: 'STRING' },
-              description: 'Skills or technologies from the candidate\'s skill list used in this project'
-            }
-          },
-          required: ['name', 'description', 'matchingSkills']
-        }
-      },
-      currentLocation: {
-        type: 'STRING',
-        description: 'Candidate\'s current location (e.g. City, State, Country). Return empty string or Unknown if not found.'
-      },
-      totalYearsExperience: {
-        type: 'NUMBER',
-        description: 'Calculated total years of experience as a decimal or number based on their history (e.g. 5 or 8.5). Return 0 if none found.'
-      },
-      noticePeriod: {
-        type: 'STRING',
-        description: 'Mentioned notice period (e.g. Immediate, 30 days). Return empty string if not found.'
-      },
-      currentCtc: {
-        type: 'STRING',
-        description: 'Mentioned current salary/CTC (e.g. 12 LPA, $90,000). Return empty string if not found.'
-      },
-      expectedCtc: {
-        type: 'STRING',
-        description: 'Mentioned expected salary/CTC (e.g. 16 LPA, $110,000). Return empty string if not found.'
-      }
+      fit_summary: { type: 'STRING' }
     },
-    required: ['name', 'email', 'skills', 'experience', 'education', 'seniorityLevel', 'interviewQuestions', 'career_gaps', 'technical_depth_audit', 'domain_question_bank', 'project_deep_dive', 'hr_questions', 'red_flags', 'must_prepare_topics', 'fit_summary', 'projects', 'currentLocation', 'totalYearsExperience', 'noticePeriod']
+    required: ['name', 'email', 'skills', 'experience', 'education', 'projects', 'seniorityLevel', 'interviewQuestions', 'career_gaps', 'technical_depth_audit', 'domain_question_bank', 'project_deep_dive', 'hr_questions', 'red_flags', 'must_prepare_topics', 'fit_summary', 'currentLocation', 'totalYearsExperience', 'noticePeriod']
   };
 
   const apiKey = settings?.geminiApiKey || process.env.GEMINI_API_KEY;
@@ -1251,9 +1253,11 @@ export async function parseResume(resumeText, pdfBase64 = null) {
 
   const prompt = (pdfBase64 && canUsePdfDirectly)
     ? `Analyze the attached PDF resume and perform the recruiter seven-part analysis.
-CRITICAL SKILLS EXTRACTION: Extract EVERY single technical skill, tool, technology, software, framework, programming language, database, or competency mentioned anywhere in the resume (including under headers like 'Tech', 'Technologies', 'Tools', 'Skills', or mentioned in work experience/projects). Do not miss, group, or omit any of them (e.g. if 'ArcGIS Pro, QGIS, Erdas, ENVI' are listed, extract each one individually).`
+CRITICAL SKILLS EXTRACTION: Extract EVERY single technical skill, tool, technology, software, framework, programming language, database, or competency mentioned anywhere in the resume (including under headers like 'Tech', 'Technologies', 'Tools', 'Skills', or mentioned in work experience/projects). Do not miss, group, or omit any of them (e.g. if 'ArcGIS Pro, QGIS, Erdas, ENVI' are listed, extract each one individually).
+CRITICAL PROJECTS EXTRACTION: You MUST extract EVERY SINGLE project, academic project, research initiative, or case study listed in the resume (under sections like 'Projects'). DO NOT stop after extracting only 1 project! If the candidate lists 3 projects, return all 3 projects as individual entries in the 'projects' array with their exact title, description of work, and technologies used.`
     : `Parse this resume text and perform the recruiter seven-part analysis.
 CRITICAL SKILLS EXTRACTION: Extract EVERY single technical skill, tool, technology, software, framework, programming language, database, or competency mentioned anywhere in the resume (including under headers like 'Tech', 'Technologies', 'Tools', 'Skills', or mentioned in work experience/projects). Do not miss, group, or omit any of them (e.g. if 'ArcGIS Pro, QGIS, Erdas, ENVI' are listed, extract each one individually).
+CRITICAL PROJECTS EXTRACTION: You MUST extract EVERY SINGLE project, academic project, research initiative, or case study listed in the resume (under sections like 'Projects'). DO NOT stop after extracting only 1 project! If the candidate lists 3 projects, return all 3 projects as individual entries in the 'projects' array with their exact title, description of work, and technologies used.
 
 Resume Text:
 ${resumeText}`;
@@ -1269,6 +1273,8 @@ ${resumeText}`;
         const phoneMatch = resumeText.match(/(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/);
         if (phoneMatch) parsedData.phone = phoneMatch[0];
       }
+      // Guarantee all projects in the resume text are extracted
+      parsedData.projects = extractFallbackProjectsFromText(resumeText, parsedData.projects, parsedData.skills);
     }
     if (parsedData.interviewQuestions) {
       parsedData.interviewQuestions = sanitizeStringArray(parsedData.interviewQuestions);
@@ -1289,6 +1295,68 @@ ${resumeText}`;
   return parsedData;
 }
 
+export function extractFallbackProjectsFromText(resumeText, existingProjects = [], candidateSkills = []) {
+  if (!resumeText || typeof resumeText !== 'string') return existingProjects || [];
+  const projects = Array.isArray(existingProjects) ? [...existingProjects] : [];
+
+  const projectSectionMatch = resumeText.match(/(?:^|\n)\s*(?:PROJECTS|Academic Projects|Key Projects|Projects & Research)\s*[:\n]([\s\S]*?)(?=(?:\n\s*(?:Education|Experience|Work Experience|Certifications|Certificates|Honer and Awards|Honors and Awards|Awards|Publications|Languages|Personal Details|Declaration)\b|$))/i);
+  
+  if (!projectSectionMatch || !projectSectionMatch[1]) {
+    return projects;
+  }
+
+  const sectionText = projectSectionMatch[1].trim();
+  const lines = sectionText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  
+  const projectBlocks = [];
+  let currentBlock = null;
+  const dateRegex = /(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?|\b20\d{2}\b)/i;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const isBullet = line.startsWith('•') || line.startsWith('-') || line.startsWith('*');
+    const hasDate = dateRegex.test(line);
+    const isSubHeader = /^(Objective|Key Activities|Tools Used|Description|Technologies Used):/i.test(line);
+
+    if (!isBullet && !isSubHeader && (hasDate || (i < lines.length - 1 && (/^(Objective|Key Activities|Tools Used|Description|•|-|\*)/i.test(lines[i + 1]))))) {
+      if (currentBlock && currentBlock.lines.length > 0) {
+        projectBlocks.push(currentBlock);
+      }
+      currentBlock = { 
+        title: line.replace(/(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|\d{4})[\s\S]*$/i, '').replace(/[-–\s]+$/, '').trim() || line, 
+        lines: [line] 
+      };
+    } else if (currentBlock) {
+      currentBlock.lines.push(line);
+    }
+  }
+  if (currentBlock && currentBlock.lines.length > 0) {
+    projectBlocks.push(currentBlock);
+  }
+
+  for (const block of projectBlocks) {
+    const titleClean = block.title.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (!titleClean || titleClean.length < 5) continue;
+
+    const alreadyExists = projects.some(p => {
+      const pClean = (p.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      return pClean.includes(titleClean.substring(0, 15)) || titleClean.includes(pClean.substring(0, 15));
+    });
+
+    if (!alreadyExists) {
+      const fullText = block.lines.join(' ');
+      const matchedSkills = (candidateSkills || []).filter(s => s && s.length > 2 && new RegExp(`\\b${s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i').test(fullText));
+      const descLines = block.lines.slice(1).join(' ').trim();
+      projects.push({
+        name: block.title.replace(/\s+/g, ' ').trim(),
+        description: descLines || block.title,
+        matchingSkills: matchedSkills.slice(0, 8)
+      });
+    }
+  }
+
+  return projects;
+}
 
 function parseDateString(str) {
   if (!str) return null;
