@@ -7,6 +7,15 @@ setGlobalDispatcher(new Agent({
   connectTimeout: 60000 // 60 seconds
 }));
 
+// Process-level safety guards to ensure socket disconnects or third-party emitter errors NEVER crash the server
+process.on('uncaughtException', (err) => {
+  console.error('[CRITICAL] Caught unhandled exception (server kept alive):', err?.message || err);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('[CRITICAL] Caught unhandled rejection (server kept alive):', reason?.message || reason);
+});
+
 import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
@@ -150,8 +159,11 @@ async function testConnectionInBackground() {
         auth: { user, pass },
         logger: false
       });
+      client.on('error', (err) => {
+        console.warn('[ImapFlow Test] Connection error handled:', err.message || err);
+      });
       await client.connect();
-      await client.logout();
+      try { await client.logout(); } catch (e) {}
       lastGmailConnectionStatus = { success: true, error: null, lastChecked: new Date() };
     } catch (error) {
       const errMsg = error.responseText ? `${error.message}: ${error.responseText}` : error.message;
@@ -1206,6 +1218,13 @@ async function runEmailPoller() {
       const hasImapConfig = !!(emailConfig.user && emailConfig.pass);
       if (!hasImapConfig) return;
 
+      // If previous check failed with AUTHENTICATIONFAILED, back off for 5 minutes to avoid spamming Google
+      const isAuthFailure = lastGmailConnectionStatus.success === false && 
+        (lastGmailConnectionStatus.error?.includes('AUTHENTICATIONFAILED') || lastGmailConnectionStatus.error?.includes('Invalid credentials'));
+      if (isAuthFailure && lastGmailConnectionStatus.lastChecked && (Date.now() - new Date(lastGmailConnectionStatus.lastChecked).getTime() < 300000)) {
+        return;
+      }
+
       console.log(`Automated Poller: Checking for new resumes via ${emailConfig.provider}...`);
       try {
         const emailsList = await fetchIMAPEmails(emailConfig);
@@ -1233,9 +1252,12 @@ async function runEmailPoller() {
           );
         }
       } catch (gmailErr) {
-        console.error('Gmail Poller Error:', gmailErr.message);
         const errMsg = gmailErr.responseText ? `${gmailErr.message}: ${gmailErr.responseText}` : gmailErr.message;
         lastGmailConnectionStatus = { success: false, error: errMsg, lastChecked: new Date() };
+        console.error('Gmail Poller Error:', errMsg);
+        if (errMsg.includes('AUTHENTICATIONFAILED') || errMsg.includes('Invalid credentials')) {
+          console.warn('[Gmail Poller] Authentication failed with Google IMAP. Please verify your Gmail Address and 16-character App Password under Settings -> Email Configuration. Poller backed off for 5 minutes.');
+        }
         await EmailLog.create({ level: 'error', source: 'poller', message: errMsg }).catch(() => {});
       }
     }
@@ -3451,6 +3473,9 @@ app.post('/api/gmail/test-connection', authenticateToken, requireRole(['admin'])
       secure: true,
       auth: { user, pass },
       logger: false
+    });
+    client.on('error', (err) => {
+      console.warn('[ImapFlow Test Endpoint] Connection error handled:', err.message || err);
     });
 
     await client.connect();

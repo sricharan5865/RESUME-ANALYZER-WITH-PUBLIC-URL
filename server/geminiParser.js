@@ -806,21 +806,45 @@ async function callAIProvider(prompt, systemInstruction = '', schema = null, pdf
     let result = await ollamaFetch(requestBody);
     let text = result.message?.content;
     
-    // If the model returned an empty response, retry without format:'json' constraint
+    // Support for thinking models (e.g. qwen3, deepseek-r1): if content is empty, check if JSON was emitted inside message.thinking
+    if (!text && result.message?.thinking) {
+      const thinkingText = result.message.thinking;
+      const jsonMatch = thinkingText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          JSON.parse(cleanJsonResponse(jsonMatch[0]));
+          text = jsonMatch[0];
+          console.log('Ollama: Successfully extracted valid JSON output from message.thinking.');
+        } catch (e) {}
+      }
+    }
+
+    // If the model returned an empty response, retry with extended tokens and relaxed formatting constraint
     if (!text) {
       console.warn('Ollama: Empty response on first attempt. Raw result:', JSON.stringify(result).substring(0, 500));
-      console.warn('Ollama: Retrying without format:json constraint...');
-      const retryBody = { ...requestBody };
+      console.warn('Ollama: Retrying with extended num_predict (4096) and relaxed format constraint...');
+      const retryBody = {
+        ...requestBody,
+        options: {
+          ...requestBody.options,
+          num_predict: 4096
+        }
+      };
       delete retryBody.format;
       // Add explicit JSON instruction to user message instead
       if (schema) {
         retryBody.messages = [
           ...retryBody.messages,
-          { role: 'user', content: 'You MUST respond with valid JSON only. No markdown, no explanation, no code fences. Just the raw JSON object.' }
+          { role: 'user', content: 'You MUST respond with valid JSON only. No thinking, no markdown, no explanation, no code fences. Just the raw JSON object starting with {.' }
         ];
       }
       result = await ollamaFetch(retryBody);
       text = result.message?.content;
+      if (!text && result.message?.thinking) {
+        const thinkingText = result.message.thinking;
+        const jsonMatch = thinkingText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) text = jsonMatch[0];
+      }
       if (!text) {
         console.error('Ollama: Empty response on retry as well. Full result:', JSON.stringify(result).substring(0, 1000));
         throw new Error('Ollama API returned an empty response. The model may not support this request format. Try a different model (e.g., llama3, qwen2).');

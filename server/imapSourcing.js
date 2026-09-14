@@ -23,6 +23,9 @@ export async function fetchIMAPEmails(config) {
     auth: { user, pass },
     logger: false
   });
+  client.on('error', (err) => {
+    console.warn('[ImapFlow] Socket/Connection error handled in fetchIMAPEmails:', err.message || err);
+  });
 
   const emailsList = [];
 
@@ -140,6 +143,9 @@ export async function markIMAPEmailAsRead(uid, config) {
     auth: { user, pass },
     logger: false
   });
+  client.on('error', (err) => {
+    console.warn('[ImapFlow] Socket/Connection error handled in markIMAPEmailAsRead:', err.message || err);
+  });
 
   try {
     await client.connect();
@@ -179,6 +185,9 @@ export async function getIMAPAttachmentData(uid, attachmentIdx, config) {
     secure: true,
     auth: { user, pass },
     logger: false
+  });
+  client.on('error', (err) => {
+    console.warn('[ImapFlow] Socket/Connection error handled in getIMAPAttachmentData:', err.message || err);
   });
 
   try {
