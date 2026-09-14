@@ -244,13 +244,14 @@ export default function App() {
     if (!silent) setSyncing(true);
     try {
       // Fetch Auth/Email Status (lenient check, never causes user sign out)
+      let authData = { authenticated: false };
       try {
         const authRes = await fetch(`${BACKEND_URL}/api/auth/status`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         
         if (authRes.ok) {
-          const authData = await authRes.json();
+          authData = await authRes.json();
           setEmailProvider(authData.emailProvider || 'gmail');
           setAiProvider(authData.aiProvider || 'gemini');
           
@@ -298,13 +299,17 @@ export default function App() {
       setSettings(settingsData || { emailTemplates: {} });
 
       // Fetch Gmail Sourcing unread queue count (if authenticated)
-      if (authData.authenticated && user?.role !== 'manager') {
-        const gmailRes = await fetch(`${BACKEND_URL}/api/gmail/emails`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (gmailRes.ok) {
-          const gmailData = await gmailRes.json();
-          setUnreadCount(gmailData.emails?.length || 0);
+      if (authData?.authenticated && user?.role !== 'manager') {
+        try {
+          const gmailRes = await fetch(`${BACKEND_URL}/api/gmail/emails`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (gmailRes.ok) {
+            const gmailData = await gmailRes.json();
+            setUnreadCount(gmailData.emails?.length || 0);
+          }
+        } catch (gErr) {
+          console.warn('Failed to fetch Gmail unread count:', gErr);
         }
       } else {
         setUnreadCount(0);
@@ -312,7 +317,7 @@ export default function App() {
     } catch (error) {
       console.error('Failed to sync application data:', error);
       if (!silent) {
-        showToast('Server connection failed. Make sure the backend is running.', 'error');
+        showToast(error.message?.includes('fetch') ? 'Server connection failed. Make sure the backend is running.' : `Application sync error: ${error.message}`, 'error');
       }
     } finally {
       if (!silent) setSyncing(false);
