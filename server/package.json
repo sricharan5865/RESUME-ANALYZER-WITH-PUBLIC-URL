@@ -8,7 +8,7 @@
     "start": "node server.js",
     "dev": "node --watch-path=server.js --watch-path=geminiParser.js --watch-path=models.js --watch-path=emailCategorizer.js --watch-path=embeddingService.js --watch-path=imapSourcing.js --watch-path=parser.js --watch-path=searchIndex.js --watch-path=ragService.js --watch-path=outlookApi.js server.js",
     "start:test": "node ../tests/e2e/testServerEntry.js",
-    "test:e2e": "start-server-and-test start:test http://localhost:5001/api/auth/status test:run",
+    "test:e2e": "node ../tests/e2e/runner.js",
     "test:run": "vitest run --config ../tests/e2e/vitest.config.js"
   },
   "dependencies": {

@@ -112,23 +112,75 @@ export default function App() {
   useEffect(() => {
     const originalFetch = window.fetch;
     window.fetch = async (...args) => {
-      const response = await originalFetch(...args);
-      if (response.status === 401 && !response.url.includes('/api/auth/login')) {
-        try {
-          const clone = response.clone();
-          const body = await clone.json().catch(() => ({}));
-          if (body?.isTokenExpired || (body?.error && (
-            body.error.toLowerCase().includes('token') || 
-            body.error.toLowerCase().includes('jwt') || 
-            body.error.toLowerCase().includes('invalid') || 
-            body.error.toLowerCase().includes('expired')
-          ))) {
-            handleSessionExpired();
-          } else if (response.url.includes('/api/auth/status') || response.url.includes('/api/candidates') || response.url.includes('/api/jobs') || response.url.includes('/api/settings')) {
-            handleSessionExpired();
+      let [resource, config] = args;
+      const url = typeof resource === 'string' ? resource : (resource?.url || '');
+      const currentToken = localStorage.getItem('token');
+
+      // Auto-inject or repair Authorization header for private backend API calls
+      if (currentToken && url.includes('/api/') && !url.includes('/api/public/') && !url.includes('/api/auth/login')) {
+        config = config ? { ...config } : {};
+        const isInvalidAuthVal = (val) => !val || val === 'Bearer undefined' || val === 'Bearer null' || val.trim() === 'Bearer' || val.trim() === '';
+
+        if (config.headers instanceof Headers) {
+          const auth = config.headers.get('Authorization') || config.headers.get('authorization');
+          if (isInvalidAuthVal(auth)) {
+            config.headers.set('Authorization', `Bearer ${currentToken}`);
           }
-        } catch (e) {
-          handleSessionExpired();
+        } else if (Array.isArray(config.headers)) {
+          const authIdx = config.headers.findIndex(([k]) => k.toLowerCase() === 'authorization');
+          if (authIdx === -1) {
+            config.headers = [...config.headers, ['Authorization', `Bearer ${currentToken}`]];
+          } else if (isInvalidAuthVal(config.headers[authIdx][1])) {
+            config.headers[authIdx] = ['Authorization', `Bearer ${currentToken}`];
+          }
+        } else {
+          const auth = config.headers?.['Authorization'] || config.headers?.['authorization'];
+          if (isInvalidAuthVal(auth)) {
+            config.headers = {
+              ...config.headers,
+              'Authorization': `Bearer ${currentToken}`
+            };
+          }
+        }
+        args[1] = config;
+      }
+
+      const response = await originalFetch(...args);
+
+      if (response.status === 401 && !url.includes('/api/auth/login')) {
+        // Never sign out on upload or background polling/transient errors
+        const isTransientOrUpload = url.includes('/candidates/upload') || 
+                                   url.includes('/ingestion-logs') || 
+                                   url.includes('/gmail') || 
+                                   url.includes('/outlook') ||
+                                   url.includes('/api/auth/status');
+
+        if (!isTransientOrUpload) {
+          try {
+            const clone = response.clone();
+            const body = await clone.json().catch(() => ({}));
+            
+            // Check if client token has actually expired by time
+            let tokenIsActuallyExpired = false;
+            if (currentToken) {
+              try {
+                const parts = currentToken.split('.');
+                if (parts.length === 3) {
+                  const payload = JSON.parse(atob(parts[1]));
+                  if (payload.exp && payload.exp * 1000 < Date.now()) {
+                    tokenIsActuallyExpired = true;
+                  }
+                }
+              } catch (e) {}
+            }
+
+            // Only sign out if the server flagged token expiration AND the token is actually expired by time
+            if (body?.isTokenExpired === true && tokenIsActuallyExpired) {
+              handleSessionExpired();
+            }
+          } catch (e) {
+            // Ignore non-json responses
+          }
         }
       }
       return response;
@@ -191,24 +243,25 @@ export default function App() {
     if (!token) return;
     if (!silent) setSyncing(true);
     try {
-      // Fetch Auth Status
-      const authRes = await fetch(`${BACKEND_URL}/api/auth/status`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      
-      if (authRes.status === 401 || authRes.status === 403) {
-        handleSessionExpired();
-        return;
+      // Fetch Auth/Email Status (lenient check, never causes user sign out)
+      try {
+        const authRes = await fetch(`${BACKEND_URL}/api/auth/status`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (authRes.ok) {
+          const authData = await authRes.json();
+          setEmailProvider(authData.emailProvider || 'gmail');
+          setAiProvider(authData.aiProvider || 'gemini');
+          
+          const isOutlook = (authData.emailProvider || 'gmail') === 'outlook';
+          setEmailConnectionError(isOutlook ? authData.outlookConnectionError : authData.imapConnectionError);
+          setEmailConfigured(isOutlook ? !!authData.outlookConfigured : !!authData.imapConfigured);
+          setEmailConnected(isOutlook ? !!authData.outlookConnected : !!authData.imapConnected);
+        }
+      } catch (authErr) {
+        console.warn('Failed to fetch email/service status:', authErr);
       }
-      
-      const authData = await authRes.json();
-      setEmailProvider(authData.emailProvider || 'gmail');
-      setAiProvider(authData.aiProvider || 'gemini');
-      
-      const isOutlook = (authData.emailProvider || 'gmail') === 'outlook';
-      setEmailConnectionError(isOutlook ? authData.outlookConnectionError : authData.imapConnectionError);
-      setEmailConfigured(isOutlook ? !!authData.outlookConfigured : !!authData.imapConfigured);
-      setEmailConnected(isOutlook ? !!authData.outlookConnected : !!authData.imapConnected);
 
       // Fetch Jobs
       const jobsRes = await fetch(`${BACKEND_URL}/api/jobs`, {
@@ -573,38 +626,42 @@ export default function App() {
           )}
 
           {/* 7. Placements */}
-          <button 
-            className="btn" 
-            style={{ 
-              justifyContent: 'flex-start',
-              background: activeTab === 'placements' ? 'rgba(99, 102, 241, 0.1)' : 'transparent',
-              color: activeTab === 'placements' ? 'var(--text-primary)' : 'var(--text-secondary)',
-              borderLeft: activeTab === 'placements' ? '3px solid var(--accent-primary)' : '3px solid transparent',
-              borderRadius: '0 var(--radius-md) var(--radius-md) 0',
-              marginLeft: '-16px',
-              paddingLeft: '28px'
-            }}
-            onClick={() => setActiveTab('placements')}
-          >
-            <DollarSign size={16} /> Placements
-          </button>
+          {user?.role !== 'manager' && (
+            <button 
+              className="btn" 
+              style={{ 
+                justifyContent: 'flex-start',
+                background: activeTab === 'placements' ? 'rgba(99, 102, 241, 0.1)' : 'transparent',
+                color: activeTab === 'placements' ? 'var(--text-primary)' : 'var(--text-secondary)',
+                borderLeft: activeTab === 'placements' ? '3px solid var(--accent-primary)' : '3px solid transparent',
+                borderRadius: '0 var(--radius-md) var(--radius-md) 0',
+                marginLeft: '-16px',
+                paddingLeft: '28px'
+              }}
+              onClick={() => setActiveTab('placements')}
+            >
+              <DollarSign size={16} /> Placements
+            </button>
+          )}
 
           {/* 8. Referrals */}
-          <button 
-            className="btn" 
-            style={{ 
-              justifyContent: 'flex-start',
-              background: activeTab === 'referrals' ? 'rgba(99, 102, 241, 0.1)' : 'transparent',
-              color: activeTab === 'referrals' ? 'var(--text-primary)' : 'var(--text-secondary)',
-              borderLeft: activeTab === 'referrals' ? '3px solid var(--accent-primary)' : '3px solid transparent',
-              borderRadius: '0 var(--radius-md) var(--radius-md) 0',
-              marginLeft: '-16px',
-              paddingLeft: '28px'
-            }}
-            onClick={() => setActiveTab('referrals')}
-          >
-            <UserPlus size={16} /> Referrals
-          </button>
+          {user?.role !== 'manager' && (
+            <button 
+              className="btn" 
+              style={{ 
+                justifyContent: 'flex-start',
+                background: activeTab === 'referrals' ? 'rgba(99, 102, 241, 0.1)' : 'transparent',
+                color: activeTab === 'referrals' ? 'var(--text-primary)' : 'var(--text-secondary)',
+                borderLeft: activeTab === 'referrals' ? '3px solid var(--accent-primary)' : '3px solid transparent',
+                borderRadius: '0 var(--radius-md) var(--radius-md) 0',
+                marginLeft: '-16px',
+                paddingLeft: '28px'
+              }}
+              onClick={() => setActiveTab('referrals')}
+            >
+              <UserPlus size={16} /> Referrals
+            </button>
+          )}
 
           {/* 9. Pending CVs */}
           <button 

@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Antigravity Figma Bridge</title>
+  <style>
+    :root {
+      --bg: #0F172A;
+      --card-bg: #1E293B;
+      --text: #F8FAFC;
+      --text-muted: #94A3B8;
+      --accent: #6366F1;
+      --accent-hover: #4F46E5;
+      --success: #10B981;
+      --danger: #EF4444;
+      --border: #334155;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      padding: 14px;
+      font-size: 12px;
+      line-height: 1.4;
+      user-select: none;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .title-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .logo-badge {
+      background: linear-gradient(135deg, #6366F1, #A855F7);
+      color: white;
+      font-weight: 700;
+      padding: 3px 7px;
+      border-radius: 6px;
+      font-size: 11px;
+      letter-spacing: 0.5px;
+    }
+    .title {
+      font-weight: 600;
+      font-size: 13px;
+    }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 10px;
+      font-weight: 500;
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--danger);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    .status-badge.connected {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--success);
+      border-color: rgba(16, 185, 129, 0.3);
+    }
+    .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    .card-title {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+    .quick-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    .log-window {
+      background: #090D16;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      height: 110px;
+      overflow-y: auto;
+      padding: 8px;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 10.5px;
+      color: #D1D5DB;
+    }
+    .log-entry {
+      margin-bottom: 4px;
+      word-break: break-all;
+    }
+    .log-entry.info { color: #93C5FD; }
+    .log-entry.success { color: #86EFAC; }
+    .log-entry.warn { color: #FDE047; }
+    .log-entry.error { color: #FCA5A5; }
+    .btn {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn:hover { background: var(--accent-hover); }
+    .btn.secondary {
+      background: #1E293B;
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 11px;
+      padding: 6px 8px;
+    }
+    .btn.secondary:hover {
+      background: #334155;
+      border-color: #475569;
+    }
+    .btn.export {
+      background: linear-gradient(135deg, #4F46E5, #7C3AED);
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .btn.export:hover {
+      filter: brightness(1.1);
+    }
+    .footer {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-align: center;
+      margin-top: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="title-group">
+      <span class="logo-badge">AGY</span>
+      <span class="title">Figma Live Bridge</span>
+    </div>
+    <div id="statusBadge" class="status-badge">
+      <span class="dot"></span>
+      <span id="statusText">Connecting...</span>
+    </div>
+  </div>
+
+  <button id="btnExportSelection" class="btn export">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+    Export Selection to Antigravity (React)
+  </button>
+
+  <div class="card">
+    <div class="card-title">Quick Render Presets</div>
+    <div class="quick-grid">
+      <button id="btnCandidateCard" class="btn secondary">📇 Candidate Card</button>
+      <button id="btnDashboard" class="btn secondary">📊 Full Dashboard</button>
+      <button id="btnTable" class="btn secondary">📋 Data Table</button>
+      <button id="btnModal" class="btn secondary">🗓️ Interview Modal</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Live Sync Feed</div>
+    <div id="logWindow" class="log-window">
+      <div class="log-entry info">[System] Initializing bridge client...</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Port: 3055 | WebSocket Auto-Sync Active
+  </div>
+
+  <script>
+    const logWindow = document.getElementById('logWindow');
+    const statusBadge = document.getElementById('statusBadge');
+    const statusText = document.getElementById('statusText');
+    const btnExportSelection = document.getElementById('btnExportSelection');
+    const btnCandidateCard = document.getElementById('btnCandidateCard');
+    const btnDashboard = document.getElementById('btnDashboard');
+    const btnTable = document.getElementById('btnTable');
+    const btnModal = document.getElementById('btnModal');
+
+    function log(message, type = 'info') {
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      const time = new Date().toLocaleTimeString();
+      entry.textContent = `[${time}] ${message}`;
+      logWindow.appendChild(entry);
+      logWindow.scrollTop = logWindow.scrollHeight;
+    }
+
+    let socket = null;
+    let reconnectTimer = null;
+
+    function connectWebSocket() {
+      if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
+        return;
+      }
+
+      log('Connecting to ws://localhost:3055...', 'info');
+      try {
+        socket = new WebSocket('ws://localhost:3055');
+
+        socket.onopen = () => {
+          statusBadge.classList.add('connected');
+          statusText.textContent = 'Connected';
+          log('Connected to Antigravity Bridge server!', 'success');
+        };
+
+        socket.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            log(`Received command: ${data.type || 'UNKNOWN'}`, 'info');
+
+            if (data.type === 'GENERATE_DESIGN') {
+              log(`Building canvas for: ${data.data.title || 'Component'}`, 'info');
+              parent.postMessage({
+                pluginMessage: {
+                  type: 'GENERATE_DESIGN',
+                  requestId: data.id,
+                  spec: data.data
+                }
+              }, '*');
+            }
+          } catch (err) {
+            log(`Failed to process message: ${err.message}`, 'error');
+          }
+        };
+
+        socket.onclose = () => {
+          statusBadge.classList.remove('connected');
+          statusText.textContent = 'Disconnected';
+          log('Bridge disconnected. Retrying in 3s...', 'warn');
+          scheduleReconnect();
+        };
+
+        socket.onerror = () => {
+          statusBadge.classList.remove('connected');
+          statusText.textContent = 'Offline';
+        };
+      } catch (err) {
+        log(`WebSocket init error: ${err.message}`, 'error');
+        scheduleReconnect();
+      }
+    }
+
+    function scheduleReconnect() {
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      reconnectTimer = setTimeout(() => {
+        connectWebSocket();
+      }, 3000);
+    }
+
+    // Handle messages sent from Figma Sandbox (code.js)
+    window.onmessage = (event) => {
+      const msg = event.data.pluginMessage;
+      if (!msg) return;
+
+      if (msg.type === 'LOG') {
+        log(msg.message, msg.level || 'info');
+      }
+
+      if (msg.type === 'DESIGN_CREATED' || msg.type === 'DESIGN_EXPORTED') {
+        log(`Exported "${msg.payload.name || 'Layout'}" with React code to Antigravity!`, 'success');
+        if (socket && socket.readyState === WebSocket.OPEN) {
+          socket.send(JSON.stringify(msg));
+        } else {
+          log('Cannot send: Bridge WebSocket is offline', 'error');
+        }
+      }
+    };
+
+    btnExportSelection.onclick = () => {
+      parent.postMessage({
+        pluginMessage: { type: 'EXPORT_SELECTION' }
+      }, '*');
+    };
+
+    btnCandidateCard.onclick = () => {
+      parent.postMessage({
+        pluginMessage: {
+          type: 'GENERATE_DESIGN',
+          requestId: 'manual_card_' + Date.now(),
+          spec: {
+            type: 'card',
+            title: "Sarah Jenkins",
+            role: "Senior Full Stack Engineer",
+            matchScore: "96%",
+            status: "Recommended",
+            skills: ["React", "Node.js", "TypeScript", "System Design"],
+            summary: "8+ years experience leading distributed cloud architectures and scalable web platforms."
+          }
+        }
+      }, '*');
+    };
+
+    btnDashboard.onclick = () => {
+      parent.postMessage({
+        pluginMessage: {
+          type: 'GENERATE_DESIGN',
+          requestId: 'manual_dash_' + Date.now(),
+          spec: {
+            type: 'dashboard',
+            title: "TalentFlow AI - Recruiter Hub"
+          }
+        }
+      }, '*');
+    };
+
+    btnTable.onclick = () => {
+      parent.postMessage({
+        pluginMessage: {
+          type: 'GENERATE_DESIGN',
+          requestId: 'manual_tbl_' + Date.now(),
+          spec: {
+            type: 'table',
+            title: "Live Applicant Pipeline"
+          }
+        }
+      }, '*');
+    };
+
+    btnModal.onclick = () => {
+      parent.postMessage({
+        pluginMessage: {
+          type: 'GENERATE_DESIGN',
+          requestId: 'manual_modal_' + Date.now(),
+          spec: {
+            type: 'modal',
+            title: "Schedule Technical Interview"
+          }
+        }
+      }, '*');
+    };
+
+    // Start WebSocket connection
+    connectWebSocket();
+  </script>
+</body>
+</html>

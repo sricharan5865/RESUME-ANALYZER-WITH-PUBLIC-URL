@@ -108,7 +108,7 @@ export default function SettingsView({ token, jobs, templates, onJobCreated, onJ
           setOllamaUrl(data.ollamaUrl || 'http://localhost:11434');
           setOllamaModel(data.ollamaModel || 'gpt-oss:20b');
           setOllamaEmbeddingModel(data.ollamaEmbeddingModel || data.ollamaModel || 'gpt-oss:20b');
-          setOutlookClientId(data.outlookClientId ? '••••••••' : '');
+          setOutlookClientId(data.outlookClientId || '');
           setOutlookClientSecret(data.outlookClientSecret ? '••••••••' : '');
           setOutlookTenantId(data.outlookTenantId || '');
           setOutlookUserEmail(data.outlookUserEmail || '');
@@ -350,9 +350,7 @@ export default function SettingsView({ token, jobs, templates, onJobCreated, onJ
       updateData.ollamaUrl = ollamaUrl;
       updateData.ollamaModel = ollamaModel;
       updateData.ollamaEmbeddingModel = ollamaEmbeddingModel;
-      if (outlookClientId !== '••••••••') {
-        updateData.outlookClientId = outlookClientId;
-      }
+      updateData.outlookClientId = outlookClientId;
       if (outlookClientSecret !== '••••••••') {
         updateData.outlookClientSecret = outlookClientSecret;
       }

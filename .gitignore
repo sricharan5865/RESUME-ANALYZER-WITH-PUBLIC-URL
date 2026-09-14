@@ -40,3 +40,5 @@ server/*.pdf
 server/*.png
 server/test_*.js
 
+# Scratch directory
+scratch/

@@ -1,0 +1,13 @@
+{
+  "name": "antigravity-figma-bridge",
+  "version": "1.0.0",
+  "description": "Bi-directional bridge between Antigravity and Figma canvas for automated UI generation",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "send": "node send-design.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}

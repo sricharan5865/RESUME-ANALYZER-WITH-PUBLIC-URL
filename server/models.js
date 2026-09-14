@@ -150,7 +150,6 @@ const candidateProfileSchema = new mongoose.Schema({
   interviewQuestions: [String]
 }, { timestamps: true });
 
-candidateProfileSchema.index({ candidateId: 1 });
 
 const jobMatchSchema = new mongoose.Schema({
   candidateId: { type: String, required: true },

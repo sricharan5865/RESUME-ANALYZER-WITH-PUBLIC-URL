@@ -128,7 +128,7 @@ export async function listOutlookMessages(accessToken, emailUser) {
     throw new Error('Sourcing email user must be specified to query Microsoft Graph.');
   }
 
-  const url = `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(emailUser)}/mailFolders/inbox/messages?$filter=hasAttachments eq true and isRead eq false&$expand=attachments&$select=id,subject,from,receivedDateTime,bodyPreview,body,hasAttachments&$top=10`;
+  const url = `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(emailUser)}/mailFolders/inbox/messages?$filter=hasAttachments eq true and isRead eq false&$expand=attachments&$select=id,subject,from,receivedDateTime,bodyPreview,body,hasAttachments&$top=25`;
 
   try {
     const response = await graphApiRequest(url, {
@@ -144,29 +144,26 @@ export async function listOutlookMessages(accessToken, emailUser) {
 
     for (const msg of rawMessages) {
       const attachments = msg.attachments || [];
-      const pdfAttachments = attachments
-        .filter(att => att['@odata.type'] === '#microsoft.graph.fileAttachment' && 
-                       (att.contentType === 'application/pdf' || att.name?.toLowerCase().endsWith('.pdf')))
+      const fileAttachments = attachments
+        .filter(att => att['@odata.type'] === '#microsoft.graph.fileAttachment')
         .map(att => ({
           attachmentId: att.id,
-          filename: att.name || `resume-${msg.id}.pdf`,
-          contentType: att.contentType || 'application/pdf',
+          filename: att.name || `attachment-${msg.id}`,
+          contentType: att.contentType || 'application/octet-stream',
           size: att.size || 0
         }));
 
-      if (pdfAttachments.length > 0) {
-        formattedMessages.push({
-          id: msg.id,
-          subject: msg.subject || '(No Subject)',
-          from: msg.from?.emailAddress?.name 
-            ? `${msg.from.emailAddress.name} <${msg.from.emailAddress.address}>` 
-            : msg.from?.emailAddress?.address || 'Unknown Sender',
-          date: msg.receivedDateTime || new Date().toISOString(),
-          snippet: msg.bodyPreview || '',
-          body: msg.body?.content || '',
-          attachments: pdfAttachments
-        });
-      }
+      formattedMessages.push({
+        id: msg.id,
+        subject: msg.subject || '(No Subject)',
+        from: msg.from?.emailAddress?.name 
+          ? `${msg.from.emailAddress.name} <${msg.from.emailAddress.address}>` 
+          : msg.from?.emailAddress?.address || 'Unknown Sender',
+        date: msg.receivedDateTime || new Date().toISOString(),
+        snippet: msg.bodyPreview || '',
+        body: msg.body?.content || '',
+        attachments: fileAttachments
+      });
     }
 
     return formattedMessages;

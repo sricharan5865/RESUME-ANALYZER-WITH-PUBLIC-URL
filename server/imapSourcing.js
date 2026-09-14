@@ -59,16 +59,17 @@ export async function fetchIMAPEmails(config) {
         console.warn('IMAP date search failed:', e.message);
       }
       
-      // Limit to most recent 20 messages for performance
-      uids = uids.slice(-20);
+      // Filter out already processed UIDs first to prevent starvation by non-resume emails
+      const processedDocs = await ProcessedEmail.find(
+        { messageId: { $in: uids.map(u => u.toString()) } },
+        { messageId: 1 }
+      ).lean();
+      const processedSet = new Set(processedDocs.map(d => d.messageId));
+      const pendingUids = uids.filter(u => !processedSet.has(u.toString()));
+      const targetUids = pendingUids.slice(-20);
       
-      for (const uid of uids) {
+      for (const uid of targetUids) {
         const uidStr = uid.toString();
-        // Check if this UID has already been processed or checked
-        const alreadyProcessed = await ProcessedEmail.exists({ messageId: uidStr });
-        if (alreadyProcessed) {
-          continue;
-        }
 
         // Fetch raw email source stream
         const rawSource = await client.download(uid);

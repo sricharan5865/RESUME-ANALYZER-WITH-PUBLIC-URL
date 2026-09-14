@@ -144,7 +144,7 @@ if [ ! -f "$SERVER_DIR/.env" ]; then
     cat > "$SERVER_DIR/.env" << EOF
 PORT=5000
 FRONTEND_URL=http://$LINUX_IP:5173
-MONGO_URI=mongodb://admin:password@localhost:27017/talentflow?authSource=admin
+MONGO_URI=mongodb://127.0.0.1:27017/talentflow
 JWT_SECRET=talentflow-super-secret-key
 EOF
     chmod 600 "$SERVER_DIR/.env"

@@ -307,8 +307,10 @@ export async function embedTexts(texts) {
       });
     } catch (err) {
       console.error(`Embedding service failed for batch of ${batch.length} texts:`, err.message);
-      // Fallback to generating zero/mock vectors so the application doesn't crash on upload
-      embeddings = batch.map(() => new Array(768).fill(0));
+      // Re-throw instead of silently writing zero vectors: candidates whose embeddings fail
+      // would otherwise be stored as unsearchable garbage in the vector index.
+      // Callers (indexCandidate/indexAllCandidates) already handle errors and skip/log the candidate.
+      throw err;
     }
 
     allEmbeddings.push(...embeddings);

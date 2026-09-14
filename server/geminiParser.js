@@ -665,11 +665,9 @@ async function callAIProvider(prompt, systemInstruction = '', schema = null, pdf
         ],
         temperature: 0.1,
         max_tokens: 8192
+        // NOTE: response_format (json_object) is not supported by OpenRouter for Anthropic models.
+        // The userContent already instructs the model to return valid JSON matching the schema.
       };
-
-      if (schema) {
-        requestBody.response_format = { type: 'json_object' };
-      }
 
       response = await fetchOpenRouterWithRetry(url, requestBody, apiKey);
 

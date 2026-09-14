@@ -1,4 +1,9 @@
 {
+  "name": "talentflow-root",
+  "type": "module",
+  "scripts": {
+    "test:e2e": "cd server && npm run test:e2e"
+  },
   "dependencies": {
     "mongoose": "^9.7.3",
     "vitest": "^1.6.0"

@@ -169,6 +169,50 @@ if (!fs.existsSync(UPLOADS_DIR)) {
   fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 }
 
+// Helper function to safely resolve file references inside UPLOADS_DIR (including job subdirectories)
+function resolveUploadPath(fileRef) {
+  if (!fileRef || typeof fileRef !== 'string') return null;
+  const rootUploads = path.resolve(UPLOADS_DIR);
+  const normalizedRoot = path.normalize(rootUploads).toLowerCase();
+  
+  // Clean off prefixes and query strings
+  let cleanRef = fileRef.replace(/^\/api\/uploads\//, '').replace(/^\/uploads\//, '');
+
+  const isFile = (p) => { try { return fs.statSync(p).isFile(); } catch (e) { return false; } };
+
+  // 1. Direct or relative path inside UPLOADS_DIR
+  const directPath = path.resolve(UPLOADS_DIR, cleanRef);
+  const normalizedDirect = path.normalize(directPath).toLowerCase();
+  if (normalizedDirect !== normalizedRoot && normalizedDirect.startsWith(normalizedRoot) && isFile(directPath)) {
+    return directPath;
+  }
+
+  // 2. Check root UPLOADS_DIR by basename
+  const filename = path.basename(cleanRef);
+  const rootFile = path.resolve(UPLOADS_DIR, filename);
+  const normalizedRootFile = path.normalize(rootFile).toLowerCase();
+  if (normalizedRootFile.startsWith(normalizedRoot) && isFile(rootFile)) {
+    return rootFile;
+  }
+
+  // 3. Search job subdirectories for filename
+  if (fs.existsSync(rootUploads)) {
+    try {
+      const subdirs = fs.readdirSync(rootUploads, { withFileTypes: true });
+      for (const dirent of subdirs) {
+        if (dirent.isDirectory()) {
+          const candidate = path.join(rootUploads, dirent.name, filename);
+          if (isFile(candidate)) {
+            return candidate;
+          }
+        }
+      }
+    } catch (e) {}
+  }
+
+  return null;
+}
+
 // CORS: Always allow localhost for Windows dev + configured FRONTEND_URL for Linux/remote access
 const allowedOrigins = [
   'http://localhost:5173',
@@ -188,6 +232,17 @@ app.use(cors({
 app.use(express.json());
 app.use('/uploads', express.static(UPLOADS_DIR));
 app.use('/api/uploads', express.static(UPLOADS_DIR));
+
+// Fallback upload resolver for flat legacy URLs or nested job paths
+app.use(['/uploads/:filename(*)', '/api/uploads/:filename(*)'], (req, res, next) => {
+  const filename = req.params.filename || req.params[0];
+  if (!filename) return next();
+  const filePath = resolveUploadPath(filename);
+  if (filePath && fs.existsSync(filePath)) {
+    return res.sendFile(filePath);
+  }
+  next();
+});
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -227,10 +282,18 @@ function authenticateToken(req, res, next) {
     token = req.query.token;
   }
 
-  if (!token) return res.status(401).json({ error: 'Access denied: No token provided' });
+  if (!token || token === 'undefined' || token === 'null' || token.trim() === '') {
+    return res.status(401).json({ error: 'Access denied: No token provided', isTokenExpired: false });
+  }
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) return res.status(401).json({ error: 'Access denied: Invalid or expired token', isTokenExpired: true });
+    if (err) {
+      const isTokenExpired = err.name === 'TokenExpiredError';
+      return res.status(401).json({ 
+        error: isTokenExpired ? 'Access denied: Token expired' : 'Access denied: Invalid token', 
+        isTokenExpired 
+      });
+    }
     req.user = user;
     next();
   });
@@ -248,10 +311,50 @@ function requireRole(roles) {
   };
 }
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI || 'mongodb://admin:password@localhost:27017/talentflow?authSource=admin')
+function canAccessCandidate(req, candidate) {
+  if (!candidate) return false;
+  if (req.user && req.user.role === 'manager') {
+    return candidate.assignedTo === req.user.email;
+  }
+  return true;
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+// Connect to MongoDB with automatic fallback between unauthenticated and authenticated local instances
+async function connectToMongoDB() {
+  if (process.env.MONGO_URI) {
+    try {
+      await mongoose.connect(process.env.MONGO_URI);
+      console.log('Connected to MongoDB via process.env.MONGO_URI');
+      return;
+    } catch (err) {
+      console.warn(`Connecting via MONGO_URI failed (${err.message}). Trying auto-detection...`);
+    }
+  }
+
+  // Try unauthenticated 127.0.0.1 first (standard for local MongoDB Windows service)
+  try {
+    await mongoose.connect('mongodb://127.0.0.1:27017/talentflow', { serverSelectionTimeoutMS: 3000 });
+    console.log('Connected to MongoDB (unauthenticated 127.0.0.1:27017/talentflow)');
+  } catch (err) {
+    console.log('Unauthenticated connection attempt failed, trying with Docker admin credentials...');
+    await mongoose.connect('mongodb://admin:password@127.0.0.1:27017/talentflow?authSource=admin');
+    console.log('Connected to MongoDB (admin:password@127.0.0.1:27017/talentflow)');
+  }
+}
+
+connectToMongoDB()
   .then(async () => {
-    console.log('Connected to MongoDB');
+    console.log('MongoDB Connected & Ready.');
 
     // Seed default users if empty
     try {
@@ -1040,7 +1143,11 @@ async function runEmailPoller() {
 
         for (const email of emailsList) {
           const alreadyProcessed = await ProcessedEmail.exists({ messageId: email.id });
-          if (alreadyProcessed) continue;
+          if (alreadyProcessed) {
+            // Also ensure it is marked as read in Outlook so it doesn't block future polls
+            markOutlookEmailAsRead(accessToken, emailConfig.outlookUserEmail, email.id).catch(() => {});
+            continue;
+          }
 
           // Categorize email
           let category = 'Other';
@@ -1064,6 +1171,7 @@ async function runEmailPoller() {
               { $setOnInsert: { messageId: email.id, processedAt: new Date() } },
               { upsert: true }
             );
+            markOutlookEmailAsRead(accessToken, emailConfig.outlookUserEmail, email.id).catch(() => {});
             continue;
           }
 
@@ -1086,6 +1194,7 @@ async function runEmailPoller() {
             { $setOnInsert: { messageId: email.id, processedAt: new Date() } },
             { upsert: true }
           );
+          markOutlookEmailAsRead(accessToken, emailConfig.outlookUserEmail, email.id).catch(() => {});
         }
       } catch (outlookErr) {
         console.error('Outlook Poller Error:', outlookErr.message);
@@ -1152,7 +1261,7 @@ app.get('/api/gmail/emails', authenticateToken, requireRole(['admin', 'recruiter
   if (emailConfig.provider === 'outlook') {
     // Use Outlook Graph API
     if (!emailConfig.outlookClientId || !emailConfig.outlookClientSecret || !emailConfig.outlookUserEmail) {
-      return res.status(401).json({ error: 'Outlook credentials not configured.' });
+      return res.status(400).json({ error: 'Outlook credentials not configured.' });
     }
     try {
       const accessToken = await getOutlookAccessToken();
@@ -1177,7 +1286,7 @@ app.get('/api/gmail/emails', authenticateToken, requireRole(['admin', 'recruiter
 
   // Gmail IMAP (existing logic)
   const hasImapConfig = !!(emailConfig.user && emailConfig.pass);
-  if (!hasImapConfig) return res.status(401).json({ error: 'Not authenticated.' });
+  if (!hasImapConfig) return res.status(400).json({ error: 'Gmail IMAP credentials not configured.' });
   try {
     const fetchedEmails = await fetchIMAPEmails(emailConfig);
     lastGmailConnectionStatus = { success: true, error: null, lastChecked: new Date() };
@@ -1217,7 +1326,7 @@ app.get('/api/gmail/attachment/:messageId/:attachmentId', authenticateToken, req
 
   // Gmail IMAP
   const hasImapConfig = !!(emailConfig.user && emailConfig.pass);
-  if (!hasImapConfig) return res.status(401).json({ error: 'Not authenticated.' });
+  if (!hasImapConfig) return res.status(400).json({ error: 'Gmail IMAP credentials not configured.' });
   try {
     const parts = attachmentId.split('-att-');
     const imapAtt = await getIMAPAttachmentData(messageId, parts[1] || '0', emailConfig);
@@ -1234,15 +1343,23 @@ app.post('/api/candidates/extract-gmail', authenticateToken, requireRole(['admin
   const { messageId, attachmentId, jobId } = req.body;
   if (!messageId || !attachmentId) return res.status(400).json({ error: 'Missing parameters.' });
   
-  const alreadyProcessed = await ProcessedEmail.exists({ messageId });
-  if (alreadyProcessed) return res.status(400).json({ error: 'Email already processed.' });
+  // Atomic claim of messageId to prevent check-then-create race condition
+  const claimResult = await ProcessedEmail.findOneAndUpdate(
+    { messageId },
+    { $setOnInsert: { messageId, processedAt: new Date() } },
+    { upsert: true, rawResult: true }
+  ).catch(() => null);
+
+  if (claimResult && claimResult.lastErrorObject && claimResult.lastErrorObject.updatedExisting) {
+    return res.status(400).json({ error: 'Email already processed or currently being processed.' });
+  }
 
   const emailConfig = await getEmailConfig();
   let filename, buffer;
 
   if (emailConfig.provider === 'outlook') {
     if (!emailConfig.outlookClientId || !emailConfig.outlookClientSecret || !emailConfig.outlookUserEmail) {
-      return res.status(401).json({ error: 'Outlook credentials not configured.' });
+      return res.status(400).json({ error: 'Outlook credentials not configured.' });
     }
     try {
       const accessToken = await getOutlookAccessToken();
@@ -1254,7 +1371,7 @@ app.post('/api/candidates/extract-gmail', authenticateToken, requireRole(['admin
     }
   } else {
     const hasImapConfig = !!(emailConfig.user && emailConfig.pass);
-    if (!hasImapConfig) return res.status(401).json({ error: 'Not authenticated.' });
+    if (!hasImapConfig) return res.status(400).json({ error: 'Gmail IMAP credentials not configured.' });
     try {
       const parts = attachmentId.split('-att-');
       const imapAtt = await getIMAPAttachmentData(messageId, parts[1] || '0', emailConfig);
@@ -1383,9 +1500,6 @@ app.post('/api/candidates/extract-gmail', authenticateToken, requireRole(['admin
       }
     ).catch(e => console.error('Failed to update ingestion log:', e));
 
-    await ProcessedEmail.create({ messageId });
-    searchIndex.buildIndex(await Candidate.find());
-
     // Mark as read
     try {
       if (emailConfig.provider === 'outlook') {
@@ -1402,6 +1516,9 @@ app.post('/api/candidates/extract-gmail', authenticateToken, requireRole(['admin
       candidate: candObj
     });
   } catch (error) {
+    // Release claimed messageId if extraction failed so it can be retried
+    await ProcessedEmail.deleteOne({ messageId }).catch(() => {});
+
     // Clean up temp file on failure
     try {
       if (localFilePath && fs.existsSync(localFilePath)) {
@@ -1425,6 +1542,10 @@ app.get('/api/candidates/:id/resume-html', authenticateToken, async (req, res) =
     const candidate = await Candidate.findOne({ id: req.params.id });
     if (!candidate || !candidate.resumeUrl) {
       return res.status(404).send('Resume not found.');
+    }
+
+    if (!canAccessCandidate(req, candidate)) {
+      return res.status(403).send('Forbidden: You do not have access to this candidate.');
     }
 
     const filePath = resolveUploadPath(candidate.resumeUrl);
@@ -1499,7 +1620,7 @@ app.get('/api/candidates/:id/resume-html', authenticateToken, async (req, res) =
               }
             </style>
           </head>
-          <body>${text}</body>
+          <body><pre style="margin:0; font-family:inherit; white-space:pre-wrap;">${escapeHtml(text)}</pre></body>
         </html>
       `;
       res.setHeader('Content-Type', 'text/html');
@@ -1523,12 +1644,16 @@ async function autoRouteCandidate(parsedData) {
     let highestScore = 0;
     
     // Quick heuristic: keyword overlap between candidate skills and job requirements
-    const candidateSkills = (parsedData.skills || []).map(s => s.toLowerCase());
+    const candidateSkills = (parsedData.skills || [])
+      .map(s => (typeof s === 'string' ? s.toLowerCase() : String(s || '').toLowerCase()))
+      .filter(Boolean);
     if (candidateSkills.length === 0) return null;
     
     for (const job of activeJobs) {
       let score = 0;
-      const jobReqs = (job.requirementsChecklist || []).map(r => r.toLowerCase());
+      const jobReqs = (job.requirementsChecklist || [])
+        .map(r => (typeof r === 'string' ? r.toLowerCase() : String(r || '').toLowerCase()))
+        .filter(Boolean);
       const jobDesc = (job.requirements || '').toLowerCase() + ' ' + (job.description || '').toLowerCase();
       
       // 1. Check overlap with requirementsChecklist
@@ -1625,11 +1750,13 @@ app.post('/api/candidates/upload', authenticateToken, requireRole(['admin', 'rec
         }
       ).catch(e => console.error('Failed to update ingestion log:', e));
 
+      const relativeTempPath = path.relative(UPLOADS_DIR, req.file.path).replace(/\\/g, '/');
+
       return res.status(409).json({
         error: `Candidate with email ${parsedData.email || 'N/A'} (${duplicate.name}) already exists in the pipeline.`,
         duplicate: true,
         candidate: duplicate,
-        tempFile: req.file.filename,
+        tempFile: relativeTempPath,
         parsedData: parsedData,
         pdfText: pdfText,
         jobId: jobId || null,
@@ -1796,20 +1923,19 @@ app.post('/api/candidates/upload/resolve', authenticateToken, requireRole(['admi
   const data = (parsedData && typeof parsedData === 'object') ? parsedData : {};
 
   if (tempFile) {
-    const rawResolvedPath = path.resolve(UPLOADS_DIR, tempFile);
-    if (!rawResolvedPath.startsWith(UPLOADS_DIR)) {
+    const rootUploads = path.resolve(UPLOADS_DIR);
+    const resolvedPath = path.resolve(UPLOADS_DIR, tempFile);
+    const normalizedRoot = path.normalize(rootUploads).toLowerCase();
+    const normalizedPath = path.normalize(resolvedPath).toLowerCase();
+    if (!normalizedPath.startsWith(normalizedRoot)) {
       return res.status(400).json({ error: 'Invalid tempFile path.' });
     }
   }
 
-  const sanitizedTempFile = tempFile ? path.basename(tempFile) : null;
-
-  if (sanitizedTempFile) {
-    const resolvedPath = path.resolve(UPLOADS_DIR, sanitizedTempFile);
-    if (!resolvedPath.startsWith(UPLOADS_DIR)) {
-      return res.status(400).json({ error: 'Invalid tempFile path.' });
-    }
-  }
+  const resolvedTempPath = tempFile ? resolveUploadPath(tempFile) : null;
+  const relativeResumePath = resolvedTempPath 
+    ? path.relative(UPLOADS_DIR, resolvedTempPath).replace(/\\/g, '/') 
+    : (tempFile ? path.basename(tempFile) : '');
 
   try {
     if (!['update', 'delete-before', 'remove', 'cancel'].includes(action)) {
@@ -1828,11 +1954,8 @@ app.post('/api/candidates/upload/resolve', authenticateToken, requireRole(['admi
     if (action === 'update') {
       const candidate = await Candidate.findOne({ id: candidateId });
       if (!candidate) {
-        if (sanitizedTempFile) {
-          const tempPath = path.join(UPLOADS_DIR, sanitizedTempFile);
-          if (fs.existsSync(tempPath)) {
-            try { fs.unlinkSync(tempPath); } catch (e) {}
-          }
+        if (resolvedTempPath && fs.existsSync(resolvedTempPath)) {
+          try { fs.unlinkSync(resolvedTempPath); } catch (e) {}
         }
         if (logId) {
           await IngestionLog.updateOne(
@@ -1848,10 +1971,9 @@ app.post('/api/candidates/upload/resolve', authenticateToken, requireRole(['admi
 
       // Delete old file if exists
       if (candidate.resumeUrl) {
-        const oldFilename = candidate.resumeUrl.replace('/api/uploads/', '').replace('/uploads/', '');
-        const oldFilepath = path.join(UPLOADS_DIR, oldFilename);
-        if (fs.existsSync(oldFilepath) && oldFilename !== sanitizedTempFile) {
-          try { fs.unlinkSync(oldFilepath); } catch (e) {}
+        const oldPath = resolveUploadPath(candidate.resumeUrl);
+        if (oldPath && fs.existsSync(oldPath) && oldPath !== resolvedTempPath) {
+          try { fs.unlinkSync(oldPath); } catch (e) {}
         }
       }
 
@@ -1872,8 +1994,8 @@ app.post('/api/candidates/upload/resolve', authenticateToken, requireRole(['admi
       candidate.redFlags = data.red_flags || candidate.redFlags;
       candidate.seniorityLevel = data.seniorityLevel || candidate.seniorityLevel;
       candidate.projects = data.projects || candidate.projects;
-      if (sanitizedTempFile) {
-        candidate.resumeUrl = `/api/uploads/${sanitizedTempFile}`;
+      if (relativeResumePath) {
+        candidate.resumeUrl = `/api/uploads/${relativeResumePath}`;
       }
       if (jobId) {
         candidate.jobId = jobId;
@@ -1912,7 +2034,7 @@ app.post('/api/candidates/upload/resolve', authenticateToken, requireRole(['admi
       candidate.history.push({
         date: new Date().toISOString(),
         type: 'Updated',
-        text: `Manual upload updated resume: ${sanitizedTempFile ? sanitizedTempFile.split('-').slice(2).join('-') : 'Updated'}`
+        text: `Manual upload updated resume: ${relativeResumePath ? path.basename(relativeResumePath).split('-').slice(2).join('-') : 'Updated'}`
       });
 
       await candidate.save();
@@ -1943,10 +2065,9 @@ app.post('/api/candidates/upload/resolve', authenticateToken, requireRole(['admi
       const candidate = await Candidate.findOne({ id: candidateId });
       if (candidate) {
         if (candidate.resumeUrl) {
-          const filename = candidate.resumeUrl.replace('/api/uploads/', '').replace('/uploads/', '');
-          const filepath = path.join(UPLOADS_DIR, filename);
-          if (fs.existsSync(filepath)) {
-            try { fs.unlinkSync(filepath); } catch (e) {}
+          const oldPath = resolveUploadPath(candidate.resumeUrl);
+          if (oldPath && fs.existsSync(oldPath)) {
+            try { fs.unlinkSync(oldPath); } catch (e) {}
           }
         }
         await Candidate.deleteOne({ id: candidateId });
@@ -1960,11 +2081,8 @@ app.post('/api/candidates/upload/resolve', authenticateToken, requireRole(['admi
       }
 
       // Delete the new temp file
-      if (sanitizedTempFile) {
-        const tempPath = path.join(UPLOADS_DIR, sanitizedTempFile);
-        if (fs.existsSync(tempPath)) {
-          try { fs.unlinkSync(tempPath); } catch (e) {}
-        }
+      if (resolvedTempPath && fs.existsSync(resolvedTempPath)) {
+        try { fs.unlinkSync(resolvedTempPath); } catch (e) {}
       }
 
       if (logId) {
@@ -1984,10 +2102,9 @@ app.post('/api/candidates/upload/resolve', authenticateToken, requireRole(['admi
       const candidate = await Candidate.findOne({ id: candidateId });
       if (candidate) {
         if (candidate.resumeUrl) {
-          const filename = candidate.resumeUrl.replace('/api/uploads/', '').replace('/uploads/', '');
-          const filepath = path.join(UPLOADS_DIR, filename);
-          if (fs.existsSync(filepath)) {
-            try { fs.unlinkSync(filepath); } catch (e) {}
+          const oldPath = resolveUploadPath(candidate.resumeUrl);
+          if (oldPath && fs.existsSync(oldPath) && oldPath !== resolvedTempPath) {
+            try { fs.unlinkSync(oldPath); } catch (e) {}
           }
         }
         await Candidate.deleteOne({ id: candidateId });
@@ -2045,7 +2162,7 @@ app.post('/api/candidates/upload/resolve', authenticateToken, requireRole(['admi
         education: data.education || [],
         tags: generatedTags,
         stage: 'Inbox',
-        resumeUrl: sanitizedTempFile ? `/api/uploads/${sanitizedTempFile}` : '',
+        resumeUrl: relativeResumePath ? `/api/uploads/${relativeResumePath}` : '',
         resumeText: pdfText,
         matchScore: scoringResult.score || 0,
         matchingSkills: scoringResult.matchingSkills || [],
@@ -2078,7 +2195,7 @@ app.post('/api/candidates/upload/resolve', authenticateToken, requireRole(['admi
       newCandidate.history.push({
         date: new Date().toISOString(),
         type: 'Created',
-        text: `Sourced candidate from email ingestion: ${sanitizedTempFile ? sanitizedTempFile.split('-').slice(2).join('-') : 'Created'}`
+        text: `Sourced candidate from email ingestion: ${relativeResumePath ? path.basename(relativeResumePath).split('-').slice(2).join('-') : 'Created'}`
       });
 
       await newCandidate.save();
@@ -2106,11 +2223,8 @@ app.post('/api/candidates/upload/resolve', authenticateToken, requireRole(['admi
       });
 
     } else if (action === 'cancel') {
-      if (sanitizedTempFile) {
-        const tempPath = path.join(UPLOADS_DIR, sanitizedTempFile);
-        if (fs.existsSync(tempPath)) {
-          try { fs.unlinkSync(tempPath); } catch (e) {}
-        }
+      if (resolvedTempPath && fs.existsSync(resolvedTempPath)) {
+        try { fs.unlinkSync(resolvedTempPath); } catch (e) {}
       }
 
       if (logId) {
@@ -2142,7 +2256,8 @@ app.post('/api/candidates/upload/resolve', authenticateToken, requireRole(['admi
 
 app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
   try {
-    const candidates = await Candidate.find();
+    const candidateFilter = req.user.role === 'manager' ? { assignedTo: req.user.email } : {};
+    const candidates = await Candidate.find(candidateFilter);
     const jobs = await Job.find();
 
     const totalCvs = candidates.length;
@@ -2209,7 +2324,7 @@ app.get('/api/candidates/:id', authenticateToken, async (req, res) => {
     if (!candidate) return res.status(404).json({ error: 'Candidate not found.' });
 
     // If manager, check assignment
-    if (req.user.role === 'manager' && candidate.assignedTo !== req.user.email) {
+    if (!canAccessCandidate(req, candidate)) {
       return res.status(403).json({ error: 'Forbidden: You do not have access to this candidate.' });
     }
 
@@ -2222,8 +2337,16 @@ app.get('/api/candidates/:id', authenticateToken, async (req, res) => {
 app.get('/api/candidates/:id/similar', authenticateToken, async (req, res) => {
   try {
     const candidateId = req.params.id;
+    const candidate = await Candidate.findOne({ id: candidateId });
+    if (!candidate) return res.status(404).json({ error: 'Candidate not found.' });
+
+    if (!canAccessCandidate(req, candidate)) {
+      return res.status(403).json({ error: 'Forbidden: You do not have access to this candidate.' });
+    }
+
     const topK = parseInt(req.query.limit) || 5;
-    const similar = await findSimilarCandidates(candidateId, topK);
+    const assignedTo = req.user.role === 'manager' ? req.user.email : null;
+    const similar = await findSimilarCandidates(candidateId, topK, assignedTo);
     res.json(similar);
   } catch (error) {
     console.error('Failed to find similar candidates:', error);
@@ -2237,9 +2360,8 @@ app.delete('/api/candidates/:id', authenticateToken, requireRole(['admin', 'recr
     if (!candidate) return res.status(404).json({ error: 'Candidate not found.' });
 
     if (candidate.resumeUrl) {
-      const filename = candidate.resumeUrl.replace('/api/uploads/', '').replace('/uploads/', '');
-      const filepath = path.join(UPLOADS_DIR, filename);
-      if (fs.existsSync(filepath)) {
+      const filepath = resolveUploadPath(candidate.resumeUrl);
+      if (filepath && fs.existsSync(filepath)) {
         try { fs.unlinkSync(filepath); } catch (e) {}
       }
     }
@@ -2273,14 +2395,18 @@ app.post('/api/gmail/emails/:id/dismiss', authenticateToken, requireRole(['admin
   }
 });
 
-app.patch('/api/candidates/:id/stage', async (req, res) => {
+app.patch('/api/candidates/:id/stage', authenticateToken, async (req, res) => {
   try {
     const { stage } = req.body;
     const candidate = await Candidate.findOne({ id: req.params.id });
     if (!candidate) return res.status(404).json({ error: 'Not found.' });
 
+    if (!canAccessCandidate(req, candidate)) {
+      return res.status(403).json({ error: 'Forbidden: You do not have access to this candidate.' });
+    }
+
     const oldStage = candidate.stage;
-    if (oldStage === stage) {
+    if ((oldStage || '').toLowerCase() === (stage || '').toLowerCase()) {
       return res.json(candidate);
     }
     candidate.stage = stage;
@@ -2312,11 +2438,15 @@ app.patch('/api/candidates/:id/stage', async (req, res) => {
   }
 });
 
-app.patch('/api/candidates/:id/position', async (req, res) => {
+app.patch('/api/candidates/:id/position', authenticateToken, async (req, res) => {
   try {
     const { jobId } = req.body;
     const candidate = await Candidate.findOne({ id: req.params.id });
     if (!candidate) return res.status(404).json({ error: 'Candidate not found.' });
+
+    if (!canAccessCandidate(req, candidate)) {
+      return res.status(403).json({ error: 'Forbidden: You do not have access to this candidate.' });
+    }
 
     let oldJobTitle = 'General Role';
     if (candidate.jobId) {
@@ -2388,6 +2518,10 @@ app.patch('/api/candidates/:id/extracted-data', authenticateToken, async (req, r
     const { currentLocation, totalYearsExperience, noticePeriod, currentCtc, expectedCtc, formAnswers, name, email, phone, skills } = req.body;
     const candidate = await Candidate.findOne({ id: req.params.id });
     if (!candidate) return res.status(404).json({ error: 'Candidate not found.' });
+
+    if (!canAccessCandidate(req, candidate)) {
+      return res.status(403).json({ error: 'Forbidden: You do not have access to this candidate.' });
+    }
 
     if (!candidate.extractedData) {
       candidate.extractedData = {};
@@ -2461,7 +2595,7 @@ app.post('/api/candidates/:id/send-email', authenticateToken, requireRole(['admi
       await sendOutlookEmail(accessToken, emailConfig.outlookUserEmail, { to: candidate.email, subject, body, attachments });
     } else {
       const hasImapConfig = !!(emailConfig.user && emailConfig.pass);
-      if (!hasImapConfig) return res.status(401).json({ error: 'Not authenticated.' });
+      if (!hasImapConfig) return res.status(400).json({ error: 'SMTP/IMAP credentials not configured.' });
       await sendSMTPMessage({ to: candidate.email, subject, body, attachments });
     }
 
@@ -2569,6 +2703,10 @@ app.get('/api/candidates/:id/offer-letter-download', authenticateToken, async (r
     const candidate = await Candidate.findOne({ id: req.params.id });
     if (!candidate) return res.status(404).json({ error: 'Candidate not found.' });
 
+    if (!canAccessCandidate(req, candidate)) {
+      return res.status(403).json({ error: 'Forbidden: You do not have access to this candidate.' });
+    }
+
     const docxBuffer = await generateOfferLetterBuffer(candidate, candidate.offerDetails || {});
     const filename = `Offer_Letter_${candidate.name.replace(/[^a-zA-Z0-9]/g, '_')}.docx`;
 
@@ -2577,7 +2715,7 @@ app.get('/api/candidates/:id/offer-letter-download', authenticateToken, async (r
     res.send(docxBuffer);
   } catch (err) {
     console.error('Failed to stream offer docx:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -2585,6 +2723,10 @@ app.post('/api/candidates/:id/re-score', authenticateToken, async (req, res) => 
   try {
     const candidate = await Candidate.findOne({ id: req.params.id });
     if (!candidate) return res.status(404).json({ error: 'Candidate not found.' });
+
+    if (!canAccessCandidate(req, candidate)) {
+      return res.status(403).json({ error: 'Forbidden: You do not have access to this candidate.' });
+    }
 
     console.log(`Re-scoring candidate ${candidate.name}...`);
     
@@ -2885,7 +3027,7 @@ app.post('/api/jobs/:id/postings', authenticateToken, requireRole(['admin', 'rec
   }
 });
 
-app.post('/api/jobs/:id/publish', async (req, res) => {
+app.post('/api/jobs/:id/publish', authenticateToken, requireRole(['admin', 'recruiter']), async (req, res) => {
   try {
     const job = await Job.findOne({ id: req.params.id });
     if (!job) return res.status(404).json({ error: 'Job not found' });
@@ -2923,9 +3065,8 @@ app.delete('/api/jobs/:id', authenticateToken, requireRole(['admin', 'recruiter'
     for (const candidate of candidates) {
       // Delete resume file if it exists
       if (candidate.resumeUrl) {
-        const filename = candidate.resumeUrl.replace('/api/uploads/', '').replace('/uploads/', '');
-        const filepath = path.join(UPLOADS_DIR, filename);
-        if (fs.existsSync(filepath)) {
+        const filepath = resolveUploadPath(candidate.resumeUrl);
+        if (filepath && fs.existsSync(filepath)) {
           try { fs.unlinkSync(filepath); } catch (e) {}
         }
       }
@@ -3026,7 +3167,8 @@ app.post('/api/rag/search', authenticateToken, async (req, res) => {
     if (!query || query.trim().length === 0) {
       return res.status(400).json({ error: 'Query is required.' });
     }
-    const results = await searchResumes(query.trim(), topK, jobId);
+    const assignedTo = req.user.role === 'manager' ? req.user.email : null;
+    const results = await searchResumes(query.trim(), topK, jobId, assignedTo);
     res.json(results);
   } catch (error) {
     console.error('RAG search error:', error);
@@ -3042,8 +3184,9 @@ app.post('/api/rag/jd-search', authenticateToken, async (req, res) => {
     }
     
     // Step 1: RAG Search — find semantically relevant candidates first
+    const assignedTo = req.user.role === 'manager' ? req.user.email : null;
     const query = [jdTitle, jdRequirements, jdDescription].filter(Boolean).join(' ');
-    const searchResult = await searchResumes(query, 50);
+    const searchResult = await searchResumes(query, 50, null, assignedTo);
     const matchedCandidates = searchResult.results || [];
     
     // Step 2: Filter by RAG relevance — only candidates with meaningful semantic match
@@ -3056,6 +3199,9 @@ app.post('/api/rag/jd-search', authenticateToken, async (req, res) => {
     
     // Step 3: Apply date filter on relevant candidates only
     const dateQuery = { id: { $in: relevantCandidates.map(c => c.candidateId) } };
+    if (assignedTo) {
+      dateQuery.assignedTo = assignedTo;
+    }
     if (startDate || endDate) {
       dateQuery.createdAt = {};
       if (startDate) {
@@ -3230,7 +3376,8 @@ app.post('/api/rag/ask', authenticateToken, async (req, res) => {
     if (!query || query.trim().length === 0) {
       return res.status(400).json({ error: 'Query is required.' });
     }
-    const result = await ragAnswer(query.trim(), topK);
+    const assignedTo = req.user.role === 'manager' ? req.user.email : null;
+    const result = await ragAnswer(query.trim(), topK, assignedTo);
     res.json(result);
   } catch (error) {
     console.error('RAG ask error:', error);
@@ -3538,40 +3685,6 @@ function generateTrackingId() {
   return `IST-${new Date().getFullYear()}-${randomHex}`;
 }
 
-// Helper function to safely resolve file references inside UPLOADS_DIR (including project subdirectories)
-function resolveUploadPath(fileRef) {
-  if (!fileRef || typeof fileRef !== 'string') return null;
-  const filename = path.basename(fileRef);
-  const rootUploads = path.resolve(UPLOADS_DIR);
-
-  // If a direct or relative path inside UPLOADS_DIR is provided
-  const directPath = path.resolve(UPLOADS_DIR, fileRef);
-  if (directPath.startsWith(rootUploads) && fs.existsSync(directPath)) {
-    return directPath;
-  }
-
-  // Check root UPLOADS_DIR
-  const rootFile = path.resolve(UPLOADS_DIR, filename);
-  if (fs.existsSync(rootFile)) {
-    return rootFile;
-  }
-
-  // Search job subdirectories
-  if (fs.existsSync(rootUploads)) {
-    const subdirs = fs.readdirSync(rootUploads, { withFileTypes: true });
-    for (const dirent of subdirs) {
-      if (dirent.isDirectory()) {
-        const candidate = path.join(rootUploads, dirent.name, filename);
-        if (fs.existsSync(candidate)) {
-          return candidate;
-        }
-      }
-    }
-  }
-
-  return null;
-}
-
 // Temporary file upload for public routes
 app.post('/api/public/cv', upload.single('file'), (req, res) => {
   if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
@@ -3711,7 +3824,7 @@ app.post('/api/public/apply', async (req, res) => {
       console.log(`[Public Apply] Duplicate detected for ${finalEmail} on job ${jobId}. Updated existing candidate ${candidateId}.`);
     } else {
       trackingId = generateTrackingId();
-      candidateId = `cand_${Date.now()}`;
+      candidateId = `cand_${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
       // 1. Create candidate immediately in 'processing' state
       const newCandidate = new Candidate({
@@ -3969,7 +4082,7 @@ app.post('/api/public/apply', async (req, res) => {
     
     // Send confirmation email if configured
     try {
-      if (newCandidate.email) {
+      if (activeCandidate && activeCandidate.email && !isGenericVal(activeCandidate.email, 'email')) {
         const settings = await Settings.findById('global');
         if (settings && settings.emailTemplates && settings.emailTemplates.applicationReceived) {
           const emailConfig = await getEmailConfig();
@@ -3982,14 +4095,14 @@ app.post('/api/public/apply', async (req, res) => {
           }
 
           // Template variable replacements (handles both double curly and bracket styles)
-          template = template.replace(/{{CandidateName}}/g, newCandidate.name || 'Candidate');
-          template = template.replace(/{candidate_name}/g, newCandidate.name || 'Candidate');
+          template = template.replace(/{{CandidateName}}/g, activeCandidate.name || 'Candidate');
+          template = template.replace(/{candidate_name}/g, activeCandidate.name || 'Candidate');
           
           template = template.replace(/{{JobTitle}}/g, jobTitle);
           template = template.replace(/{job_title}/g, jobTitle);
           
-          template = template.replace(/{{CandidateID}}/g, newCandidate.id || 'N/A');
-          template = template.replace(/{candidate_id}/g, newCandidate.id || 'N/A');
+          template = template.replace(/{{CandidateID}}/g, activeCandidate.id || 'N/A');
+          template = template.replace(/{candidate_id}/g, activeCandidate.id || 'N/A');
           
           template = template.replace(/{company_name}/g, 'iSpatial Techno Solutions (IST)');
           
@@ -4004,18 +4117,13 @@ app.post('/api/public/apply', async (req, res) => {
           }
           
           if (emailConfig.provider === 'outlook' && emailConfig.outlookClientId && emailConfig.outlookClientSecret && emailConfig.outlookUserEmail) {
-            const { getOutlookToken } = await import('./outlookAuth.js');
-            const accessToken = await getOutlookToken(
-              emailConfig.outlookClientId,
-              emailConfig.outlookTenantId,
-              emailConfig.outlookClientSecret
-            );
-            await sendOutlookEmail(accessToken, emailConfig.outlookUserEmail, { to: newCandidate.email, subject, body });
+            const accessToken = await getOutlookAccessToken();
+            await sendOutlookEmail(accessToken, emailConfig.outlookUserEmail, { to: activeCandidate.email, subject, body });
           } else if (emailConfig.user && emailConfig.pass) {
-            await sendSMTPMessage({ to: newCandidate.email, subject, body });
+            await sendSMTPMessage({ to: activeCandidate.email, subject, body });
           }
-          newCandidate.history.push({ date: new Date().toISOString(), type: 'EmailSent', text: 'Sent Application Received auto-reply' });
-          await newCandidate.save();
+          activeCandidate.history.push({ date: new Date().toISOString(), type: 'EmailSent', text: 'Sent Application Received auto-reply' });
+          await activeCandidate.save();
         }
       }
     } catch (emailErr) {
@@ -4059,7 +4167,7 @@ app.post('/api/public/refer', async (req, res) => {
     } = req.body;
     
     const trackingId = generateTrackingId();
-    const candidateId = `cand_${Date.now()}`;
+    const candidateId = `cand_${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     
     const newCandidate = new Candidate({
       id: candidateId,
@@ -4091,7 +4199,11 @@ app.post('/api/public/refer', async (req, res) => {
 
 app.get('/api/placements', authenticateToken, async (req, res) => {
   try {
-    const placed = await Candidate.find({ stage: 'Placed' });
+    const filter = { stage: 'Placed' };
+    if (req.user.role === 'manager') {
+      filter.assignedTo = req.user.email;
+    }
+    const placed = await Candidate.find(filter);
     const formatted = placed.map(c => ({
       id: c.id,
       applicantId: c.id,
@@ -4114,7 +4226,11 @@ app.get('/api/placements', authenticateToken, async (req, res) => {
 
 app.get('/api/placements/analytics', authenticateToken, async (req, res) => {
   try {
-    const placed = await Candidate.find({ stage: 'Placed' });
+    const filter = { stage: 'Placed' };
+    if (req.user.role === 'manager') {
+      filter.assignedTo = req.user.email;
+    }
+    const placed = await Candidate.find(filter);
     
     let totalPlacements = placed.length;
     let placementsThisMonth = 0;
@@ -4149,7 +4265,6 @@ app.get('/api/placements/analytics', authenticateToken, async (req, res) => {
       byMonthMap[monthStr] = (byMonthMap[monthStr] || 0) + 1;
 
       // By department
-      // We don't have department easily accessible in Candidate, but let's mock or use job info if available
       const dept = 'Engineering'; // Fallback
       byDepartmentMap[dept] = (byDepartmentMap[dept] || 0) + 1;
 
@@ -4170,7 +4285,7 @@ app.get('/api/placements/analytics', authenticateToken, async (req, res) => {
     const byChannel = Object.keys(byChannelMap).map(k => ({
       channel: k,
       count: byChannelMap[k].count,
-          avgIncrease: byChannelMap[k].incCount > 0 ? (byChannelMap[k].totalInc / byChannelMap[k].incCount) : 0
+      avgIncrease: byChannelMap[k].incCount > 0 ? (byChannelMap[k].totalInc / byChannelMap[k].incCount) : 0
     }));
 
     res.json({
@@ -4193,6 +4308,9 @@ app.get('/api/referrals', authenticateToken, async (req, res) => {
     let filter = { $or: [{ source: 'referral' }, { referrerName: { $exists: true, $ne: '' } }] };
     if (bonusOnly === 'true') {
       filter.bonusEligible = true;
+    }
+    if (req.user.role === 'manager') {
+      filter = { $and: [filter, { assignedTo: req.user.email }] };
     }
     
     const refs = await Candidate.find(filter);
@@ -4223,7 +4341,7 @@ app.get('/api/referrals', authenticateToken, async (req, res) => {
         hasCv: !!c.resumeUrl,
         resumeUrl: c.resumeUrl || null,
         skills: c.skills || [],
-        experienceYears: c.experienceYears || c.extractedData?.totalExperience || null,
+        experienceYears: c.experienceYears || c.extractedData?.totalYearsExperience || c.extractedData?.totalExperience || null,
         bonusEligible: c.bonusEligible !== false
       };
     });
@@ -4246,7 +4364,11 @@ app.get('/api/referrals', authenticateToken, async (req, res) => {
 
 app.get('/api/referrals/dashboard', authenticateToken, async (req, res) => {
   try {
-    const refs = await Candidate.find({ $or: [{ source: 'referral' }, { referrerName: { $exists: true, $ne: '' } }] });
+    let filter = { $or: [{ source: 'referral' }, { referrerName: { $exists: true, $ne: '' } }] };
+    if (req.user.role === 'manager') {
+      filter = { $and: [filter, { assignedTo: req.user.email }] };
+    }
+    const refs = await Candidate.find(filter);
     
     let total = refs.length;
     let thisMonth = 0;
@@ -4297,7 +4419,7 @@ app.post('/api/referrals', authenticateToken, async (req, res) => {
   try {
     const { referrerName, referrerEmployeeId, candidateName, candidateEmail, candidatePhone, jobId, keySkills } = req.body;
     
-    const candidateId = `cand_${Date.now()}`;
+    const candidateId = `cand_${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
     // Create new candidate
     const newCandidate = new Candidate({
@@ -4312,7 +4434,7 @@ app.post('/api/referrals', authenticateToken, async (req, res) => {
       referrerName: referrerName,
       referrerEmployeeId: referrerEmployeeId,
       bonusEligible: true,
-      trackingId: 'REF-' + Math.floor(100000 + Math.random() * 900000)
+      trackingId: generateTrackingId()
     });
     
     await newCandidate.save();
@@ -4324,17 +4446,29 @@ app.post('/api/referrals', authenticateToken, async (req, res) => {
 
 app.get('/api/pending-cvs', authenticateToken, async (req, res) => {
   try {
-    // Return candidates in early stages
-    const pending = await Candidate.find({ stage: { $in: ['Inbox', 'AI Processed'] } });
+    const filter = { stage: { $in: ['Inbox', 'AI Processed'] } };
+    if (req.user.role === 'manager') {
+      filter.assignedTo = req.user.email;
+    }
+    const pending = await Candidate.find(filter);
+    const allJobs = await Job.find({}).lean();
+    const jobMap = new Map(allJobs.map(j => [j.id, j.title]));
+
     const formatted = pending.map(c => {
-      const daysPending = Math.floor((Date.now() - new Date(c.createdAt).getTime()) / (1000 * 3600 * 24));
+      const daysPending = c.createdAt 
+        ? Math.floor((Date.now() - new Date(c.createdAt).getTime()) / (1000 * 3600 * 24)) 
+        : 0;
+      const jobTitle = (c.jobId && jobMap.get(c.jobId)) || 'General Role';
       return {
         id: c.id,
-        name: c.name,
-        jobRole: 'Unknown',
-        formTitle: 'Unknown',
-        currentLocation: 'Unknown',
-        noticePeriod: 'Unknown',
+        name: c.name || 'Unknown Candidate',
+        jobRole: jobTitle,
+        formTitle: jobTitle,
+        currentLocation: c.extractedData?.currentLocation || c.location || 'N/A',
+        noticePeriod: c.extractedData?.noticePeriod || c.noticePeriod || 'N/A',
+        daysPending: Math.max(0, isNaN(daysPending) ? 0 : daysPending),
+        stage: c.stage || 'Inbox',
+        createdAt: c.createdAt
       };
     });
     res.json(formatted);
@@ -4357,7 +4491,6 @@ const server = app.listen(PORT, () => {
     console.error('[ERROR] Server startup error:', err);
   }
 });
-server.timeout = 600000; // 10 minutes to support long Ollama parsing tasks
 
 // Set server timeouts to 30 minutes (1,800,000 ms) for slow local LLMs
 server.timeout = 1800000;

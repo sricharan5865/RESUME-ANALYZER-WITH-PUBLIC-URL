@@ -37,6 +37,11 @@ export default function PipelineBoard({
     Rejected: true
   });
 
+  const getAuthHeader = () => {
+    const curToken = token || localStorage.getItem('token') || '';
+    return curToken ? { 'Authorization': `Bearer ${curToken}` } : {};
+  };
+
   const allSelected = Object.values(exportStages).every(val => val);
   const handleAllToggle = () => {
     const nextValue = !allSelected;
@@ -143,7 +148,7 @@ export default function PipelineBoard({
       const res = await fetch(`${backendUrl}/api/candidates/${candidateId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`
+          ...getAuthHeader()
         }
       });
       if (!res.ok) {
@@ -195,7 +200,7 @@ export default function PipelineBoard({
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          ...getAuthHeader()
         },
         body: JSON.stringify({ stage })
       });
@@ -232,7 +237,10 @@ export default function PipelineBoard({
         const filesData = files.map(f => ({ fileName: f.name, source: 'manual' }));
         const preRegRes = await fetch(`${backendUrl}/api/ingestion-logs/pre-register`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...getAuthHeader()
+          },
           body: JSON.stringify({ files: filesData })
         });
         if (preRegRes.ok) {
@@ -265,7 +273,7 @@ export default function PipelineBoard({
           const res = await fetch(`${backendUrl}/api/candidates/upload`, {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${token}`
+              ...getAuthHeader()
             },
             body: formData
           });
@@ -336,7 +344,7 @@ export default function PipelineBoard({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          ...getAuthHeader()
         },
         body: JSON.stringify({
           action,

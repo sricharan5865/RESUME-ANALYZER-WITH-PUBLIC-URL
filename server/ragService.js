@@ -332,7 +332,7 @@ export async function indexAllCandidates(progressCallback) {
  * @param {string|null} [jobId=null] - Optional jobId to filter candidates
  * @returns {Promise<{ results: Array, queryTimeMs: number, totalChunksSearched: number }>}
  */
-export async function searchResumes(query, topK = 10, jobId = null) {
+export async function searchResumes(query, topK = 10, jobId = null, assignedTo = null) {
   const startTime = Date.now();
 
   if (vectorIndex.length === 0) {
@@ -363,12 +363,14 @@ export async function searchResumes(query, topK = 10, jobId = null) {
     }));
   }
 
-  // Filter by jobId if provided
-  if (jobId) {
-    // Get candidateIds that belong to this job
-    const jobCandidates = await Candidate.find({ jobId }, { id: 1 }).lean();
-    const jobCandidateIds = new Set(jobCandidates.map(c => c.id));
-    scoredChunks = scoredChunks.filter(c => jobCandidateIds.has(c.candidateId));
+  // Filter by jobId and/or assignedTo if provided
+  if (jobId || assignedTo) {
+    const filter = {};
+    if (jobId) filter.jobId = jobId;
+    if (assignedTo) filter.assignedTo = assignedTo;
+    const scopedCandidates = await Candidate.find(filter, { id: 1 }).lean();
+    const scopedCandidateIds = new Set(scopedCandidates.map(c => c.id));
+    scoredChunks = scoredChunks.filter(c => scopedCandidateIds.has(c.candidateId));
   }
 
   // Group by candidateId: collect all matching sections, keep best score per candidate
@@ -444,11 +446,11 @@ export async function searchResumes(query, topK = 10, jobId = null) {
  * @param {number} [topK=5] - Number of candidates to include as context
  * @returns {Promise<{ answer: string, sources: Array, queryTimeMs: number }>}
  */
-export async function ragAnswer(query, topK = 5) {
+export async function ragAnswer(query, topK = 5, assignedTo = null) {
   const startTime = Date.now();
 
   // Step 1: Retrieve relevant candidates via semantic search
-  const searchResult = await searchResumes(query, topK);
+  const searchResult = await searchResumes(query, topK, null, assignedTo);
 
   if (searchResult.results.length === 0) {
     return {
@@ -525,8 +527,9 @@ export async function getRAGStatus() {
  * 
  * @param {string} candidateId - The ID of the target candidate
  * @param {number} topK - How many similar candidates to return
+ * @param {string|null} assignedTo - Optional manager email to restrict results
  */
-export async function findSimilarCandidates(candidateId, topK = 5) {
+export async function findSimilarCandidates(candidateId, topK = 5, assignedTo = null) {
   // Get the target candidate's chunks
   const targetChunks = vectorIndex.filter(v => v.candidateId === candidateId);
   if (targetChunks.length === 0) return [];
@@ -538,9 +541,16 @@ export async function findSimilarCandidates(candidateId, topK = 5) {
 
   if (!sourceChunk.embedding) return [];
 
+  // Filter allowed candidates if assignedTo is provided
+  let allowedCandidateIds = null;
+  if (assignedTo) {
+    const assignedDocs = await Candidate.find({ assignedTo }, { id: 1 }).lean();
+    allowedCandidateIds = new Set(assignedDocs.map(c => c.id));
+  }
+
   // Compute similarity against all vectors EXCEPT the target candidate
   const scoredChunks = vectorIndex
-    .filter(entry => entry.candidateId !== candidateId)
+    .filter(entry => entry.candidateId !== candidateId && (!allowedCandidateIds || allowedCandidateIds.has(entry.candidateId)))
     .map(entry => ({
       ...entry,
       score: cosineSimilarity(sourceChunk.embedding, entry.embedding)

@@ -321,7 +321,7 @@ async function callAIProviderForClassification(prompt, systemInstruction) {
     if (isOpenRouter) {
       const url = 'https://openrouter.ai/api/v1/chat/completions';
       const requestBody = {
-        model: process.env.AI_MODEL || 'google/gemini-3.1-pro-preview',
+        model: process.env.AI_MODEL || 'google/gemini-2.5-flash',
         max_tokens: 8192,
         messages: [
           ...(systemInstruction ? [{ role: 'system', content: systemInstruction }] : []),
@@ -384,9 +384,10 @@ async function callAIProviderForClassification(prompt, systemInstruction) {
     const apiKey = settings?.openaiApiKey || process.env.OPENAI_API_KEY || process.env.GEMINI_API_KEY;
     if (!apiKey) throw new Error('OpenAI API key is not configured.');
 
-    const url = 'https://api.openai.com/v1/chat/completions';
+    const isOpenRouter = apiKey.startsWith('sk-or-');
+    const url = isOpenRouter ? 'https://openrouter.ai/api/v1/chat/completions' : 'https://api.openai.com/v1/chat/completions';
     const requestBody = {
-      model: 'gpt-4o-mini',
+      model: isOpenRouter ? 'openai/gpt-4o-mini' : 'gpt-4o-mini',
       messages: [
         ...(systemInstruction ? [{ role: 'system', content: systemInstruction }] : []),
         { role: 'user', content: prompt }
@@ -396,12 +397,18 @@ async function callAIProviderForClassification(prompt, systemInstruction) {
       response_format: { type: 'json_object' }
     };
 
+    const headers = {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    };
+    if (isOpenRouter) {
+      headers['HTTP-Referer'] = 'http://localhost:5001';
+      headers['X-Title'] = 'TalentFlow Recruitment Platform';
+    }
+
     const response = await fetchWithTimeout(url, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
+      headers,
       body: JSON.stringify(requestBody)
     }, 30000);
 
@@ -418,34 +425,73 @@ async function callAIProviderForClassification(prompt, systemInstruction) {
     const apiKey = settings?.claudeApiKey || process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY;
     if (!apiKey) throw new Error('Claude API key is not configured.');
 
-    const url = 'https://api.anthropic.com/v1/messages';
-    const requestBody = {
-      model: 'claude-3-5-sonnet-20241022',
-      max_tokens: 8192,
-      system: systemInstruction || undefined,
-      messages: [{ role: 'user', content: prompt }],
-      temperature: 0.1
-    };
+    const isOpenRouter = apiKey.startsWith('sk-or-');
+    let response;
 
-    const response = await fetchWithTimeout(url, {
-      method: 'POST',
-      headers: {
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(requestBody)
-    }, 30000);
+    if (isOpenRouter) {
+      const url = 'https://openrouter.ai/api/v1/chat/completions';
+      const requestBody = {
+        model: 'anthropic/claude-3.5-sonnet',
+        messages: [
+          ...(systemInstruction ? [{ role: 'system', content: systemInstruction }] : []),
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.1,
+        max_tokens: 8192
+        // NOTE: response_format (json_object) is not supported by OpenRouter for Anthropic models.
+        // The prompt itself already instructs the model to return JSON only.
+      };
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Claude API error: ${response.status} - ${errorText}`);
+      response = await fetchWithTimeout(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'http://localhost:5001',
+          'X-Title': 'TalentFlow Recruitment Platform'
+        },
+        body: JSON.stringify(requestBody)
+      }, 30000);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Claude (OpenRouter) API error: ${response.status} - ${errorText}`);
+      }
+
+      const result = await response.json();
+      const text = result.choices?.[0]?.message?.content;
+      if (!text) throw new Error('Claude API returned an empty response.');
+      return safeExtractAndParseJson(text, emailCategorySchema, emailCategoryFallback);
+    } else {
+      const url = 'https://api.anthropic.com/v1/messages';
+      const requestBody = {
+        model: 'claude-3-5-sonnet-20241022',
+        max_tokens: 8192,
+        system: systemInstruction || undefined,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.1
+      };
+
+      response = await fetchWithTimeout(url, {
+        method: 'POST',
+        headers: {
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      }, 30000);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Claude API error: ${response.status} - ${errorText}`);
+      }
+
+      const result = await response.json();
+      const text = result.content?.[0]?.text;
+      if (!text) throw new Error('Claude API returned an empty response.');
+      return safeExtractAndParseJson(text, emailCategorySchema, emailCategoryFallback);
     }
-
-    const result = await response.json();
-    const text = result.content?.[0]?.text;
-    if (!text) throw new Error('Claude API returned an empty response.');
-    return safeExtractAndParseJson(text, emailCategorySchema, emailCategoryFallback);
   } else if (aiProvider === 'ollama') {
     const ollamaUrl = (settings?.ollamaUrl || 'http://localhost:11434').replace(/\/+$/, '');
     const ollamaModel = settings?.ollamaModel || 'llama3';

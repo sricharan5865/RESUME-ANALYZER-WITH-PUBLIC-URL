@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>✨ TalentFlow - 21st.dev Modern UI Interactive Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    :root {
+      --bg-base: #030712;
+      --bg-surface: rgba(17, 24, 39, 0.7);
+      --bg-card: rgba(31, 41, 55, 0.45);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-glow: rgba(99, 102, 241, 0.35);
+      --accent-primary: #6366f1;
+      --accent-secondary: #a855f7;
+      --accent-emerald: #10b981;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43f5e;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --radius-xl: 20px;
+      --radius-lg: 14px;
+      --radius-md: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      min-height: 100vh;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(168, 85, 247, 0.15) 0px, transparent 50%),
+        radial-gradient(at 50% 100%, rgba(16, 185, 129, 0.1) 0px, transparent 50%);
+      background-attachment: fixed;
+    }
+
+    /* Top Demo Controller Bar */
+    .demo-bar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(3, 7, 18, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 12px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      font-size: 18px;
+      letter-spacing: -0.03em;
+    }
+
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      box-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+    }
+
+    .toggle-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 4px;
+      border-radius: 40px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .toggle-btn {
+      padding: 8px 18px;
+      border-radius: 30px;
+      font-size: 13px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      color: var(--text-muted);
+      background: transparent;
+      transition: all 0.25s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .toggle-btn.active {
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+      color: white;
+      box-shadow: 0 2px 12px rgba(99, 102, 241, 0.4);
+    }
+
+    .main-container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+
+    /* Hero Section */
+    .hero-header {
+      margin-bottom: 36px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .hero-title h1 {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #ffffff 40%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-title p {
+      color: var(--text-muted);
+      font-size: 15px;
+    }
+
+    .cmd-k-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      padding: 10px 18px;
+      border-radius: 12px;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: all 0.2s;
+    }
+
+    .cmd-k-btn:hover {
+      border-color: var(--accent-primary);
+      color: white;
+      box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
+    }
+
+    .kbd-tag {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'Fira Code', monospace;
+      font-size: 11px;
+      color: #cbd5e1;
+    }
+
+    /* Bento Grid Layout */
+    .bento-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+
+    .bento-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xl);
+      padding: 28px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .bento-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(800px circle at var(--mouse-x, 0) var(--mouse-y, 0), rgba(255, 255, 255, 0.06), transparent 40%);
+      pointer-events: none;
+    }
+
+    .bento-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--border-glow);
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.6), 0 0 30px rgba(99, 102, 241, 0.15);
+    }
+
+    .col-4 { grid-column: span 4; }
+    .col-8 { grid-column: span 8; }
+    .col-6 { grid-column: span 6; }
+    .col-12 { grid-column: span 12; }
+
+    @media (max-width: 1024px) {
+      .col-4, .col-8, .col-6 { grid-column: span 12; }
+    }
+
+    .stat-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .stat-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+    }
+
+    .stat-val {
+      font-size: 38px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 4px;
+    }
+
+    .stat-label {
+      color: var(--text-muted);
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .stat-trend {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 20px;
+      margin-top: 12px;
+    }
+
+    .trend-up { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+    .trend-pulse { animation: pulse 2s infinite; }
+
+    /* Candidates Card Showcase */
+    .section-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .candidate-deck {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 20px;
+    }
+
+    /* 21st.dev Style Candidate Card */
+    .cand-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xl);
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .cand-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(99, 102, 241, 0.4);
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7), 0 0 35px rgba(99, 102, 241, 0.2);
+    }
+
+    .cand-glow {
+      position: absolute;
+      top: -40px;
+      right: -40px;
+      width: 120px;
+      height: 120px;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.35) 0%, transparent 70%);
+      border-radius: 50%;
+      pointer-events: none;
+      filter: blur(20px);
+      transition: all 0.5s;
+    }
+
+    .cand-card:hover .cand-glow {
+      transform: scale(1.4);
+      background: radial-gradient(circle, rgba(168, 85, 247, 0.45) 0%, transparent 70%);
+    }
+
+    .cand-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .cand-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #1e293b, #334155);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: #f8fafc;
+      font-size: 16px;
+    }
+
+    .match-ring {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      backdrop-filter: blur(10px);
+    }
+
+    .ring-high { background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399; }
+    .ring-mid { background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #fbbf24; }
+
+    .cand-info h3 {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 2px;
+      color: #ffffff;
+    }
+
+    .cand-info p {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+    }
+
+    .skills-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 20px;
+    }
+
+    .skill-pill {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+      color: #cbd5e1;
+      padding: 3px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .skill-pill:hover {
+      background: rgba(99, 102, 241, 0.2);
+      border-color: rgba(99, 102, 241, 0.4);
+      color: #ffffff;
+    }
+
+    .cand-footer {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-action {
+      flex: 1;
+      background: linear-gradient(135deg, var(--accent-primary), #4f46e5);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+      transition: all 0.2s;
+    }
+
+    .btn-action:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(99, 102, 241, 0.5);
+    }
+
+    .btn-icon {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-icon:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Traditional Plain View Styles (When switched) */
+    body.plain-mode {
+      background: #0f172a;
+      background-image: none;
+    }
+
+    body.plain-mode .bento-card,
+    body.plain-mode .cand-card {
+      background: #1e293b;
+      backdrop-filter: none;
+      box-shadow: none;
+      border: 1px solid #334155;
+      border-radius: 8px;
+    }
+
+    body.plain-mode .bento-card:hover,
+    body.plain-mode .cand-card:hover {
+      transform: none;
+      box-shadow: none;
+      border-color: #475569;
+    }
+
+    body.plain-mode .cand-glow { display: none; }
+    body.plain-mode .btn-action {
+      background: #4f46e5;
+      box-shadow: none;
+      border-radius: 6px;
+    }
+
+    /* Interactive Command Palette Modal */
+    .cmd-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(12px);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .cmd-modal {
+      width: 100%;
+      max-width: 580px;
+      background: #0b0f19;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.9), 0 0 50px rgba(99, 102, 241, 0.3);
+      animation: modalIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.96) translateY(-10px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .cmd-search-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .cmd-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: white;
+      font-size: 16px;
+      font-family: inherit;
+      outline: none;
+    }
+
+    .cmd-list {
+      padding: 12px;
+      max-height: 320px;
+      overflow-y: auto;
+    }
+
+    .cmd-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border-radius: 8px;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.15s;
+    }
+
+    .cmd-item:hover, .cmd-item.selected {
+      background: rgba(99, 102, 241, 0.15);
+      color: white;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Controller Bar -->
+  <header class="demo-bar">
+    <div class="brand-logo">
+      <div class="logo-icon">
+        <i data-lucide="sparkles" style="width: 18px; height: 18px;"></i>
+      </div>
+      <span>TalentFlow <span style="font-weight: 400; color: #818cf8; font-size: 13px;">21st.dev UI Preview</span></span>
+    </div>
+
+    <!-- Mode Switcher -->
+    <div class="toggle-container">
+      <button class="toggle-btn active" id="btn-21st" onclick="setMode('21st')">
+        <i data-lucide="sparkles" style="width: 14px; height: 14px;"></i> 21st.dev Modern UI
+      </button>
+      <button class="toggle-btn" id="btn-plain" onclick="setMode('plain')">
+        <i data-lucide="layout" style="width: 14px; height: 14px;"></i> Old Standard UI
+      </button>
+    </div>
+  </header>
+
+  <main class="main-container">
+    
+    <!-- Hero Section -->
+    <section class="hero-header">
+      <div class="hero-title">
+        <h1>Smart Recruitment Pipeline</h1>
+        <p>Real-time candidate telemetry, AI scoring, and automated candidate routing.</p>
+      </div>
+
+      <button class="cmd-k-btn" onclick="openCmdPalette()">
+        <i data-lucide="search" style="width: 15px; height: 15px;"></i>
+        <span>Search candidates, skills, jobs...</span>
+        <span class="kbd-tag">⌘K</span>
+      </button>
+    </section>
+
+    <!-- Bento Grid Telemetry -->
+    <div class="bento-grid">
+      
+      <!-- Card 1: Total Candidates -->
+      <div class="bento-card col-4">
+        <div class="stat-header">
+          <span class="stat-label">Active Candidates</span>
+          <div class="stat-icon" style="background: rgba(99, 102, 241, 0.2); color: #818cf8;">
+            <i data-lucide="users"></i>
+          </div>
+        </div>
+        <div class="stat-val">1,248</div>
+        <div class="stat-trend trend-up">
+          <i data-lucide="arrow-up-right" style="width: 14px; height: 14px;"></i> +18.4% this week
+        </div>
+      </div>
+
+      <!-- Card 2: AI Parsing Accuracy -->
+      <div class="bento-card col-4">
+        <div class="stat-header">
+          <span class="stat-label">AI Match Accuracy</span>
+          <div class="stat-icon" style="background: rgba(16, 185, 129, 0.2); color: #34d399;">
+            <i data-lucide="brain-circuit"></i>
+          </div>
+        </div>
+        <div class="stat-val">96.8%</div>
+        <div class="stat-trend trend-up">
+          <i data-lucide="check" style="width: 14px; height: 14px;"></i> Top tier scoring
+        </div>
+      </div>
+
+      <!-- Card 3: Avg Time to Placement -->
+      <div class="bento-card col-4">
+        <div class="stat-header">
+          <span class="stat-label">Avg. Days to Hire</span>
+          <div class="stat-icon" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24;">
+            <i data-lucide="clock"></i>
+          </div>
+        </div>
+        <div class="stat-val">8.2 <span style="font-size: 18px; font-weight: 500; color: var(--text-muted);">Days</span></div>
+        <div class="stat-trend trend-up">
+          <i data-lucide="zap" style="width: 14px; height: 14px;"></i> -3.5 days faster
+        </div>
+      </div>
+
+      <!-- Card 4: Sourcing Stream (Wide Bento Tile) -->
+      <div class="bento-card col-12">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <div>
+            <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 4px;">Live Ingestion Stream</h3>
+            <p style="font-size: 13px; color: var(--text-muted);">Real-time resumes parsed via Outlook & Gmail IMAP pollers</p>
+          </div>
+          <span class="stat-trend trend-up trend-pulse">
+            <span style="width: 6px; height: 6px; border-radius: 50%; background: #34d399;"></span> Live Polling (30s)
+          </span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px;">
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); padding: 14px; border-radius: 12px; display: flex; align-items: center; gap: 12px;">
+            <div style="width: 10px; height: 10px; border-radius: 50%; background: #6366f1;"></div>
+            <div style="flex: 1;">
+              <div style="font-weight: 600; font-size: 14px;">Siddharth Menon</div>
+              <div style="font-size: 12px; color: var(--text-muted);">ArcGIS Pro Specialist • Outlook Mailbox</div>
+            </div>
+            <span style="font-size: 11px; color: #818cf8; font-weight: 600;">94% Match</span>
+          </div>
+
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); padding: 14px; border-radius: 12px; display: flex; align-items: center; gap: 12px;">
+            <div style="width: 10px; height: 10px; border-radius: 50%; background: #10b981;"></div>
+            <div style="flex: 1;">
+              <div style="font-weight: 600; font-size: 14px;">Priyanka Verma</div>
+              <div style="font-size: 12px; color: var(--text-muted);">Senior React Architect • Gmail Sourcing</div>
+            </div>
+            <span style="font-size: 11px; color: #34d399; font-weight: 600;">88% Match</span>
+          </div>
+
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); padding: 14px; border-radius: 12px; display: flex; align-items: center; gap: 12px;">
+            <div style="width: 10px; height: 10px; border-radius: 50%; background: #f59e0b;"></div>
+            <div style="flex: 1;">
+              <div style="font-weight: 600; font-size: 14px;">Ananya Rao</div>
+              <div style="font-size: 12px; color: var(--text-muted);">DevOps & Cloud Engineer • Public Apply</div>
+            </div>
+            <span style="font-size: 11px; color: #fbbf24; font-weight: 600;">81% Match</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Candidate Cards Showcase -->
+    <div class="section-title">
+      <i data-lucide="layers" style="color: #818cf8;"></i>
+      <span>Featured Candidates (21st.dev Card Component)</span>
+    </div>
+
+    <div class="candidate-deck">
+      
+      <!-- Card 1 -->
+      <div class="cand-card">
+        <div class="cand-glow"></div>
+        <div class="cand-top">
+          <div class="cand-avatar">SM</div>
+          <div class="match-ring ring-high">
+            <i data-lucide="sparkles" style="width: 13px; height: 13px;"></i>
+            <span>94% AI Match</span>
+          </div>
+        </div>
+
+        <div class="cand-info">
+          <h3>Siddharth Menon</h3>
+          <p>ArcGIS Pro & Spatial Data Specialist • 6 Yrs Exp</p>
+        </div>
+
+        <div class="skills-row">
+          <span class="skill-pill">ArcGIS Pro</span>
+          <span class="skill-pill">Spatial Analysis</span>
+          <span class="skill-pill">Python GeoPandas</span>
+          <span class="skill-pill">PostGIS</span>
+        </div>
+
+        <div class="cand-footer">
+          <button class="btn-action" onclick="alert('Reviewing candidate: Siddharth Menon')">
+            <i data-lucide="file-text" style="width: 14px; height: 14px;"></i> View AI Profile
+          </button>
+          <button class="btn-icon" title="Generate Offer Letter" onclick="alert('Generating official Docx offer letter...')">
+            <i data-lucide="award" style="width: 16px; height: 16px;"></i>
+          </button>
+          <button class="btn-icon" title="Send Email" onclick="alert('Opening email composer...')">
+            <i data-lucide="mail" style="width: 16px; height: 16px;"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Card 2 -->
+      <div class="cand-card">
+        <div class="cand-glow"></div>
+        <div class="cand-top">
+          <div class="cand-avatar" style="background: linear-gradient(135deg, #065f46, #047857);">PV</div>
+          <div class="match-ring ring-high">
+            <i data-lucide="sparkles" style="width: 13px; height: 13px;"></i>
+            <span>88% AI Match</span>
+          </div>
+        </div>
+
+        <div class="cand-info">
+          <h3>Priyanka Verma</h3>
+          <p>Lead Frontend Engineer • 8 Yrs Exp • Hyderabad</p>
+        </div>
+
+        <div class="skills-row">
+          <span class="skill-pill">React 18</span>
+          <span class="skill-pill">TypeScript</span>
+          <span class="skill-pill">Tailwind CSS</span>
+          <span class="skill-pill">GraphQL</span>
+        </div>
+
+        <div class="cand-footer">
+          <button class="btn-action" onclick="alert('Reviewing candidate: Priyanka Verma')">
+            <i data-lucide="file-text" style="width: 14px; height: 14px;"></i> View AI Profile
+          </button>
+          <button class="btn-icon" title="Generate Offer Letter" onclick="alert('Generating official Docx offer letter...')">
+            <i data-lucide="award" style="width: 16px; height: 16px;"></i>
+          </button>
+          <button class="btn-icon" title="Send Email" onclick="alert('Opening email composer...')">
+            <i data-lucide="mail" style="width: 16px; height: 16px;"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Card 3 -->
+      <div class="cand-card">
+        <div class="cand-glow"></div>
+        <div class="cand-top">
+          <div class="cand-avatar" style="background: linear-gradient(135deg, #7c2d12, #9a3412);">AR</div>
+          <div class="match-ring ring-mid">
+            <i data-lucide="sparkles" style="width: 13px; height: 13px;"></i>
+            <span>81% AI Match</span>
+          </div>
+        </div>
+
+        <div class="cand-info">
+          <h3>Ananya Rao</h3>
+          <p>Cloud Solutions & SRE • 4.5 Yrs Exp • Bangalore</p>
+        </div>
+
+        <div class="skills-row">
+          <span class="skill-pill">AWS / Azure</span>
+          <span class="skill-pill">Kubernetes</span>
+          <span class="skill-pill">Terraform</span>
+          <span class="skill-pill">CI/CD</span>
+        </div>
+
+        <div class="cand-footer">
+          <button class="btn-action" onclick="alert('Reviewing candidate: Ananya Rao')">
+            <i data-lucide="file-text" style="width: 14px; height: 14px;"></i> View AI Profile
+          </button>
+          <button class="btn-icon" title="Generate Offer Letter" onclick="alert('Generating official Docx offer letter...')">
+            <i data-lucide="award" style="width: 16px; height: 16px;"></i>
+          </button>
+          <button class="btn-icon" title="Send Email" onclick="alert('Opening email composer...')">
+            <i data-lucide="mail" style="width: 16px; height: 16px;"></i>
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Interactive Command Palette Modal -->
+  <div class="cmd-overlay" id="cmd-overlay" onclick="closeCmdPalette(event)">
+    <div class="cmd-modal" onclick="event.stopPropagation()">
+      <div class="cmd-search-wrap">
+        <i data-lucide="search" style="color: var(--text-muted); width: 18px; height: 18px;"></i>
+        <input type="text" class="cmd-input" placeholder="Type a command or search candidates..." id="cmd-input" autofocus>
+        <span class="kbd-tag">ESC</span>
+      </div>
+      <div class="cmd-list">
+        <div style="font-size: 11px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; padding: 6px 14px;">Quick Actions</div>
+        <div class="cmd-item" onclick="alert('Navigating to: Upload Resumes'); closeCmdPalette();">
+          <span style="display: flex; align-items: center; gap: 8px;"><i data-lucide="upload" style="width: 15px;"></i> Upload New Resumes</span>
+          <span class="kbd-tag">U</span>
+        </div>
+        <div class="cmd-item" onclick="alert('Navigating to: AI Semantic Search'); closeCmdPalette();">
+          <span style="display: flex; align-items: center; gap: 8px;"><i data-lucide="sparkles" style="width: 15px;"></i> Run Semantic JD Match</span>
+          <span class="kbd-tag">S</span>
+        </div>
+        <div class="cmd-item" onclick="alert('Navigating to: Email Sourcing'); closeCmdPalette();">
+          <span style="display: flex; align-items: center; gap: 8px;"><i data-lucide="mail" style="width: 15px;"></i> Refresh Outlook/Gmail Inbox</span>
+          <span class="kbd-tag">M</span>
+        </div>
+        
+        <div style="font-size: 11px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; padding: 12px 14px 6px;">Top Matched Candidates</div>
+        <div class="cmd-item" onclick="alert('Opening: Siddharth Menon profile'); closeCmdPalette();">
+          <span style="display: flex; align-items: center; gap: 8px;"><i data-lucide="user" style="width: 15px;"></i> Siddharth Menon (94% Match)</span>
+          <span style="font-size: 12px; color: #34d399;">ArcGIS Pro</span>
+        </div>
+        <div class="cmd-item" onclick="alert('Opening: Priyanka Verma profile'); closeCmdPalette();">
+          <span style="display: flex; align-items: center; gap: 8px;"><i data-lucide="user" style="width: 15px;"></i> Priyanka Verma (88% Match)</span>
+          <span style="font-size: 12px; color: #34d399;">React 18</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    // Mouse Tracking for dynamic card border glow
+    document.querySelectorAll('.bento-card').forEach(card => {
+      card.addEventListener('mousemove', (e) => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        card.style.setProperty('--mouse-x', `${x}px`);
+        card.style.setProperty('--mouse-y', `${y}px`);
+      });
+    });
+
+    function setMode(mode) {
+      const btn21st = document.getElementById('btn-21st');
+      const btnPlain = document.getElementById('btn-plain');
+
+      if (mode === 'plain') {
+        document.body.classList.add('plain-mode');
+        btnPlain.classList.add('active');
+        btn21st.classList.remove('active');
+      } else {
+        document.body.classList.remove('plain-mode');
+        btn21st.classList.add('active');
+        btnPlain.classList.remove('active');
+      }
+    }
+
+    // Command Palette Modal
+    const overlay = document.getElementById('cmd-overlay');
+    const cmdInput = document.getElementById('cmd-input');
+
+    function openCmdPalette() {
+      overlay.style.display = 'flex';
+      setTimeout(() => cmdInput.focus(), 50);
+    }
+
+    function closeCmdPalette() {
+      overlay.style.display = 'none';
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        if (overlay.style.display === 'flex') {
+          closeCmdPalette();
+        } else {
+          openCmdPalette();
+        }
+      }
+      if (e.key === 'Escape') {
+        closeCmdPalette();
+      }
+    });
+  </script>
+</body>
+</html>

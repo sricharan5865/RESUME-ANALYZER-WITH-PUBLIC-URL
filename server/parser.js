@@ -118,38 +118,6 @@ export async function extractTextFromPDF(buffer) {
   return text;
 }
 
-function runPythonOCR(buffer) {
-  return new Promise((resolve, reject) => {
-    const tempPdfPath = path.join(os.tmpdir(), `temp_ocr_${Date.now()}.pdf`);
-    fs.writeFileSync(tempPdfPath, buffer);
-
-    const scriptPath = path.join(__dirname, 'ocr_fallback.py');
-    const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
-    const pythonProcess = spawn(pythonCmd, [scriptPath, tempPdfPath]);
-
-    let output = '';
-    let errorOutput = '';
-
-    pythonProcess.stdout.on('data', (data) => {
-      output += data.toString();
-    });
-
-    pythonProcess.stderr.on('data', (data) => {
-      errorOutput += data.toString();
-    });
-
-    pythonProcess.on('close', (code) => {
-      try { fs.unlinkSync(tempPdfPath); } catch (e) {}
-      if (code !== 0) {
-        console.error(`Python OCR exited with code ${code}: ${errorOutput}`);
-        reject(new Error('Python OCR failed.'));
-      } else {
-        resolve(output);
-      }
-    });
-  });
-}
-
 function runPythonOCRDirect(filePath) {
   return new Promise((resolve, reject) => {
     const scriptPath = path.join(__dirname, 'ocr_fallback.py');

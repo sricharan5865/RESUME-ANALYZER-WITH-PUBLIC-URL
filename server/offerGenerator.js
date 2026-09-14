@@ -65,22 +65,33 @@ export async function generateOfferLetterBuffer(candidate, offerData = {}) {
     ? new Date(offerData.offerDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
     : today.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
+  const defaultJoinDate = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
   const joinDate = offerData.joiningDate
     ? new Date(offerData.joiningDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-    : 'August 5, 2026';
+    : defaultJoinDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
+  const defaultReturnDate = offerData.joiningDate
+    ? new Date(new Date(offerData.joiningDate).getTime() - 7 * 24 * 60 * 60 * 1000)
+    : new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
   const returnDate = offerData.offerDeadline
     ? new Date(offerData.offerDeadline).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-    : (offerData.joiningDate
-      ? new Date(new Date(offerData.joiningDate).getTime() - 7 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-      : 'July 29, 2026');
+    : defaultReturnDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
-  const ctcNum = parseNum(offerData.ctc || offerData.offeredSalary || candidate.ctc || 2000000);
+  const ctcNum = parseNum(
+    offerData.ctc || 
+    offerData.offeredSalary || 
+    candidate.offeredSalary || 
+    candidate.expectedCtc || 
+    candidate.currentCtc || 
+    candidate.ctc || 
+    0
+  );
   const ctcStr = formatIndianCurrency(ctcNum);
   const ctcWords = numberToWords(ctcNum);
 
   const rawId = candidate.id ? String(candidate.id).replace(/\D/g, '') : '1600';
-  const refNo = offerData.refNo || `IST/2026/${rawId.slice(-4).padStart(4, '0')}`;
+  const currentYear = today.getFullYear();
+  const refNo = offerData.refNo || `IST/${currentYear}/${rawId.slice(-4).padStart(4, '0')}`;
   const candidateName = (candidate.name || 'CANDIDATE NAME').toUpperCase();
   const positionStr = offerData.designation || offerData.jobTitle || candidate.position || 'ArcGIS Pro Specialist';
 
