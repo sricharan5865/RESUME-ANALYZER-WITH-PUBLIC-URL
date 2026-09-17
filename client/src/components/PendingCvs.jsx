@@ -43,40 +43,48 @@ export default function PendingCvs({ backendUrl, token }) {
             ) : pending.length === 0 ? (
               <tr><td colSpan={5} style={{ padding: '24px', textAlign: 'center' }}>No pending CVs found. You're all caught up!</td></tr>
             ) : (
-              pending.map(c => (
-                <tr key={c.id} style={{ borderBottom: '1px solid var(--glass-border)' }}>
-                  <td style={{ padding: '16px', fontWeight: '500' }}>{c.name}</td>
-                  <td style={{ padding: '16px', fontSize: '13px', color: 'var(--text-secondary)' }}>
-                    <div style={{ maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {c.keySkills}
-                    </div>
-                  </td>
-                  <td style={{ padding: '16px' }}>
-                    <span style={{ padding: '4px 8px', background: 'var(--bg-primary)', borderRadius: '4px', fontSize: '12px' }}>
-                      {c.status}
-                    </span>
-                  </td>
-                  <td style={{ padding: '16px' }}>
-                    {c.isAging ? (
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#ef4444', fontWeight: '500', fontSize: '13px' }}>
-                        <AlertCircle size={14} /> {c.daysPending} days
-                      </span>
-                    ) : (
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-secondary)', fontSize: '13px' }}>
-                        <Clock size={14} /> {c.daysPending} days
-                      </span>
-                    )}
-                  </td>
-                  <td style={{ padding: '16px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <div style={{ width: '60px', height: '6px', background: 'var(--bg-primary)', borderRadius: '3px', overflow: 'hidden' }}>
-                        <div style={{ height: '100%', width: `${c.ats}%`, background: c.ats > 70 ? '#10b981' : c.ats > 40 ? '#f59e0b' : '#ef4444' }}></div>
+              pending.map(c => {
+                const keySkills = c.keySkills || (Array.isArray(c.skills) ? c.skills.slice(0, 5).join(', ') : '—');
+                const status = c.status || c.stage || 'Inbox';
+                const isAging = c.isAging !== undefined ? c.isAging : (c.daysPending > 7);
+                const ats = (c.ats !== undefined && c.ats !== null) ? c.ats : (c.matchScore || c.ownCategoryScore || 0);
+                const daysPending = c.daysPending !== undefined ? c.daysPending : 0;
+
+                return (
+                  <tr key={c.id || c._id} style={{ borderBottom: '1px solid var(--glass-border)' }}>
+                    <td style={{ padding: '16px', fontWeight: '500' }}>{c.name}</td>
+                    <td style={{ padding: '16px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                      <div style={{ maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {keySkills}
                       </div>
-                      <span style={{ fontSize: '13px', fontWeight: '600' }}>{c.ats}%</span>
-                    </div>
-                  </td>
-                </tr>
-              ))
+                    </td>
+                    <td style={{ padding: '16px' }}>
+                      <span style={{ padding: '4px 8px', background: 'var(--bg-primary)', borderRadius: '4px', fontSize: '12px' }}>
+                        {status}
+                      </span>
+                    </td>
+                    <td style={{ padding: '16px' }}>
+                      {isAging ? (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#ef4444', fontWeight: '500', fontSize: '13px' }}>
+                          <AlertCircle size={14} /> {daysPending} days
+                        </span>
+                      ) : (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-secondary)', fontSize: '13px' }}>
+                          <Clock size={14} /> {daysPending} days
+                        </span>
+                      )}
+                    </td>
+                    <td style={{ padding: '16px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ width: '60px', height: '6px', background: 'var(--bg-primary)', borderRadius: '3px', overflow: 'hidden' }}>
+                          <div style={{ height: '100%', width: `${Math.min(100, Math.max(0, ats))}%`, background: ats > 70 ? '#10b981' : ats > 40 ? '#f59e0b' : '#ef4444' }}></div>
+                        </div>
+                        <span style={{ fontSize: '13px', fontWeight: '600' }}>{ats}%</span>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>

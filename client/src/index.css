@@ -22,6 +22,7 @@
   --status-shortlist: #eab308; /* Yellow */
   --status-interview: #a855f7; /* Purple */
   --status-offered: #10b981; /* Emerald */
+  --status-placed: #059669; /* Emerald/Green */
   --status-rejected: #f43f5e; /* Rose */
   
   --radius-sm: 8px;
@@ -72,6 +73,7 @@
   --status-shortlist: #e0952b;
   --status-interview: #17a2b8;
   --status-offered: #2f9e44;
+  --status-placed: #059669;
   --status-rejected: #dc2626;
   
   --bg-gradient: radial-gradient(circle at 10% 20%, rgba(15, 95, 166, 0.08) 0%, transparent 40%),

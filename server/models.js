@@ -38,7 +38,11 @@ const candidateSchema = new mongoose.Schema({
       confidence: Number
     }
   ],
-  stage: { type: String, default: 'Inbox' },
+  stage: { 
+    type: String, 
+    default: 'Inbox',
+    enum: ['Inbox', 'AI Processed', 'Screening', 'Shortlist', 'Shortlisted', 'Interview', 'Interviewing', 'Offered', 'Placed', 'Rejected', 'Hired']
+  },
   resumeUrl: { type: String },
   resumeText: { type: String, default: '' },
   matchScore: { type: Number, default: 0 },

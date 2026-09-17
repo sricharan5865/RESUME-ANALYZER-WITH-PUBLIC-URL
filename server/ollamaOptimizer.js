@@ -22,6 +22,19 @@
     }
   }
 
+  // Preserve essential extractedData scalar fields before stripping
+  if (cleanProfile.extractedData && typeof cleanProfile.extractedData === 'object') {
+    if (cleanProfile.extractedData.totalYearsExperience !== undefined && cleanProfile.totalYearsExperience === undefined) {
+      cleanProfile.totalYearsExperience = cleanProfile.extractedData.totalYearsExperience;
+    }
+    if (cleanProfile.extractedData.currentLocation !== undefined && cleanProfile.currentLocation === undefined) {
+      cleanProfile.currentLocation = cleanProfile.extractedData.currentLocation;
+    }
+    if (cleanProfile.extractedData.noticePeriod !== undefined && cleanProfile.noticePeriod === undefined) {
+      cleanProfile.noticePeriod = cleanProfile.extractedData.noticePeriod;
+    }
+  }
+
   const keysToStrip = [
     'interviewQuestions',
     'hrQuestions',

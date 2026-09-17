@@ -1163,6 +1163,7 @@ export default function CandidateDetails({ candidate: propCandidate, job, jobs =
                   <option value="Shortlist">Shortlist</option>
                   <option value="Interview">Interview</option>
                   <option value="Offered">Offered</option>
+                  <option value="Placed">Placed</option>
                   <option value="Rejected">Rejected</option>
                 </select>
               </div>

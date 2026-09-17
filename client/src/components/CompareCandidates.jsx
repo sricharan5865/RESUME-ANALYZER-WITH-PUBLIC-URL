@@ -16,9 +16,23 @@ export default function CompareCandidates({ candidates, compareIds, onBack }) {
     );
   }
 
-  const cands = candidates.filter(c => compareIds.includes(c.id));
+  const cands = (candidates || []).filter(c => compareIds.includes(c.id) || compareIds.includes(c._id));
+  if (cands.length === 0) {
+    return (
+      <div style={{ padding: '24px' }}>
+        <header style={{ marginBottom: '24px' }}>
+          <h2 style={{ fontSize: '20px', fontWeight: 'bold' }}>Candidate Comparison</h2>
+          <button onClick={onBack} style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-primary)', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', marginTop: '12px' }}>← Back to Pipeline</button>
+        </header>
+        <div className="glass" style={{ padding: '40px', textAlign: 'center', borderRadius: '12px' }}>
+          <p style={{ color: 'var(--text-muted)' }}>No candidates selected. Go to the Pipeline board and select candidates to compare.</p>
+        </div>
+      </div>
+    );
+  }
+
   const getScore = (c) => (c.matchScore !== undefined && c.matchScore > 0) ? c.matchScore : (c.ownCategoryScore > 0 ? c.ownCategoryScore : (c.matchScore || 0));
-  const bestScore = Math.max(...cands.map(getScore));
+  const bestScore = cands.length > 0 ? Math.max(...cands.map(getScore)) : 0;
 
   const rows = [
     { label: "Job Match Score", render: c => { const s = getScore(c); return <span style={{ fontWeight: 'bold', color: s >= 80 ? 'var(--status-offered)' : 'inherit' }}>{s}%</span>; }, highlight: true },
@@ -46,7 +60,7 @@ export default function CompareCandidates({ candidates, compareIds, onBack }) {
             <tr>
               <th style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', borderRight: '1px solid var(--border-color)', minWidth: '150px' }}>Attribute</th>
               {cands.map((c) => (
-                <th key={c.id} style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', borderRight: '1px solid var(--border-color)', minWidth: '250px', background: getScore(c) === bestScore && bestScore > 0 ? 'rgba(16, 185, 129, 0.1)' : 'transparent' }}>
+                <th key={c.id || c._id} style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', borderRight: '1px solid var(--border-color)', minWidth: '250px', background: getScore(c) === bestScore && bestScore > 0 ? 'rgba(16, 185, 129, 0.1)' : 'transparent' }}>
                   <div style={{ fontWeight: 'bold', fontSize: '16px' }}>{c.name}</div>
                   <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{c.email}</div>
                   <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{c.phone}</div>
@@ -61,7 +75,7 @@ export default function CompareCandidates({ candidates, compareIds, onBack }) {
                   {r.label}
                 </td>
                 {cands.map((c) => (
-                  <td key={c.id} style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', borderRight: '1px solid var(--border-color)', background: r.highlight && getScore(c) === bestScore && bestScore > 0 ? 'rgba(16, 185, 129, 0.05)' : 'transparent' }}>
+                  <td key={c.id || c._id} style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', borderRight: '1px solid var(--border-color)', background: r.highlight && getScore(c) === bestScore && bestScore > 0 ? 'rgba(16, 185, 129, 0.05)' : 'transparent' }}>
                     {r.render(c)}
                   </td>
                 ))}

@@ -326,7 +326,13 @@ function requireRole(roles) {
 function canAccessCandidate(req, candidate) {
   if (!candidate) return false;
   if (req.user && req.user.role === 'manager') {
-    return candidate.assignedTo === req.user.email;
+    if (candidate.assignedTo) {
+      return candidate.assignedTo === req.user.email;
+    }
+    if (req.user.department && candidate.department) {
+      return req.user.department.toLowerCase() === candidate.department.toLowerCase();
+    }
+    return true;
   }
   return true;
 }
@@ -639,6 +645,7 @@ async function sendAutomaticEmail(candidate, triggerType, extraParams = {}) {
       return { success: false, reason: reasonMsg };
     }
 
+    candidate.history = candidate.history || [];
     candidate.history.push({
       date: new Date().toISOString(),
       type: 'EmailSent',
@@ -796,7 +803,8 @@ app.post('/api/admin/users/:id/reset-password', authenticateToken, requireRole([
 app.post('/api/candidates/:id/assign', authenticateToken, requireRole(['admin', 'recruiter']), async (req, res) => {
   const { managerEmail } = req.body;
   try {
-    const candidate = await Candidate.findOne({ id: req.params.id });
+    const idQuery = mongoose.isValidObjectId(req.params.id) ? { $or: [{ id: req.params.id }, { _id: req.params.id }] } : { id: req.params.id };
+    const candidate = await Candidate.findOne(idQuery);
     if (!candidate) {
       return res.status(404).json({ error: 'Candidate not found' });
     }
@@ -1568,7 +1576,8 @@ app.post('/api/candidates/extract-gmail', authenticateToken, requireRole(['admin
 
 app.get('/api/candidates/:id/resume-html', authenticateToken, async (req, res) => {
   try {
-    const candidate = await Candidate.findOne({ id: req.params.id });
+    const idQuery = mongoose.isValidObjectId(req.params.id) ? { $or: [{ id: req.params.id }, { _id: req.params.id }] } : { id: req.params.id };
+    const candidate = await Candidate.findOne(idQuery);
     if (!candidate || !candidate.resumeUrl) {
       return res.status(404).send('Resume not found.');
     }
@@ -1716,7 +1725,7 @@ async function autoRouteCandidate(parsedData) {
   }
 }
 
-app.post('/api/candidates/upload', authenticateToken, requireRole(['admin', 'recruiter']), upload.single('resume'), async (req, res) => {
+app.post('/api/candidates/upload', authenticateToken, requireRole(['admin', 'recruiter', 'manager']), upload.single('resume'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No resume file uploaded.' });
   global.lastUploadedFilename = req.file.originalname;
   let { jobId, logId } = req.body;
@@ -1914,6 +1923,7 @@ app.post('/api/candidates/upload', authenticateToken, requireRole(['admin', 'rec
       unmatchedRequirements: checklistResult.unmatchedRequirements || [],
       passedCoreSkills: checklistResult.passedCoreSkills !== false,
       extractedData: parsedData,
+      assignedTo: req.user?.role === 'manager' ? req.user.email : null,
       history: [{ date: new Date().toISOString(), type: 'Imported', text: `Manual upload: ${req.file.originalname}` }]
     });
 
@@ -1975,7 +1985,7 @@ app.post('/api/candidates/upload', authenticateToken, requireRole(['admin', 'rec
   }
 });
 
-app.post('/api/candidates/upload/resolve', authenticateToken, requireRole(['admin', 'recruiter']), async (req, res) => {
+app.post('/api/candidates/upload/resolve', authenticateToken, requireRole(['admin', 'recruiter', 'manager']), async (req, res) => {
   let { action, candidateId, tempFile, parsedData, pdfText, jobId, logId } = req.body;
   const data = (parsedData && typeof parsedData === 'object') ? parsedData : {};
 
@@ -2119,6 +2129,10 @@ app.post('/api/candidates/upload/resolve', authenticateToken, requireRole(['admi
         console.warn('Tag generation failed during update:', e.message);
       }
 
+      if (req.user?.role === 'manager' && !candidate.assignedTo) {
+        candidate.assignedTo = req.user.email;
+      }
+      candidate.history = candidate.history || [];
       candidate.history.push({
         date: new Date().toISOString(),
         type: 'Updated',
@@ -2307,7 +2321,8 @@ app.post('/api/candidates/upload/resolve', authenticateToken, requireRole(['admi
         seniorityLevel: data.seniorityLevel || 'Mid',
         hrQuestions: [],
         technicalQuestions: [],
-        projects: data.projects || []
+        projects: data.projects || [],
+        assignedTo: req.user?.role === 'manager' ? req.user.email : null
       });
 
       const duplicateScore = scoringResult.score || 0;
@@ -2323,6 +2338,7 @@ app.post('/api/candidates/upload/resolve', authenticateToken, requireRole(['admi
         console.log(`Duplicate candidate score is ${duplicateScore}% (<= 50%). Skipping Q&A generation to decrease load on Ollama.`);
       }
 
+      newCandidate.history = newCandidate.history || [];
       newCandidate.history.push({
         date: new Date().toISOString(),
         type: 'Created',
@@ -2459,7 +2475,8 @@ app.get('/api/candidates', authenticateToken, async (req, res) => {
 
 app.get('/api/candidates/:id', authenticateToken, async (req, res) => {
   try {
-    const candidate = await Candidate.findOne({ id: req.params.id });
+    const idQuery = mongoose.isValidObjectId(req.params.id) ? { $or: [{ id: req.params.id }, { _id: req.params.id }] } : { id: req.params.id };
+    const candidate = await Candidate.findOne(idQuery);
     if (!candidate) return res.status(404).json({ error: 'Candidate not found.' });
 
     // If manager, check assignment
@@ -2484,8 +2501,8 @@ app.get('/api/candidates/:id', authenticateToken, async (req, res) => {
 
 app.get('/api/candidates/:id/similar', authenticateToken, async (req, res) => {
   try {
-    const candidateId = req.params.id;
-    const candidate = await Candidate.findOne({ id: candidateId });
+    const idQuery = mongoose.isValidObjectId(req.params.id) ? { $or: [{ id: req.params.id }, { _id: req.params.id }] } : { id: req.params.id };
+    const candidate = await Candidate.findOne(idQuery);
     if (!candidate) return res.status(404).json({ error: 'Candidate not found.' });
 
     if (!canAccessCandidate(req, candidate)) {
@@ -2494,7 +2511,7 @@ app.get('/api/candidates/:id/similar', authenticateToken, async (req, res) => {
 
     const topK = parseInt(req.query.limit) || 5;
     const assignedTo = req.user.role === 'manager' ? req.user.email : null;
-    const similar = await findSimilarCandidates(candidateId, topK, assignedTo);
+    const similar = await findSimilarCandidates(candidate.id, topK, assignedTo);
     res.json(similar);
   } catch (error) {
     console.error('Failed to find similar candidates:', error);
@@ -2504,7 +2521,8 @@ app.get('/api/candidates/:id/similar', authenticateToken, async (req, res) => {
 
 app.delete('/api/candidates/:id', authenticateToken, requireRole(['admin', 'recruiter']), async (req, res) => {
   try {
-    const candidate = await Candidate.findOne({ id: req.params.id });
+    const idQuery = mongoose.isValidObjectId(req.params.id) ? { $or: [{ id: req.params.id }, { _id: req.params.id }] } : { id: req.params.id };
+    const candidate = await Candidate.findOne(idQuery);
     if (!candidate) return res.status(404).json({ error: 'Candidate not found.' });
 
     if (candidate.resumeUrl) {
@@ -2514,18 +2532,18 @@ app.delete('/api/candidates/:id', authenticateToken, requireRole(['admin', 'recr
       }
     }
 
-    await Candidate.deleteOne({ id: req.params.id });
+    await Candidate.deleteOne(idQuery);
 
     // Cascade delete related records
-    await CandidateProfile.deleteMany({ candidateId: req.params.id }).catch(() => {});
-    await JobMatch.deleteMany({ candidateId: req.params.id }).catch(() => {});
-    await ResumeChunk.deleteMany({ candidateId: req.params.id }).catch(() => {});
+    await CandidateProfile.deleteMany({ candidateId: candidate.id }).catch(() => {});
+    await JobMatch.deleteMany({ candidateId: candidate.id }).catch(() => {});
+    await ResumeChunk.deleteMany({ candidateId: candidate.id }).catch(() => {});
 
     const candidates = await Candidate.find();
     searchIndex.buildIndex(candidates);
 
     // Remove from RAG index
-    removeCandidate(req.params.id).catch(err => console.error('RAG removal failed:', err.message));
+    removeCandidate(candidate.id).catch(err => console.error('RAG removal failed:', err.message));
 
     res.json({ success: true, message: 'Candidate deleted successfully.' });
   } catch (error) {
@@ -2546,19 +2564,25 @@ app.post('/api/gmail/emails/:id/dismiss', authenticateToken, requireRole(['admin
 app.patch('/api/candidates/:id/stage', authenticateToken, async (req, res) => {
   try {
     const { stage } = req.body;
-    const candidate = await Candidate.findOne({ id: req.params.id });
+    const idQuery = mongoose.isValidObjectId(req.params.id) ? { $or: [{ id: req.params.id }, { _id: req.params.id }] } : { id: req.params.id };
+    const candidate = await Candidate.findOne(idQuery);
     if (!candidate) return res.status(404).json({ error: 'Not found.' });
 
     if (!canAccessCandidate(req, candidate)) {
       return res.status(403).json({ error: 'Forbidden: You do not have access to this candidate.' });
     }
 
+    const validStages = ['Inbox', 'AI Processed', 'Screening', 'Shortlist', 'Shortlisted', 'Interview', 'Interviewing', 'Offered', 'Placed', 'Rejected', 'Hired'];
+    const matchedStage = validStages.find(s => s.toLowerCase() === (stage || '').toLowerCase());
+    const finalStage = matchedStage || stage;
+
     const oldStage = candidate.stage;
-    if ((oldStage || '').toLowerCase() === (stage || '').toLowerCase()) {
+    if ((oldStage || '').toLowerCase() === (finalStage || '').toLowerCase()) {
       return res.json(candidate);
     }
-    candidate.stage = stage;
-    candidate.history.push({ date: new Date().toISOString(), type: 'StageChanged', text: `Moved from "${oldStage}" to "${stage}"` });
+    candidate.stage = finalStage;
+    candidate.history = candidate.history || [];
+    candidate.history.push({ date: new Date().toISOString(), type: 'StageChanged', text: `Moved from "${oldStage}" to "${finalStage}"` });
     
     await candidate.save();
 
@@ -2589,7 +2613,8 @@ app.patch('/api/candidates/:id/stage', authenticateToken, async (req, res) => {
 app.patch('/api/candidates/:id/position', authenticateToken, async (req, res) => {
   try {
     const { jobId } = req.body;
-    const candidate = await Candidate.findOne({ id: req.params.id });
+    const idQuery = mongoose.isValidObjectId(req.params.id) ? { $or: [{ id: req.params.id }, { _id: req.params.id }] } : { id: req.params.id };
+    const candidate = await Candidate.findOne(idQuery);
     if (!candidate) return res.status(404).json({ error: 'Candidate not found.' });
 
     if (!canAccessCandidate(req, candidate)) {
@@ -2598,18 +2623,19 @@ app.patch('/api/candidates/:id/position', authenticateToken, async (req, res) =>
 
     let oldJobTitle = 'General Role';
     if (candidate.jobId) {
-      const oldJob = await Job.findOne({ id: candidate.jobId });
+      const oldJob = await Job.findOne({ $or: [{ id: candidate.jobId }, { _id: mongoose.isValidObjectId(candidate.jobId) ? candidate.jobId : null }] });
       if (oldJob) oldJobTitle = oldJob.title;
     }
 
     let newJobTitle = 'General Role';
     let targetJob = null;
     if (jobId) {
-      targetJob = await Job.findOne({ id: jobId });
+      targetJob = await Job.findOne({ $or: [{ id: jobId }, { _id: mongoose.isValidObjectId(jobId) ? jobId : null }] });
       if (targetJob) newJobTitle = targetJob.title;
     }
 
     candidate.jobId = jobId || null;
+    candidate.history = candidate.history || [];
     candidate.history.push({
       date: new Date().toISOString(),
       type: 'PositionChanged',
@@ -2703,7 +2729,8 @@ app.patch('/api/candidates/:id/position', authenticateToken, async (req, res) =>
 app.patch('/api/candidates/:id/extracted-data', authenticateToken, async (req, res) => {
   try {
     const { currentLocation, totalYearsExperience, noticePeriod, currentCtc, expectedCtc, formAnswers, name, email, phone, skills } = req.body;
-    const candidate = await Candidate.findOne({ id: req.params.id });
+    const idQuery = mongoose.isValidObjectId(req.params.id) ? { $or: [{ id: req.params.id }, { _id: req.params.id }] } : { id: req.params.id };
+    const candidate = await Candidate.findOne(idQuery);
     if (!candidate) return res.status(404).json({ error: 'Candidate not found.' });
 
     if (!canAccessCandidate(req, candidate)) {
@@ -2733,6 +2760,7 @@ app.patch('/api/candidates/:id/extracted-data', authenticateToken, async (req, r
     };
     
     candidate.markModified('extractedData');
+    candidate.history = candidate.history || [];
     candidate.history.push({
       date: new Date().toISOString(),
       type: 'Status',
@@ -2751,7 +2779,8 @@ app.post('/api/candidates/:id/send-email', authenticateToken, requireRole(['admi
   const { subject, body, attachOfferPdf } = req.body;
   const emailConfig = await getEmailConfig();
 
-  const candidate = await Candidate.findOne({ id: req.params.id });
+  const idQuery = mongoose.isValidObjectId(req.params.id) ? { $or: [{ id: req.params.id }, { _id: req.params.id }] } : { id: req.params.id };
+  const candidate = await Candidate.findOne(idQuery);
   if (!candidate) return res.status(404).json({ error: 'Not found.' });
   if (!candidate.email) return res.status(400).json({ error: 'No email specified.' });
 
@@ -2787,6 +2816,7 @@ app.post('/api/candidates/:id/send-email', authenticateToken, requireRole(['admi
     }
 
     const emailNote = attachments.length > 0 ? ` (with ${attachments[0].filename} attached)` : '';
+    candidate.history = candidate.history || [];
     candidate.history.push({ date: new Date().toISOString(), type: 'EmailSent', text: `Sent email: "${subject}"${emailNote}` });
     await candidate.save();
     res.json({ success: true, message: 'Email sent successfully.', hasAttachment: attachments.length > 0 });
@@ -2798,7 +2828,8 @@ app.post('/api/candidates/:id/send-email', authenticateToken, requireRole(['admi
 app.post('/api/candidates/:id/send-offer-letter', authenticateToken, requireRole(['admin', 'recruiter']), async (req, res) => {
   try {
     const { offerDetails, subject, body, sendEmailNow } = req.body;
-    const candidate = await Candidate.findOne({ id: req.params.id });
+    const idQuery = mongoose.isValidObjectId(req.params.id) ? { $or: [{ id: req.params.id }, { _id: req.params.id }] } : { id: req.params.id };
+    const candidate = await Candidate.findOne(idQuery);
     if (!candidate) return res.status(404).json({ error: 'Candidate not found.' });
 
     const shouldSendEmail = sendEmailNow !== false;
@@ -2852,6 +2883,7 @@ app.post('/api/candidates/:id/send-offer-letter', authenticateToken, requireRole
     const joiningDate = offerDetails?.joiningDate || 'Not Specified';
     const salary = offerDetails?.offeredSalary || 'Not Specified';
     
+    candidate.history = candidate.history || [];
     candidate.history.push({
       date: new Date().toISOString(),
       type: 'Offer Extended',
@@ -2887,7 +2919,8 @@ app.post('/api/candidates/:id/send-offer-letter', authenticateToken, requireRole
 
 app.get('/api/candidates/:id/offer-letter-download', authenticateToken, async (req, res) => {
   try {
-    const candidate = await Candidate.findOne({ id: req.params.id });
+    const idQuery = mongoose.isValidObjectId(req.params.id) ? { $or: [{ id: req.params.id }, { _id: req.params.id }] } : { id: req.params.id };
+    const candidate = await Candidate.findOne(idQuery);
     if (!candidate) return res.status(404).json({ error: 'Candidate not found.' });
 
     if (!canAccessCandidate(req, candidate)) {
@@ -2908,7 +2941,8 @@ app.get('/api/candidates/:id/offer-letter-download', authenticateToken, async (r
 
 app.post('/api/candidates/:id/re-score', authenticateToken, async (req, res) => {
   try {
-    const candidate = await Candidate.findOne({ id: req.params.id });
+    const idQuery = mongoose.isValidObjectId(req.params.id) ? { $or: [{ id: req.params.id }, { _id: req.params.id }] } : { id: req.params.id };
+    const candidate = await Candidate.findOne(idQuery);
     if (!candidate) return res.status(404).json({ error: 'Candidate not found.' });
 
     if (!canAccessCandidate(req, candidate)) {
@@ -2935,7 +2969,7 @@ app.post('/api/candidates/:id/re-score', authenticateToken, async (req, res) => 
 
     let job = null;
     if (candidate.jobId) {
-      job = await Job.findOne({ id: candidate.jobId });
+      job = await Job.findOne({ $or: [{ id: candidate.jobId }, { _id: mongoose.isValidObjectId(candidate.jobId) ? candidate.jobId : null }] });
     }
     if (!job) {
       job = await Job.findOne({ status: 'Active' });
@@ -3004,14 +3038,15 @@ app.post('/api/candidates/:id/re-score', authenticateToken, async (req, res) => 
 
 app.post('/api/candidates/:id/generate-questions', authenticateToken, requireRole(['admin', 'recruiter']), async (req, res) => {
   try {
-    const candidate = await Candidate.findOne({ id: req.params.id });
+    const idQuery = mongoose.isValidObjectId(req.params.id) ? { $or: [{ id: req.params.id }, { _id: req.params.id }] } : { id: req.params.id };
+    const candidate = await Candidate.findOne(idQuery);
     if (!candidate) {
       return res.status(404).json({ error: 'Candidate not found.' });
     }
 
     let job = null;
     if (candidate.jobId) {
-      job = await Job.findOne({ id: candidate.jobId });
+      job = await Job.findOne({ $or: [{ id: candidate.jobId }, { _id: mongoose.isValidObjectId(candidate.jobId) ? candidate.jobId : null }] });
     }
 
     let hrQuestions = [];
@@ -3259,7 +3294,7 @@ app.post('/api/jobs/:id/postings', authenticateToken, requireRole(['admin', 'rec
 
 app.post('/api/jobs/:id/publish', authenticateToken, requireRole(['admin', 'recruiter']), async (req, res) => {
   try {
-    const job = await Job.findOne({ id: req.params.id });
+    const job = await Job.findOne({ $or: [{ id: req.params.id }, { _id: mongoose.isValidObjectId(req.params.id) ? req.params.id : null }] });
     if (!job) return res.status(404).json({ error: 'Job not found' });
 
     const { publishToCareers } = req.body;
@@ -3288,9 +3323,10 @@ app.post('/api/jobs/:id/publish', authenticateToken, requireRole(['admin', 'recr
 app.delete('/api/jobs/:id', authenticateToken, requireRole(['admin', 'recruiter']), async (req, res) => {
   try {
     const jobId = req.params.id;
+    const jobQuery = { $or: [{ id: jobId }, { _id: mongoose.isValidObjectId(jobId) ? jobId : null }] };
     
     // Find all candidates associated with this job
-    const candidates = await Candidate.find({ jobId });
+    const candidates = await Candidate.find({ $or: [{ jobId }, { jobId: mongoose.isValidObjectId(jobId) ? jobId : null }] });
     
     for (const candidate of candidates) {
       // Delete resume file if it exists
@@ -3314,10 +3350,10 @@ app.delete('/api/jobs/:id', authenticateToken, requireRole(['admin', 'recruiter'
     }
     
     // Delete the job itself
-    await Job.deleteOne({ id: jobId });
+    await Job.deleteOne(jobQuery);
 
     // Clean up any remaining JobMatch records for this job
-    await JobMatch.deleteMany({ jobId }).catch(() => {});
+    await JobMatch.deleteMany({ $or: [{ jobId }, { jobId: mongoose.isValidObjectId(jobId) ? jobId : null }] }).catch(() => {});
     
     // Rebuild search index for remaining candidates
     const remainingCandidates = await Candidate.find();
@@ -3576,7 +3612,8 @@ app.post('/api/rag/jd-search', authenticateToken, async (req, res) => {
 
 app.post('/api/candidates/:id/generate-jd-questions', authenticateToken, requireRole(['admin', 'recruiter']), async (req, res) => {
   try {
-    const candidate = await Candidate.findOne({ id: req.params.id });
+    const idQuery = mongoose.isValidObjectId(req.params.id) ? { $or: [{ id: req.params.id }, { _id: req.params.id }] } : { id: req.params.id };
+    const candidate = await Candidate.findOne(idQuery);
     if (!candidate) {
       return res.status(404).json({ error: 'Candidate not found.' });
     }
@@ -3820,9 +3857,11 @@ app.get('/api/ingestion-logs', authenticateToken, requireRole(['admin', 'recruit
 
 // Re-evaluate resume from Ingestion Tracker
 app.post('/api/ingestion-logs/:id/re-evaluate', authenticateToken, requireRole(['admin', 'recruiter']), async (req, res) => {
+  let log = null;
+  let candidate = null;
   try {
     const { id } = req.params;
-    const log = await IngestionLog.findOne({ id });
+    log = await IngestionLog.findOne({ id });
     if (!log) {
       return res.status(404).json({ error: 'Ingestion log entry not found.' });
     }
@@ -3831,7 +3870,6 @@ app.post('/api/ingestion-logs/:id/re-evaluate', authenticateToken, requireRole([
     await log.save().catch(() => {});
 
     // Try to locate linked candidate
-    let candidate = null;
     if (log.candidateId) {
       candidate = await Candidate.findOne({ $or: [{ id: log.candidateId }, { _id: mongoose.isValidObjectId(log.candidateId) ? log.candidateId : null }] });
     }
@@ -3945,6 +3983,7 @@ app.post('/api/ingestion-logs/:id/re-evaluate', authenticateToken, requireRole([
         }
       }
 
+      candidate.history = candidate.history || [];
       candidate.history.push({
         date: new Date().toISOString(),
         type: 'Re-evaluated',
@@ -4109,6 +4148,11 @@ app.post('/api/ingestion-logs/:id/re-evaluate', authenticateToken, requireRole([
     try {
       if (candidate) {
         await Candidate.updateOne({ id: candidate.id }, { $set: { isProcessing: false } }).catch(() => {});
+      }
+      if (log) {
+        log.status = 'failed';
+        log.error = error.message || 'Re-evaluation failed';
+        await log.save().catch(() => {});
       }
     } catch (e) {}
     res.status(500).json({ error: error.message });
@@ -4349,6 +4393,7 @@ app.post('/api/public/apply', async (req, res) => {
         formAnswers: finalAnswersList
       };
       existingCandidate.markModified('extractedData');
+      existingCandidate.history = existingCandidate.history || [];
       existingCandidate.history.push({ date: new Date().toISOString(), type: 'Status', text: isReferral ? `Re-submitted via referral link by ${finalReferrerName}` : 'Application re-submitted. Previous data updated.' });
       await existingCandidate.save();
       console.log(`[Public Apply] Duplicate detected for ${finalEmail} on job ${jobId}. Updated existing candidate ${candidateId}.`);
@@ -4406,7 +4451,7 @@ app.post('/api/public/apply', async (req, res) => {
     if (activeCandidate && activeCandidate.email && !isGenericVal(activeCandidate.email, 'email')) {
       let jobTitle = 'General Role';
       if (jobId) {
-        const targetJob = await Job.findOne({ id: jobId });
+        const targetJob = await Job.findOne({ $or: [{ id: jobId }, { _id: mongoose.isValidObjectId(jobId) ? jobId : null }] });
         if (targetJob) jobTitle = targetJob.title;
       }
       console.log(`[Public Apply] Sending application received confirmation email to ${activeCandidate.email} for role "${jobTitle}"...`);
@@ -4444,7 +4489,7 @@ app.post('/api/public/apply', async (req, res) => {
 
         let job = null;
         if (jobId) {
-          job = await Job.findOne({ id: jobId });
+          job = await Job.findOne({ $or: [{ id: jobId }, { _id: mongoose.isValidObjectId(jobId) ? jobId : null }] });
           if (job && (!job.requirementsChecklist || job.requirementsChecklist.length === 0)) {
             console.log(`Auto-generating requirements checklist for job ${job.title}...`);
             const generatedChecklist = await extractChecklistFromJob(job);
@@ -4652,6 +4697,7 @@ app.post('/api/public/apply', async (req, res) => {
           } else if (emailConfig.user && emailConfig.pass) {
             await sendSMTPMessage({ to: activeCandidate.email, subject, body });
           }
+          activeCandidate.history = activeCandidate.history || [];
           activeCandidate.history.push({ date: new Date().toISOString(), type: 'EmailSent', text: 'Sent Application Received auto-reply' });
           await activeCandidate.save();
         }
@@ -4998,7 +5044,11 @@ app.get('/api/pending-cvs', authenticateToken, async (req, res) => {
         noticePeriod: c.extractedData?.noticePeriod || c.noticePeriod || 'N/A',
         daysPending: Math.max(0, isNaN(daysPending) ? 0 : daysPending),
         stage: c.stage || 'Inbox',
-        createdAt: c.createdAt
+        createdAt: c.createdAt,
+        keySkills: (c.skills && c.skills.length > 0) ? c.skills.slice(0, 5).join(', ') : 'N/A',
+        status: c.stage || 'Inbox',
+        isAging: daysPending > 7,
+        ats: (c.matchScore !== undefined && c.matchScore > 0) ? c.matchScore : (c.ownCategoryScore || 0)
       };
     });
     res.json(formatted);

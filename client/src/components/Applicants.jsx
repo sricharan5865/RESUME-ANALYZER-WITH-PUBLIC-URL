@@ -4,7 +4,7 @@ import { exportToCSV, exportToExcel, prepareCandidateExportData } from '../utils
 import { getCandidateLocation, getCandidateExperience, getCandidateNoticePeriod } from '../utils/candidateHelpers';
 
 const NOTICE_PERIODS = ["Immediate", "15 days", "30 days", "45 days", "60 days", "90 days", "More than 90 days"];
-const STAGES = ["Inbox", "Shortlist", "Interview", "Offered", "Rejected"];
+const STAGES = ["Inbox", "Shortlist", "Interview", "Offered", "Placed", "Rejected"];
 
 const ALL_COLUMNS = [
   { id: 'name', label: 'Name & Email', defaultVisible: true, required: true },
@@ -97,7 +97,7 @@ export default function Applicants({
     }
 
     // 2. Job Role / Position
-    if (selectedJobId && c.jobId !== selectedJobId) return false;
+    if (selectedJobId && !(c.jobId === selectedJobId || (jobs.find(j => j.id === selectedJobId || j._id === selectedJobId)?.title && (c.position === jobs.find(j => j.id === selectedJobId || j._id === selectedJobId)?.title || c.jobRole === jobs.find(j => j.id === selectedJobId || j._id === selectedJobId)?.title)))) return false;
 
     // 3. Location
     if (locationFilter) {
@@ -174,7 +174,7 @@ export default function Applicants({
     if (selectedCandidates.length === sortedCandidates.length) {
       setSelectedCandidates([]);
     } else {
-      setSelectedCandidates(sortedCandidates.map(c => c.id));
+      setSelectedCandidates(sortedCandidates.map(c => c.id || c._id).filter(Boolean));
     }
   };
 
@@ -218,7 +218,7 @@ export default function Applicants({
 
   const handleExport = () => {
     const rawDataToExport = selectedCandidates.length > 0 
-      ? candidates.filter(c => selectedCandidates.includes(c.id))
+      ? candidates.filter(c => selectedCandidates.includes(c.id) || selectedCandidates.includes(c._id))
       : sortedCandidates;
 
     if (rawDataToExport.length === 0) {
@@ -606,8 +606,8 @@ export default function Applicants({
               </tr>
             ) : (
               sortedCandidates.map((c) => {
-                const job = jobs.find(j => j.id === c.jobId);
-                const isSelected = selectedCandidates.includes(c.id);
+                const job = jobs.find(j => j.id === c.jobId || j._id === c.jobId);
+                const isSelected = selectedCandidates.includes(c.id) || selectedCandidates.includes(c._id);
                 const isGeneralRole = !c.jobId || !job;
                 const useJobMatch = !isGeneralRole || !!c.jdQuestions;
                 
@@ -616,12 +616,12 @@ export default function Applicants({
                 const scoreColorClass = score >= 80 ? 'score-high' : score >= 50 ? 'score-medium' : 'score-low';
 
                 return (
-                  <tr key={c.id} style={{ borderBottom: '1px solid var(--glass-border)', background: isSelected ? 'rgba(99, 102, 241, 0.2)' : 'transparent', transition: 'background-color 0.2s' }}>
+                  <tr key={c.id || c._id} style={{ borderBottom: '1px solid var(--glass-border)', background: isSelected ? 'rgba(99, 102, 241, 0.2)' : 'transparent', transition: 'background-color 0.2s' }}>
                     <td style={{ padding: '16px' }}>
                       <input 
                         type="checkbox" 
                         checked={isSelected}
-                        onChange={() => handleToggleSelectCandidate(c.id)}
+                        onChange={() => handleToggleSelectCandidate(c.id || c._id)}
                       />
                     </td>
 
@@ -687,8 +687,8 @@ export default function Applicants({
                           borderRadius: '12px',
                           fontSize: '11px',
                           fontWeight: '500',
-                          background: c.stage === 'Offered' ? 'rgba(16, 185, 129, 0.1)' : c.stage === 'Rejected' ? 'rgba(244, 63, 94, 0.1)' : 'rgba(255,255,255,0.05)',
-                          color: c.stage === 'Offered' ? 'var(--status-offered)' : c.stage === 'Rejected' ? 'var(--status-rejected)' : 'var(--text-primary)'
+                          background: (c.stage === 'Offered' || c.stage === 'Placed') ? 'rgba(16, 185, 129, 0.15)' : c.stage === 'Rejected' ? 'rgba(244, 63, 94, 0.1)' : 'rgba(255,255,255,0.05)',
+                          color: (c.stage === 'Offered' || c.stage === 'Placed') ? '#10b981' : c.stage === 'Rejected' ? 'var(--status-rejected)' : 'var(--text-primary)'
                         }}>
                           {c.stage}
                         </span>

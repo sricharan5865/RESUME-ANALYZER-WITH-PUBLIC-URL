@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Briefcase, MapPin, Sparkles, Eye, Mail, Upload, FileText, Plus, Loader, Filter, Trash2, Search, AlertCircle, X, FileSpreadsheet, Calendar, Download } from 'lucide-react';
+import { Briefcase, MapPin, Sparkles, Eye, Mail, Upload, FileText, Plus, Loader, Filter, Trash2, Search, AlertCircle, X, FileSpreadsheet, Calendar, Download, CheckCircle } from 'lucide-react';
 import { exportToCSV, exportToExcel, prepareCandidateExportData } from '../utils/export';
 import { getCandidateDate, matchDateRangeHelper } from '../utils/dateFilters';
 
 
-const STAGES = ['Inbox', 'Shortlist', 'Interview', 'Offered', 'Rejected'];
+const STAGES = ['Inbox', 'Shortlist', 'Interview', 'Offered', 'Placed', 'Rejected'];
 
 export default function PipelineBoard({ 
   candidates, 
@@ -15,7 +15,7 @@ export default function PipelineBoard({
   onOpenOfferModal,
   onManualUpload,
   onCandidateDeleted,
-  backendUrl,
+  backendUrl, 
   rankAccordingToJob,
   token,
   onCompare
@@ -34,6 +34,7 @@ export default function PipelineBoard({
     Shortlist: true,
     Interview: true,
     Offered: true,
+    Placed: true,
     Rejected: true
   });
 
@@ -50,6 +51,7 @@ export default function PipelineBoard({
       Shortlist: nextValue,
       Interview: nextValue,
       Offered: nextValue,
+      Placed: nextValue,
       Rejected: nextValue
     });
   };
@@ -127,7 +129,7 @@ export default function PipelineBoard({
 
   // Filter candidates by Job ID & Date
   const filteredCandidates = candidates.filter(c => {
-    if (selectedFilterJobId && c.jobId !== selectedFilterJobId) return false;
+    if (selectedFilterJobId && !(c.jobId === selectedFilterJobId || (jobs.find(j => j.id === selectedFilterJobId || j._id === selectedFilterJobId)?.title && (c.position === jobs.find(j => j.id === selectedFilterJobId || j._id === selectedFilterJobId)?.title || c.jobRole === jobs.find(j => j.id === selectedFilterJobId || j._id === selectedFilterJobId)?.title)))) return false;
     if (filterDateRange && !matchDateRangeHelper(getCandidateDate(c), filterDateRange)) return false;
     return true;
   });
@@ -644,6 +646,7 @@ export default function PipelineBoard({
             if (stage === 'Shortlist') headerColor = 'var(--status-shortlist)';
             if (stage === 'Interview') headerColor = 'var(--status-interview)';
             if (stage === 'Offered') headerColor = 'var(--status-offered)';
+            if (stage === 'Placed') headerColor = '#10b981';
             if (stage === 'Rejected') headerColor = 'var(--status-rejected)';
 
             return (
@@ -659,8 +662,15 @@ export default function PipelineBoard({
                 {/* Column Header */}
                 <div className="kanban-column-header">
                   <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '700', color: headerColor }}>
+                    {stage === 'Placed' && <CheckCircle size={15} style={{ color: '#10b981' }} />}
                     {stage}
-                    <span style={{ fontSize: '12px', background: 'var(--bg-tertiary)', color: 'var(--text-secondary)', padding: '2px 8px', borderRadius: '10px' }}>
+                    <span style={{ 
+                      fontSize: '12px', 
+                      background: stage === 'Placed' ? 'rgba(16, 185, 129, 0.15)' : 'var(--bg-tertiary)', 
+                      color: stage === 'Placed' ? '#10b981' : 'var(--text-secondary)', 
+                      padding: '2px 8px', 
+                      borderRadius: '10px' 
+                    }}>
                       {stageCandidates.length}
                     </span>
                   </span>

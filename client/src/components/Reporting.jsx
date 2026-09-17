@@ -5,7 +5,8 @@ export default function Reporting({ candidates, jobs }) {
   const totalCandidates = candidates.length;
 
   // 1. Pipeline Funnel
-  const stages = ['Inbox', 'Shortlist', 'Interview', 'Offered', 'Rejected'];
+  const STAGES = ['Inbox', 'Shortlist', 'Interview', 'Offered', 'Placed', 'Rejected'];
+  const stages = STAGES;
   const stageCounts = candidates.reduce((acc, c) => {
     const stage = c.stage || 'Inbox';
     acc[stage] = (acc[stage] || 0) + 1;
@@ -15,9 +16,10 @@ export default function Reporting({ candidates, jobs }) {
   // Cumulative funnel calculation: a candidate in Interview passed through Inbox & Shortlist
   const funnelData = {
     'Sourced': totalCandidates,
-    'Shortlisted': (stageCounts['Shortlist'] || 0) + (stageCounts['Interview'] || 0) + (stageCounts['Offered'] || 0),
-    'Interviewed': (stageCounts['Interview'] || 0) + (stageCounts['Offered'] || 0),
-    'Offered': stageCounts['Offered'] || 0
+    'Shortlisted': (stageCounts['Shortlist'] || 0) + (stageCounts['Interview'] || 0) + (stageCounts['Offered'] || 0) + (stageCounts['Placed'] || 0),
+    'Interviewed': (stageCounts['Interview'] || 0) + (stageCounts['Offered'] || 0) + (stageCounts['Placed'] || 0),
+    'Offered': (stageCounts['Offered'] || 0) + (stageCounts['Placed'] || 0),
+    'Placed': stageCounts['Placed'] || 0
   };
 
   // 2. Score Distribution

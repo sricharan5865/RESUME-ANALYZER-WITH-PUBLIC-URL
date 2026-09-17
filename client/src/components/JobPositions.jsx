@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Briefcase, Plus, Trash2, Edit2, X, Save, Link, Globe, CheckCircle2, Search, ExternalLink, Eye, Users, UserCheck, Clock, User, Sparkles, Filter } from 'lucide-react';
 import { getCandidateNoticePeriod, getCandidateLocation, getCandidateExperience } from '../utils/candidateHelpers';
 
-const STAGES = ["Inbox", "Shortlist", "Interview", "Offered", "Rejected"];
+const STAGES = ["Inbox", "Shortlist", "Interview", "Offered", "Placed", "Rejected"];
 
 const DEPARTMENTS = [
   "Project Management",
@@ -332,15 +332,25 @@ export default function JobPositions({
     if (!window.confirm('Are you sure you want to delete this job posting? All candidates associated with this job will also be deleted.')) return;
     if (!window.confirm('Are you absolutely sure you want to delete this job posting? This cannot be undone.')) return;
     try {
-      await fetch(`${backendUrl}/api/jobs/${id}`, { 
+      const res = await fetch(`${backendUrl}/api/jobs/${id}`, { 
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
+      if (!res.ok) {
+        let errMsg = 'Failed to delete job';
+        try {
+          const data = await res.json();
+          if (data && data.error) errMsg = data.error;
+        } catch (_) {}
+        alert(errMsg);
+        return;
+      }
       onJobDeleted(id);
     } catch (e) {
       console.error(e);
+      alert(e.message || 'Error deleting job');
     }
   };
 
@@ -801,7 +811,7 @@ export default function JobPositions({
                                 </button>
                                 <button className="btn btn-danger" style={{ padding: '6px' }} onClick={(e) => {
                                   e.stopPropagation();
-                                  handleDeleteJob(job.id);
+                                  handleDeleteJob(job.id || job._id);
                                 }} title="Delete Position">
                                   <Trash2 size={13} />
                                 </button>
