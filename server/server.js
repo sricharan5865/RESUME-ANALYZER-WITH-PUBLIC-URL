@@ -1794,7 +1794,10 @@ app.post('/api/candidates/upload', authenticateToken, requireRole(['admin', 'rec
 
     let job = null;
     if (jobId) {
-      job = await Job.findOne({ id: jobId });
+      job = await Job.findOne({ $or: [{ id: jobId }, { _id: mongoose.isValidObjectId(jobId) ? jobId : null }] });
+      if (job) {
+        jobId = job.id;
+      }
     }
     
     // Auto-Routing: If no explicit jobId is provided, try to find the best match
@@ -1816,13 +1819,23 @@ app.post('/api/candidates/upload', authenticateToken, requireRole(['admin', 'rec
     let jdQuestions = null;
 
     try {
-      console.log('Running analysis, scoring, and tag generation in parallel...');
-      const results = await Promise.all([
-        scoreCandidateByOwnCategory(parsedData).catch(e => { console.error('Own category score failed:', e.message); return null; }),
-        job ? scoreCandidate(parsedData, job).catch(e => { console.error('Job match score failed:', e.message); return null; }) : Promise.resolve(null),
-        generateTags(parsedData, job || { title: 'General', description: '' }, settings?.tagPreferences || []).catch(e => { console.error('Tag generation failed:', e.message); return null; }),
-        job ? scoreCandidateAgainstChecklist(parsedData, job).catch(e => { console.error('Checklist score failed:', e.message); return null; }) : Promise.resolve(null),
-      ]);
+      console.log('Running analysis, scoring, and tag generation...');
+      let results;
+      if (settings?.aiProvider === 'ollama') {
+        console.log('Ollama active: Running evaluation tasks sequentially to avoid model queue overload...');
+        const r0 = await scoreCandidateByOwnCategory(parsedData).catch(e => { console.error('Own category score failed:', e.message); return null; });
+        const r1 = job ? await scoreCandidate(parsedData, job).catch(e => { console.error('Job match score failed:', e.message); return null; }) : null;
+        const r2 = await generateTags(parsedData, job || { title: 'General', description: '' }, settings?.tagPreferences || []).catch(e => { console.error('Tag generation failed:', e.message); return null; });
+        const r3 = job ? await scoreCandidateAgainstChecklist(parsedData, job).catch(e => { console.error('Checklist score failed:', e.message); return null; }) : null;
+        results = [r0, r1, r2, r3];
+      } else {
+        results = await Promise.all([
+          scoreCandidateByOwnCategory(parsedData).catch(e => { console.error('Own category score failed:', e.message); return null; }),
+          job ? scoreCandidate(parsedData, job).catch(e => { console.error('Job match score failed:', e.message); return null; }) : Promise.resolve(null),
+          generateTags(parsedData, job || { title: 'General', description: '' }, settings?.tagPreferences || []).catch(e => { console.error('Tag generation failed:', e.message); return null; }),
+          job ? scoreCandidateAgainstChecklist(parsedData, job).catch(e => { console.error('Checklist score failed:', e.message); return null; }) : Promise.resolve(null),
+        ]);
+      }
       if (results[0]) ownCategoryResult = results[0];
       if (results[1]) scoringResult = results[1];
       if (results[2]) generatedTags = results[2];
@@ -1835,6 +1848,13 @@ app.post('/api/candidates/upload', authenticateToken, requireRole(['admin', 'rec
           matchingSkills: checklistResult.matchedRequirements,
           missingSkills: checklistResult.unmatchedRequirements,
           reasoning: checklistResult.reasoning
+        };
+      } else if (!job && ownCategoryResult && ownCategoryResult.score > 0) {
+        scoringResult = {
+          score: ownCategoryResult.score,
+          matchingSkills: ownCategoryResult.matchingSkills || [],
+          missingSkills: ownCategoryResult.missingSkills || [],
+          reasoning: ownCategoryResult.reasoning || ''
         };
       }
 
@@ -2035,10 +2055,33 @@ app.post('/api/candidates/upload/resolve', authenticateToken, requireRole(['admi
       let job = null;
       let scoringResult = { score: 0, matchingSkills: [], missingSkills: [], reasoning: '' };
       if (candidate.jobId) {
-        job = await Job.findOne({ id: candidate.jobId });
+        job = await Job.findOne({ $or: [{ id: candidate.jobId }, { _id: mongoose.isValidObjectId(candidate.jobId) ? candidate.jobId : null }] });
       }
       if (job) {
-        scoringResult = await scoreCandidate(data, job);
+        if (!job.requirementsChecklist || job.requirementsChecklist.length === 0) {
+          const genList = await extractChecklistFromJob(job);
+          job.requirementsChecklist = genList;
+          await job.save().catch(e => console.error('Failed to save checklist:', e));
+        }
+        const [scoreRes, checkRes] = await Promise.all([
+          scoreCandidate(data, job).catch(() => null),
+          scoreCandidateAgainstChecklist(data, job).catch(() => null)
+        ]);
+        if (checkRes && checkRes.checklist && checkRes.checklist.length > 0) {
+          scoringResult = {
+            score: checkRes.score,
+            matchingSkills: checkRes.matchedRequirements,
+            missingSkills: checkRes.unmatchedRequirements,
+            reasoning: checkRes.reasoning
+          };
+          candidate.checklist = checkRes.checklist;
+          candidate.checklistScore = checkRes.score;
+          candidate.matchedRequirements = checkRes.matchedRequirements;
+          candidate.unmatchedRequirements = checkRes.unmatchedRequirements;
+          candidate.passedCoreSkills = checkRes.passedCoreSkills !== false;
+        } else if (scoreRes) {
+          scoringResult = scoreRes;
+        }
       }
       candidate.matchScore = scoringResult.score || 0;
       candidate.matchingSkills = scoringResult.matchingSkills || [];
@@ -2147,7 +2190,10 @@ app.post('/api/candidates/upload/resolve', authenticateToken, requireRole(['admi
 
       let job = null;
       if (jobId) {
-        job = await Job.findOne({ id: jobId });
+        job = await Job.findOne({ $or: [{ id: jobId }, { _id: mongoose.isValidObjectId(jobId) ? jobId : null }] });
+        if (job) {
+          jobId = job.id;
+        }
       }
       
       // Auto-Routing: If no explicit jobId is provided, try to find the best match
@@ -2158,18 +2204,46 @@ app.post('/api/candidates/upload/resolve', authenticateToken, requireRole(['admi
         }
       }
 
+      if (job && (!job.requirementsChecklist || job.requirementsChecklist.length === 0)) {
+        const genList = await extractChecklistFromJob(job);
+        job.requirementsChecklist = genList;
+        await job.save().catch(e => console.error('Failed to save checklist in delete-before:', e));
+      }
+
+      let checklistResult = { score: 0, passedCoreSkills: true, matchedRequirements: [], unmatchedRequirements: [], reasoning: '', checklist: [] };
+
       try {
-        console.log('Running resolve delete-before scoring in parallel...');
-        const results = await Promise.all([
-          scoreCandidateByOwnCategory(data).catch(e => { console.error('Own category score failed:', e.message); return null; }),
-          job ? scoreCandidate(data, job).catch(e => { console.error('Job match score failed:', e.message); return null; }) : Promise.resolve(null),
-          generateTags(data, job || { title: 'General', description: '' }, settings?.tagPreferences || []).catch(e => { console.error('Tag generation failed:', e.message); return null; })
-        ]);
+        console.log('Running resolve delete-before scoring...');
+        let results;
+        if (settings?.aiProvider === 'ollama') {
+          const r0 = await scoreCandidateByOwnCategory(data).catch(() => null);
+          const r1 = job ? await scoreCandidate(data, job).catch(() => null) : null;
+          const r2 = await generateTags(data, job || { title: 'General', description: '' }, settings?.tagPreferences || []).catch(() => null);
+          const r3 = job ? await scoreCandidateAgainstChecklist(data, job).catch(() => null) : null;
+          results = [r0, r1, r2, r3];
+        } else {
+          results = await Promise.all([
+            scoreCandidateByOwnCategory(data).catch(() => null),
+            job ? scoreCandidate(data, job).catch(() => null) : Promise.resolve(null),
+            generateTags(data, job || { title: 'General', description: '' }, settings?.tagPreferences || []).catch(() => null),
+            job ? scoreCandidateAgainstChecklist(data, job).catch(() => null) : Promise.resolve(null)
+          ]);
+        }
         if (results[0]) ownCategoryResult = results[0];
         if (results[1]) scoringResult = results[1];
         if (results[2]) generatedTags = results[2];
+        if (results[3]) checklistResult = results[3];
+
+        if (checklistResult.checklist && checklistResult.checklist.length > 0) {
+          scoringResult = {
+            score: checklistResult.score,
+            matchingSkills: checklistResult.matchedRequirements,
+            missingSkills: checklistResult.unmatchedRequirements,
+            reasoning: checklistResult.reasoning
+          };
+        }
       } catch (err) {
-        console.error('Parallel resolve delete-before scoring failed:', err.message);
+        console.error('Resolve delete-before scoring failed:', err.message);
       }
 
       const newCandidate = new Candidate({
@@ -2194,6 +2268,11 @@ app.post('/api/candidates/upload/resolve', authenticateToken, requireRole(['admi
         ownCategoryMatchingSkills: ownCategoryResult.matchingSkills || [],
         ownCategoryMissingSkills: ownCategoryResult.missingSkills || [],
         ownCategoryExplanation: ownCategoryResult.reasoning || '',
+        checklist: checklistResult.checklist || [],
+        checklistScore: checklistResult.score || 0,
+        matchedRequirements: checklistResult.matchedRequirements || [],
+        unmatchedRequirements: checklistResult.unmatchedRequirements || [],
+        passedCoreSkills: checklistResult.passedCoreSkills !== false,
         comments: '',
         seniorityLevel: data.seniorityLevel || 'Mid',
         hrQuestions: [],
@@ -2519,12 +2598,44 @@ app.patch('/api/candidates/:id/position', authenticateToken, async (req, res) =>
     };
 
     if (targetJob) {
+      if (!targetJob.requirementsChecklist || targetJob.requirementsChecklist.length === 0) {
+        try {
+          const generatedChecklist = await extractChecklistFromJob(targetJob);
+          if (generatedChecklist && generatedChecklist.length > 0) {
+            targetJob.requirementsChecklist = generatedChecklist;
+            await targetJob.save().catch(e => console.error('Failed to save checklist:', e));
+          }
+        } catch (e) {}
+      }
+
+      let checklistResult = null;
+      if (targetJob.requirementsChecklist && targetJob.requirementsChecklist.length > 0) {
+        checklistResult = await scoreCandidateAgainstChecklist(parsedData, targetJob).catch(e => {
+          console.error('Checklist scoring failed on position change:', e.message);
+          return null;
+        });
+      }
+
       const ragChunks = await getRelevantChunksForJob(candidate.id, targetJob.description || targetJob.requirements);
       const scoringResult = await scoreCandidate(parsedData, targetJob, ragChunks);
-      candidate.matchScore = scoringResult.score || 0;
-      candidate.matchingSkills = scoringResult.matchingSkills || [];
-      candidate.missingSkills = scoringResult.missingSkills || [];
-      candidate.matchExplanation = scoringResult.reasoning || '';
+
+      if (checklistResult && checklistResult.checklist && checklistResult.checklist.length > 0) {
+        candidate.checklist = checklistResult.checklist;
+        candidate.checklistScore = checklistResult.score || 0;
+        candidate.matchedRequirements = checklistResult.matchedRequirements || [];
+        candidate.unmatchedRequirements = checklistResult.unmatchedRequirements || [];
+        candidate.passedCoreSkills = checklistResult.passedCoreSkills !== false;
+
+        candidate.matchScore = checklistResult.score || 0;
+        candidate.matchingSkills = checklistResult.matchedRequirements || [];
+        candidate.missingSkills = checklistResult.unmatchedRequirements || [];
+        candidate.matchExplanation = checklistResult.reasoning || '';
+      } else {
+        candidate.matchScore = scoringResult?.score || 0;
+        candidate.matchingSkills = scoringResult?.matchingSkills || [];
+        candidate.missingSkills = scoringResult?.missingSkills || [];
+        candidate.matchExplanation = scoringResult?.reasoning || '';
+      }
     } else {
       const ownCategoryResult = await scoreCandidateByOwnCategory(parsedData);
       candidate.matchScore = ownCategoryResult.score || 0;
@@ -2794,13 +2905,49 @@ app.post('/api/candidates/:id/re-score', authenticateToken, async (req, res) => 
     }
 
     if (job) {
-      // RAG-Enhanced JD Matching: fetch specific relevant chunks for the scoring prompt
+      if (!job.requirementsChecklist || job.requirementsChecklist.length === 0) {
+        try {
+          const generatedChecklist = await extractChecklistFromJob(job);
+          if (generatedChecklist && generatedChecklist.length > 0) {
+            job.requirementsChecklist = generatedChecklist;
+            await job.save().catch(e => console.error('Failed to save auto-generated checklist:', e));
+          }
+        } catch (e) {}
+      }
+
+      let checklistResult = null;
+      if (job.requirementsChecklist && job.requirementsChecklist.length > 0) {
+        checklistResult = await scoreCandidateAgainstChecklist(parsedData, job).catch(e => {
+          console.error('Checklist scoring failed in re-score:', e.message);
+          return null;
+        });
+      }
+
       const ragChunks = await getRelevantChunksForJob(candidate.id, job.description || job.requirements);
       const scoringResult = await scoreCandidate(parsedData, job, ragChunks);
-      candidate.matchScore = scoringResult.score || 0;
-      candidate.matchingSkills = scoringResult.matchingSkills || [];
-      candidate.missingSkills = scoringResult.missingSkills || [];
-      candidate.matchExplanation = scoringResult.reasoning || '';
+
+      if (checklistResult && checklistResult.checklist && checklistResult.checklist.length > 0) {
+        candidate.checklist = checklistResult.checklist;
+        candidate.checklistScore = checklistResult.score || 0;
+        candidate.matchedRequirements = checklistResult.matchedRequirements || [];
+        candidate.unmatchedRequirements = checklistResult.unmatchedRequirements || [];
+        candidate.passedCoreSkills = checklistResult.passedCoreSkills !== false;
+
+        candidate.matchScore = checklistResult.score || 0;
+        candidate.matchingSkills = checklistResult.matchedRequirements || [];
+        candidate.missingSkills = checklistResult.unmatchedRequirements || [];
+        candidate.matchExplanation = checklistResult.reasoning || '';
+      } else {
+        candidate.matchScore = scoringResult?.score || 0;
+        candidate.matchingSkills = scoringResult?.matchingSkills || [];
+        candidate.missingSkills = scoringResult?.missingSkills || [];
+        candidate.matchExplanation = scoringResult?.reasoning || '';
+      }
+    } else {
+      candidate.matchScore = candidate.ownCategoryScore;
+      candidate.matchingSkills = candidate.ownCategoryMatchingSkills;
+      candidate.missingSkills = candidate.ownCategoryMissingSkills;
+      candidate.matchExplanation = candidate.ownCategoryExplanation;
     }
 
     await candidate.save();
@@ -3623,6 +3770,296 @@ app.get('/api/ingestion-logs', authenticateToken, requireRole(['admin', 'recruit
     const logs = await IngestionLog.find().sort({ timestamp: -1 }).limit(200);
     res.json({ logs });
   } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Re-evaluate resume from Ingestion Tracker
+app.post('/api/ingestion-logs/:id/re-evaluate', authenticateToken, requireRole(['admin', 'recruiter']), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const log = await IngestionLog.findOne({ id });
+    if (!log) {
+      return res.status(404).json({ error: 'Ingestion log entry not found.' });
+    }
+
+    log.status = 'processing';
+    await log.save().catch(() => {});
+
+    // Try to locate linked candidate
+    let candidate = null;
+    if (log.candidateId) {
+      candidate = await Candidate.findOne({ $or: [{ id: log.candidateId }, { _id: mongoose.isValidObjectId(log.candidateId) ? log.candidateId : null }] });
+    }
+    if (!candidate && log.candidateName) {
+      candidate = await Candidate.findOne({ name: { $regex: new RegExp(`^${escapeRegex(log.candidateName.trim())}$`, 'i') } });
+    }
+    if (!candidate && log.extractedData?.email) {
+      candidate = await Candidate.findOne({ email: { $regex: new RegExp(`^${escapeRegex(log.extractedData.email.trim())}$`, 'i') } });
+    }
+    if (!candidate && log.fileName) {
+      const baseName = path.basename(log.fileName);
+      candidate = await Candidate.findOne({ resumeUrl: { $regex: new RegExp(escapeRegex(baseName), 'i') } });
+    }
+
+    let settings = await Settings.findById('global');
+
+    if (candidate) {
+      console.log(`[Re-evaluate] Found existing candidate ${candidate.name} (${candidate.id}) for log ${log.id}. Re-evaluating...`);
+      candidate.isProcessing = true;
+      await candidate.save().catch(() => {});
+      const profileData = candidate.extractedData || {
+        name: candidate.name,
+        email: candidate.email,
+        phone: candidate.phone,
+        skills: candidate.skills,
+        experience: candidate.experience,
+        education: candidate.education,
+        resumeText: candidate.resumeText
+      };
+
+      let job = null;
+      if (candidate.jobId) {
+        job = await Job.findOne({ $or: [{ id: candidate.jobId }, { _id: mongoose.isValidObjectId(candidate.jobId) ? candidate.jobId : null }] });
+      }
+
+      if (job && (!job.requirementsChecklist || job.requirementsChecklist.length === 0)) {
+        const genList = await extractChecklistFromJob(job);
+        job.requirementsChecklist = genList;
+        await job.save().catch(e => console.error('Failed to save checklist:', e));
+      }
+
+      let ownCategoryResult = { score: 0, matchingSkills: [], missingSkills: [], reasoning: '' };
+      let scoringResult = { score: 0, matchingSkills: [], missingSkills: [], reasoning: '' };
+      let generatedTags = [];
+      let checklistResult = { score: 0, passedCoreSkills: true, matchedRequirements: [], unmatchedRequirements: [], reasoning: '', checklist: [] };
+
+      if (settings?.aiProvider === 'ollama') {
+        const r0 = await scoreCandidateByOwnCategory(profileData).catch(() => null);
+        const r1 = job ? await scoreCandidate(profileData, job).catch(() => null) : null;
+        const r2 = await generateTags(profileData, job || { title: 'General', description: '' }, settings?.tagPreferences || []).catch(() => null);
+        const r3 = job ? await scoreCandidateAgainstChecklist(profileData, job).catch(() => null) : null;
+        if (r0) ownCategoryResult = r0;
+        if (r1) scoringResult = r1;
+        if (r2) generatedTags = r2;
+        if (r3) checklistResult = r3;
+      } else {
+        const results = await Promise.all([
+          scoreCandidateByOwnCategory(profileData).catch(() => null),
+          job ? scoreCandidate(profileData, job).catch(() => null) : Promise.resolve(null),
+          generateTags(profileData, job || { title: 'General', description: '' }, settings?.tagPreferences || []).catch(() => null),
+          job ? scoreCandidateAgainstChecklist(profileData, job).catch(() => null) : Promise.resolve(null)
+        ]);
+        if (results[0]) ownCategoryResult = results[0];
+        if (results[1]) scoringResult = results[1];
+        if (results[2]) generatedTags = results[2];
+        if (results[3]) checklistResult = results[3];
+      }
+
+      if (checklistResult.checklist && checklistResult.checklist.length > 0) {
+        scoringResult = {
+          score: checklistResult.score,
+          matchingSkills: checklistResult.matchedRequirements,
+          missingSkills: checklistResult.unmatchedRequirements,
+          reasoning: checklistResult.reasoning
+        };
+      }
+
+      candidate.matchScore = scoringResult.score || 0;
+      candidate.matchingSkills = scoringResult.matchingSkills || [];
+      candidate.missingSkills = scoringResult.missingSkills || [];
+      candidate.matchExplanation = scoringResult.reasoning || '';
+      candidate.ownCategoryScore = ownCategoryResult.score || 0;
+      candidate.ownCategoryMatchingSkills = ownCategoryResult.matchingSkills || [];
+      candidate.ownCategoryMissingSkills = ownCategoryResult.missingSkills || [];
+      candidate.ownCategoryExplanation = ownCategoryResult.reasoning || '';
+
+      if (checklistResult.checklist && checklistResult.checklist.length > 0) {
+        candidate.checklist = checklistResult.checklist;
+        candidate.checklistScore = checklistResult.score;
+        candidate.matchedRequirements = checklistResult.matchedRequirements;
+        candidate.unmatchedRequirements = checklistResult.unmatchedRequirements;
+        candidate.passedCoreSkills = checklistResult.passedCoreSkills !== false;
+      }
+
+      if (generatedTags && generatedTags.length > 0) {
+        candidate.tags = generatedTags;
+      }
+
+      if (job && candidate.matchScore > 50) {
+        const qna = await generateQuestionsForCandidate(candidate, job).catch(() => null);
+        if (qna) {
+          candidate.hrQuestions = qna.hrQuestions || candidate.hrQuestions;
+          candidate.technicalQuestions = qna.technicalQuestions || candidate.technicalQuestions;
+        }
+      }
+
+      candidate.history.push({
+        date: new Date().toISOString(),
+        type: 'Re-evaluated',
+        text: `Resume re-evaluated via Ingestion Tracker (${job ? `Position: ${job.title}, ` : ''}Score: ${candidate.matchScore}%)`
+      });
+
+      candidate.isProcessing = false;
+      await candidate.save();
+
+      log.status = 'success';
+      log.candidateId = candidate.id;
+      log.candidateName = candidate.name;
+      log.extractedData = candidate.extractedData || profileData;
+      log.error = '';
+      log.timestamp = new Date();
+      await log.save();
+
+      searchIndex.buildIndex(await Candidate.find());
+      indexCandidate(candidate).catch(() => {});
+
+      return res.json({
+        success: true,
+        message: `Candidate ${candidate.name} re-evaluated successfully! Match Score: ${candidate.matchScore}%`,
+        log,
+        candidate
+      });
+    }
+
+    // Candidate not found directly in DB - attempt recovery from physical file or cached extractedData
+    let localFilePath = null;
+    if (log.fileName) {
+      try {
+        const files = fs.readdirSync(UPLOADS_DIR);
+        const match = files.find(f => f.toLowerCase().endsWith(log.fileName.toLowerCase()) || f.toLowerCase().includes(log.fileName.toLowerCase()));
+        if (match) {
+          localFilePath = path.join(UPLOADS_DIR, match);
+        }
+      } catch (e) {}
+    }
+
+    let parsedData = log.extractedData;
+    let pdfText = '';
+
+    if (localFilePath && fs.existsSync(localFilePath)) {
+      try {
+        pdfText = await extractTextFromFile(localFilePath, log.fileName);
+        const fileBuffer = fs.readFileSync(localFilePath);
+        const pdfBase64 = fileBuffer.toString('base64');
+        parsedData = await parseResume(pdfText, pdfBase64);
+      } catch (err) {
+        console.warn('Re-evaluation text extraction/parse error:', err.message);
+      }
+    }
+
+    if (!parsedData || !parsedData.name) {
+      log.status = 'failed';
+      log.error = 'Unable to re-evaluate: original resume file and candidate profile could not be located.';
+      await log.save();
+      return res.status(404).json({ error: 'Original resume file and candidate profile could not be located to re-evaluate.' });
+    }
+
+    // Auto-route or match to job
+    const job = await autoRouteCandidate(parsedData);
+    let ownCategoryResult = { score: 0, matchingSkills: [], missingSkills: [], reasoning: '' };
+    let scoringResult = { score: 0, matchingSkills: [], missingSkills: [], reasoning: '' };
+    let generatedTags = [];
+    let checklistResult = { score: 0, passedCoreSkills: true, matchedRequirements: [], unmatchedRequirements: [], reasoning: '', checklist: [] };
+
+    if (job && (!job.requirementsChecklist || job.requirementsChecklist.length === 0)) {
+      job.requirementsChecklist = await extractChecklistFromJob(job);
+      await job.save().catch(() => {});
+    }
+
+    if (settings?.aiProvider === 'ollama') {
+      const r0 = await scoreCandidateByOwnCategory(parsedData).catch(() => null);
+      const r1 = job ? await scoreCandidate(parsedData, job).catch(() => null) : null;
+      const r2 = await generateTags(parsedData, job || { title: 'General', description: '' }, settings?.tagPreferences || []).catch(() => null);
+      const r3 = job ? await scoreCandidateAgainstChecklist(parsedData, job).catch(() => null) : null;
+      if (r0) ownCategoryResult = r0;
+      if (r1) scoringResult = r1;
+      if (r2) generatedTags = r2;
+      if (r3) checklistResult = r3;
+    } else {
+      const results = await Promise.all([
+        scoreCandidateByOwnCategory(parsedData).catch(() => null),
+        job ? scoreCandidate(parsedData, job).catch(() => null) : Promise.resolve(null),
+        generateTags(parsedData, job || { title: 'General', description: '' }, settings?.tagPreferences || []).catch(() => null),
+        job ? scoreCandidateAgainstChecklist(parsedData, job).catch(() => null) : Promise.resolve(null)
+      ]);
+      if (results[0]) ownCategoryResult = results[0];
+      if (results[1]) scoringResult = results[1];
+      if (results[2]) generatedTags = results[2];
+      if (results[3]) checklistResult = results[3];
+    }
+
+    if (checklistResult.checklist && checklistResult.checklist.length > 0) {
+      scoringResult = {
+        score: checklistResult.score,
+        matchingSkills: checklistResult.matchedRequirements,
+        missingSkills: checklistResult.unmatchedRequirements,
+        reasoning: checklistResult.reasoning
+      };
+    }
+
+    const newCand = new Candidate({
+      id: `candidate-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      jobId: job ? job.id : '',
+      name: parsedData.name || 'Candidate',
+      email: parsedData.email || '',
+      phone: parsedData.phone || '',
+      linkedinUrl: parsedData.linkedinUrl || '',
+      skills: parsedData.skills || [],
+      experience: parsedData.experience || [],
+      education: parsedData.education || [],
+      tags: generatedTags,
+      stage: 'Inbox',
+      resumeUrl: localFilePath ? `/api/uploads/${path.basename(localFilePath)}` : '',
+      resumeText: pdfText || parsedData.resumeText || '',
+      matchScore: scoringResult.score || 0,
+      matchingSkills: scoringResult.matchingSkills || [],
+      missingSkills: scoringResult.missingSkills || [],
+      matchExplanation: scoringResult.reasoning || '',
+      ownCategoryScore: ownCategoryResult.score || 0,
+      ownCategoryMatchingSkills: ownCategoryResult.matchingSkills || [],
+      ownCategoryMissingSkills: ownCategoryResult.missingSkills || [],
+      ownCategoryExplanation: ownCategoryResult.reasoning || '',
+      checklist: checklistResult.checklist || [],
+      checklistScore: checklistResult.score || 0,
+      matchedRequirements: checklistResult.matchedRequirements || [],
+      unmatchedRequirements: checklistResult.unmatchedRequirements || [],
+      passedCoreSkills: checklistResult.passedCoreSkills !== false,
+      comments: '',
+      seniorityLevel: parsedData.seniorityLevel || 'Mid',
+      hrQuestions: [],
+      technicalQuestions: [],
+      projects: parsedData.projects || [],
+      extractedData: parsedData,
+      history: [{ date: new Date().toISOString(), type: 'Imported', text: `Re-evaluated and imported via Ingestion Tracker: ${log.fileName}` }]
+    });
+
+    await newCand.save();
+
+    log.status = 'success';
+    log.candidateId = newCand.id;
+    log.candidateName = newCand.name;
+    log.extractedData = parsedData;
+    log.error = '';
+    log.timestamp = new Date();
+    await log.save();
+
+    searchIndex.buildIndex(await Candidate.find());
+    indexCandidate(newCand).catch(() => {});
+
+    return res.json({
+      success: true,
+      message: `Resume re-evaluated and imported as candidate ${newCand.name}! Match Score: ${newCand.matchScore}%`,
+      log,
+      candidate: newCand
+    });
+  } catch (error) {
+    console.error('Failed to re-evaluate ingestion log:', error);
+    try {
+      if (candidate) {
+        await Candidate.updateOne({ id: candidate.id }, { $set: { isProcessing: false } }).catch(() => {});
+      }
+    } catch (e) {}
     res.status(500).json({ error: error.message });
   }
 });

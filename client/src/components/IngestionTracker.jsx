@@ -3,11 +3,13 @@ import { RefreshCw, ClipboardList, CheckCircle2, AlertCircle, Loader, Eye, X, Fi
 import { exportToExcel } from '../utils/export';
 import { matchDateRangeHelper } from '../utils/dateFilters';
 
-export default function IngestionTracker({ backendUrl, isActive, token }) {
+export default function IngestionTracker({ backendUrl, isActive, token, onCandidateUpdated, onCandidateImported }) {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedLog, setSelectedLog] = useState(null);
   const [filterDateRange, setFilterDateRange] = useState('');
+  const [reEvaluatingId, setReEvaluatingId] = useState(null);
+  const [actionMessage, setActionMessage] = useState(null);
 
   const filteredLogs = logs.filter(log => {
     const logDate = log.timestamp ? new Date(log.timestamp) : null;
@@ -40,6 +42,45 @@ export default function IngestionTracker({ backendUrl, isActive, token }) {
       console.error('Failed to fetch ingestion logs', e);
     } finally {
       if (!silent) setLoading(false);
+    }
+  };
+
+  const handleReEvaluate = async (log) => {
+    if (!log || !log.id || reEvaluatingId) return;
+    setReEvaluatingId(log.id);
+    setActionMessage(null);
+    try {
+      const res = await fetch(`${backendUrl}/api/ingestion-logs/${log.id}/re-evaluate`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Re-evaluation failed');
+      }
+
+      setActionMessage({ type: 'success', text: data.message || 'Resume re-evaluated successfully!' });
+
+      // Refresh log list
+      await fetchLogs(true);
+
+      // If details modal is currently open for this log, update it
+      if (selectedLog && selectedLog.id === log.id && data.log) {
+        setSelectedLog(data.log);
+      }
+
+      // Propagate candidate state update to application
+      if (data.candidate) {
+        if (onCandidateUpdated) onCandidateUpdated(data.candidate);
+        if (onCandidateImported) onCandidateImported(data.candidate, true);
+      }
+    } catch (err) {
+      console.error('Re-evaluation error:', err);
+      setActionMessage({ type: 'error', text: err.message || 'Failed to re-evaluate resume.' });
+    } finally {
+      setReEvaluatingId(null);
     }
   };
 
@@ -129,6 +170,33 @@ export default function IngestionTracker({ backendUrl, isActive, token }) {
         </div>
       </div>
 
+      {/* Alert / Notification banner */}
+      {actionMessage && (
+        <div style={{
+          padding: '12px 18px',
+          borderRadius: 'var(--radius-md)',
+          background: actionMessage.type === 'success' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+          border: `1px solid ${actionMessage.type === 'success' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+          color: actionMessage.type === 'success' ? 'var(--status-offered)' : 'var(--status-rejected)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          fontSize: '13px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {actionMessage.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+            <span>{actionMessage.text}</span>
+          </div>
+          <button 
+            onClick={() => setActionMessage(null)}
+            style={{ background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer', padding: '2px 4px' }}
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
       {/* Main logs Table */}
       <div className="glass" style={{ flexGrow: 1, padding: '24px', borderRadius: 'var(--radius-lg)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         <div style={{ flexGrow: 1, overflowY: 'auto' }}>
@@ -186,7 +254,9 @@ export default function IngestionTracker({ backendUrl, isActive, token }) {
               </thead>
               <tbody>
                 {filteredLogs.map((log) => {
+                  const isLogProcessing = log.status === 'processing' || reEvaluatingId === log.id;
                   const statusColors = 
+                    isLogProcessing ? { bg: 'rgba(59, 130, 246, 0.12)', text: 'var(--accent-primary)', border: 'rgba(59, 130, 246, 0.35)' } :
                     log.status === 'success' ? { bg: 'rgba(16, 185, 129, 0.1)', text: 'var(--status-offered)', border: 'rgba(16, 185, 129, 0.2)' } :
                     log.status === 'failed' ? { bg: 'rgba(239, 68, 68, 0.1)', text: 'var(--status-rejected)', border: 'rgba(239, 68, 68, 0.2)' } :
                     log.status === 'duplicate' ? { bg: 'rgba(245, 158, 11, 0.1)', text: '#d97706', border: 'rgba(245, 158, 11, 0.2)' } :
@@ -217,24 +287,66 @@ export default function IngestionTracker({ backendUrl, isActive, token }) {
                           color: statusColors.text,
                           border: `1px solid ${statusColors.border}`
                         }}>
-                          {log.status === 'success' && <CheckCircle2 size={12} />}
-                          {log.status === 'failed' && <AlertCircle size={12} />}
-                          {log.status === 'duplicate' && <AlertCircle size={12} style={{ color: '#d97706' }} />}
-                          {log.status === 'cancelled' && <X size={12} />}
-                          {log.status === 'processing' && <Loader className="animate-spin" size={12} style={{ animation: 'spin 1.5s linear infinite' }} />}
-                          {log.status === 'duplicate' ? 'ALREADY EXISTS' : log.status.toUpperCase()}
+                          {isLogProcessing ? (
+                            <>
+                              <Loader className="animate-spin" size={12} style={{ animation: 'spin 1.5s linear infinite' }} />
+                              {reEvaluatingId === log.id ? 'RE-EVALUATING...' : 'PROCESSING...'}
+                            </>
+                          ) : log.status === 'success' ? (
+                            <>
+                              <CheckCircle2 size={12} />
+                              SUCCESS
+                            </>
+                          ) : log.status === 'failed' ? (
+                            <>
+                              <AlertCircle size={12} />
+                              FAILED
+                            </>
+                          ) : log.status === 'duplicate' ? (
+                            <>
+                              <AlertCircle size={12} style={{ color: '#d97706' }} />
+                              ALREADY EXISTS
+                            </>
+                          ) : log.status === 'cancelled' ? (
+                            <>
+                              <X size={12} />
+                              CANCELLED
+                            </>
+                          ) : (
+                            log.status.toUpperCase()
+                          )}
                         </span>
                       </td>
                       <td style={{ padding: '14px 16px', textAlign: 'right' }}>
-                        {log.status !== 'processing' && (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
+                          <button 
+                            className="btn btn-secondary" 
+                            style={{ 
+                              padding: '4px 10px', 
+                              fontSize: '11px', 
+                              minHeight: '28px', 
+                              display: 'inline-flex', 
+                              alignItems: 'center', 
+                              gap: '4px',
+                              color: 'var(--accent-primary)',
+                              borderColor: 'rgba(99, 102, 241, 0.3)'
+                            }}
+                            onClick={() => handleReEvaluate(log)}
+                            disabled={reEvaluatingId === log.id}
+                            title="Re-evaluate resume and recalculate match scores"
+                          >
+                            <RefreshCw size={11} style={{ animation: reEvaluatingId === log.id ? 'spin 1.5s linear infinite' : 'none' }} />
+                            {reEvaluatingId === log.id ? 'Evaluating...' : 'Re-evaluate'}
+                          </button>
                           <button 
                             className="btn btn-secondary" 
                             style={{ padding: '4px 10px', fontSize: '11px', minHeight: '28px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                             onClick={() => setSelectedLog(log)}
+                            title="View processing details"
                           >
                             <Eye size={12} /> Details
                           </button>
-                        )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -312,26 +424,74 @@ export default function IngestionTracker({ backendUrl, isActive, token }) {
                   fontSize: '11px', 
                   fontWeight: '600',
                   background: 
+                    (selectedLog.status === 'processing' || reEvaluatingId === selectedLog.id) ? 'rgba(59, 130, 246, 0.12)' :
                     selectedLog.status === 'success' ? 'rgba(16, 185, 129, 0.1)' :
                     selectedLog.status === 'failed' ? 'rgba(239, 68, 68, 0.1)' :
                     selectedLog.status === 'duplicate' ? 'rgba(245, 158, 11, 0.1)' :
                     selectedLog.status === 'cancelled' ? 'rgba(156, 163, 175, 0.1)' :
                     'rgba(59, 130, 246, 0.1)',
                   color: 
+                    (selectedLog.status === 'processing' || reEvaluatingId === selectedLog.id) ? 'var(--accent-primary)' :
                     selectedLog.status === 'success' ? 'var(--status-offered)' :
                     selectedLog.status === 'failed' ? 'var(--status-rejected)' :
                     selectedLog.status === 'duplicate' ? '#d97706' :
                     selectedLog.status === 'cancelled' ? 'var(--text-secondary)' :
                     'var(--accent-primary)'
                 }}>
-                  {selectedLog.status === 'success' && <CheckCircle2 size={12} />}
-                  {selectedLog.status === 'failed' && <AlertCircle size={12} />}
-                  {selectedLog.status === 'duplicate' && <AlertCircle size={12} style={{ color: '#d97706' }} />}
-                  {selectedLog.status === 'cancelled' && <X size={12} />}
-                  {selectedLog.status === 'processing' && <Loader className="animate-spin" size={12} style={{ animation: 'spin 1.5s linear infinite' }} />}
-                  {selectedLog.status === 'duplicate' ? 'ALREADY EXISTS' : selectedLog.status.toUpperCase()}
+                  {(selectedLog.status === 'processing' || reEvaluatingId === selectedLog.id) ? (
+                    <>
+                      <Loader className="animate-spin" size={12} style={{ animation: 'spin 1.5s linear infinite' }} />
+                      {reEvaluatingId === selectedLog.id ? 'RE-EVALUATING...' : 'PROCESSING...'}
+                    </>
+                  ) : selectedLog.status === 'success' ? (
+                    <>
+                      <CheckCircle2 size={12} />
+                      SUCCESS
+                    </>
+                  ) : selectedLog.status === 'failed' ? (
+                    <>
+                      <AlertCircle size={12} />
+                      FAILED
+                    </>
+                  ) : selectedLog.status === 'duplicate' ? (
+                    <>
+                      <AlertCircle size={12} style={{ color: '#d97706' }} />
+                      ALREADY EXISTS
+                    </>
+                  ) : selectedLog.status === 'cancelled' ? (
+                    <>
+                      <X size={12} />
+                      CANCELLED
+                    </>
+                  ) : (
+                    selectedLog.status.toUpperCase()
+                  )}
                 </span>
               </div>
+
+              {(selectedLog.status === 'processing' || reEvaluatingId === selectedLog.id) && (
+                <div style={{
+                  background: 'rgba(59, 130, 246, 0.08)',
+                  border: '1px solid rgba(59, 130, 246, 0.25)',
+                  padding: '14px 16px',
+                  borderRadius: 'var(--radius-md)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px'
+                }}>
+                  <Loader size={18} className="animate-spin" style={{ color: 'var(--accent-primary)', animation: 'spin 1.5s linear infinite', flexShrink: 0 }} />
+                  <div>
+                    <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)', display: 'block' }}>
+                      {reEvaluatingId === selectedLog.id ? 'Re-evaluation in progress...' : 'Processing in progress...'}
+                    </span>
+                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                      {reEvaluatingId === selectedLog.id 
+                        ? 'Extracting criteria and recalculating ATS match scores. Please wait a moment...' 
+                        : 'Resume is currently being processed or waiting for evaluation. You can click "Re-evaluate Resume" below to trigger or retry evaluation at any time.'}
+                    </span>
+                  </div>
+                </div>
+              )}
 
               {(selectedLog.status === 'failed' || selectedLog.status === 'duplicate' || selectedLog.status === 'cancelled') && selectedLog.error && (
                 <div style={{ 
@@ -383,7 +543,23 @@ export default function IngestionTracker({ backendUrl, isActive, token }) {
             </div>
 
             {/* Modal Footer */}
-            <div style={{ padding: '16px 24px', borderTop: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'flex-end', background: 'rgba(0,0,0,0.1)' }}>
+            <div style={{ padding: '16px 24px', borderTop: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.1)', flexWrap: 'wrap', gap: '10px' }}>
+              <button 
+                className="btn btn-primary" 
+                style={{ 
+                  padding: '8px 16px', 
+                  fontSize: '13px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+                onClick={() => handleReEvaluate(selectedLog)}
+                disabled={reEvaluatingId === selectedLog.id}
+              >
+                <RefreshCw size={13} style={{ animation: reEvaluatingId === selectedLog.id ? 'spin 1.5s linear infinite' : 'none' }} />
+                {reEvaluatingId === selectedLog.id ? 'Re-evaluating Resume...' : 'Re-evaluate Resume'}
+              </button>
+
               <button 
                 className="btn btn-secondary" 
                 style={{ padding: '8px 16px', fontSize: '13px' }}

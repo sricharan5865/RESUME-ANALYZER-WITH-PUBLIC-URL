@@ -234,7 +234,11 @@ export default function PipelineBoard({
       setUploadProgress('Pre-registering upload queue...');
       let registeredLogs = [];
       try {
-        const filesData = files.map(f => ({ fileName: f.name, source: 'manual' }));
+        const filesData = files.map(f => ({ 
+          fileName: f.name, 
+          source: 'manual',
+          jobId: selectedFilterJobId || null
+        }));
         const preRegRes = await fetch(`${backendUrl}/api/ingestion-logs/pre-register`, {
           method: 'POST',
           headers: {
@@ -266,6 +270,9 @@ export default function PipelineBoard({
         try {
           const formData = new FormData();
           formData.append('resume', file);
+          if (selectedFilterJobId) {
+            formData.append('jobId', selectedFilterJobId);
+          }
           if (logId) {
             formData.append('logId', logId);
           }
@@ -288,7 +295,7 @@ export default function PipelineBoard({
                   tempFile: errData.tempFile,
                   parsedData: errData.parsedData,
                   pdfText: errData.pdfText,
-                  jobId: errData.jobId,
+                  jobId: errData.jobId || selectedFilterJobId || null,
                   fileName: file.name,
                   fileObject: file,
                   logId: errData.logId || logId
@@ -352,7 +359,7 @@ export default function PipelineBoard({
           tempFile: currentDuplicate.tempFile,
           parsedData: currentDuplicate.parsedData,
           pdfText: currentDuplicate.pdfText,
-          jobId: currentDuplicate.jobId,
+          jobId: currentDuplicate.jobId || selectedFilterJobId || null,
           logId: currentDuplicate.logId
         })
       });
@@ -477,10 +484,30 @@ export default function PipelineBoard({
         </div>
 
         {/* Upload Resume Direct Portal */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-            Manual Import:
-          </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          {selectedFilterJobId && (
+            <span 
+              style={{ 
+                fontSize: '11px', 
+                fontWeight: '600', 
+                color: 'var(--accent-primary)', 
+                background: 'rgba(99, 102, 241, 0.1)', 
+                padding: '4px 8px', 
+                borderRadius: '6px', 
+                border: '1px solid rgba(99, 102, 241, 0.25)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                maxWidth: '220px',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
+              }} 
+              title={`Uploading resumes will automatically match and assign to: ${jobs.find(j => j.id === selectedFilterJobId)?.title || selectedFilterJobId}`}
+            >
+              <Briefcase size={12} /> Target: {jobs.find(j => j.id === selectedFilterJobId)?.title || selectedFilterJobId}
+            </span>
+          )}
           
           <label 
             className="btn btn-secondary"
@@ -488,7 +515,9 @@ export default function PipelineBoard({
               padding: '6px 14px', 
               fontSize: '12px', 
               cursor: uploadingFile ? 'not-allowed' : 'pointer',
-              opacity: uploadingFile ? 0.5 : 1
+              opacity: uploadingFile ? 0.5 : 1,
+              borderColor: selectedFilterJobId ? 'var(--accent-primary)' : undefined,
+              background: selectedFilterJobId ? 'rgba(99, 102, 241, 0.12)' : undefined
             }}
           >
             {uploadingFile ? (
@@ -499,7 +528,11 @@ export default function PipelineBoard({
             ) : (
               <>
                 <Upload size={12} />
-                <span style={{ marginLeft: '6px' }}>Upload Resume(s)</span>
+                <span style={{ marginLeft: '6px' }}>
+                  {selectedFilterJobId 
+                    ? `Upload for ${jobs.find(j => j.id === selectedFilterJobId)?.title || 'Job'}` 
+                    : 'Upload Resume(s)'}
+                </span>
               </>
             )}
             {!uploadingFile && (
@@ -771,11 +804,43 @@ export default function PipelineBoard({
                                 <p style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                   <Briefcase size={10} /> {job ? job.title : 'General'}
                                 </p>
+                                {candidate.isProcessing && (
+                                  <span style={{ 
+                                    display: 'inline-flex', 
+                                    alignItems: 'center', 
+                                    gap: '4px', 
+                                    fontSize: '10px', 
+                                    color: 'var(--accent-primary)',
+                                    fontWeight: '600',
+                                    background: 'rgba(59, 130, 246, 0.1)',
+                                    padding: '1px 6px',
+                                    borderRadius: '8px',
+                                    marginTop: '3px'
+                                  }}>
+                                    <Loader size={9} className="animate-spin" style={{ animation: 'spin 1.5s linear infinite' }} />
+                                    Processing AI Match...
+                                  </span>
+                                )}
                               </div>
                             </div>
                             
-                            <div className={`score-badge ${scoreColorClass}`} style={{ width: '32px', height: '32px', fontSize: '11px', flexShrink: 0 }}>
-                              {score}
+                            <div className={`score-badge ${candidate.isProcessing ? '' : scoreColorClass}`} style={{ 
+                              width: '32px', 
+                              height: '32px', 
+                              fontSize: '11px', 
+                              flexShrink: 0,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              background: candidate.isProcessing ? 'rgba(59, 130, 246, 0.1)' : undefined,
+                              border: candidate.isProcessing ? '1px dashed var(--accent-primary)' : undefined,
+                              color: candidate.isProcessing ? 'var(--accent-primary)' : undefined
+                            }} title={candidate.isProcessing ? 'AI evaluation in progress...' : `Score: ${score}%`}>
+                              {candidate.isProcessing ? (
+                                <Loader size={13} className="animate-spin" style={{ animation: 'spin 1.5s linear infinite' }} />
+                              ) : (
+                                score
+                              )}
                             </div>
                           </div>
 

@@ -322,10 +322,16 @@ export default function CandidateDetails({ candidate: propCandidate, job, jobs =
             jdTitle: propCandidate.jdTitle || data.jdTitle,
             jdRequirements: propCandidate.jdRequirements || data.jdRequirements,
             jdDescription: propCandidate.jdDescription || data.jdDescription,
-            matchScore: propCandidate.matchScore !== undefined ? propCandidate.matchScore : data.matchScore,
-            matchExplanation: propCandidate.matchExplanation || data.matchExplanation,
-            matchingSkills: propCandidate.matchingSkills || data.matchingSkills,
-            missingSkills: propCandidate.missingSkills || data.missingSkills
+            matchScore: (data.matchScore !== undefined && data.matchScore > 0)
+              ? data.matchScore
+              : (propCandidate.matchScore !== undefined ? propCandidate.matchScore : data.matchScore),
+            matchExplanation: data.matchExplanation || propCandidate.matchExplanation,
+            matchingSkills: (data.matchingSkills && data.matchingSkills.length > 0)
+              ? data.matchingSkills
+              : (propCandidate.matchingSkills || []),
+            missingSkills: (data.missingSkills && data.missingSkills.length > 0)
+              ? data.missingSkills
+              : (propCandidate.missingSkills || [])
           });
         })
         .catch(err => {
@@ -347,7 +353,53 @@ export default function CandidateDetails({ candidate: propCandidate, job, jobs =
   const [assignedManager, setAssignedManager] = useState(candidate?.assignedTo || '');
   const [loadingJdQuestions, setLoadingJdQuestions] = useState(false);
   const [loadingQuestions, setLoadingQuestions] = useState(false);
+  const [isReScoring, setIsReScoring] = useState(false);
   const reScoreLockRef = useRef(null);
+
+  const handleManualReScore = async () => {
+    if (!candidate?.id || isReScoring) return;
+    setIsReScoring(true);
+    try {
+      const res = await fetch(`${backendUrl}/api/candidates/${candidate.id}/re-score`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (res.ok) {
+        const updatedCandidate = await res.json();
+        setCandidate(prev => ({
+          ...prev,
+          ...updatedCandidate,
+          matchScore: updatedCandidate.matchScore,
+          matchExplanation: updatedCandidate.matchExplanation,
+          matchingSkills: updatedCandidate.matchingSkills || [],
+          missingSkills: updatedCandidate.missingSkills || [],
+          checklist: updatedCandidate.checklist || prev?.checklist,
+          matchedRequirements: updatedCandidate.matchedRequirements || prev?.matchedRequirements,
+          unmatchedRequirements: updatedCandidate.unmatchedRequirements || prev?.unmatchedRequirements,
+          ownCategoryScore: updatedCandidate.ownCategoryScore,
+          ownCategoryExplanation: updatedCandidate.ownCategoryExplanation,
+          ownCategoryMatchingSkills: updatedCandidate.ownCategoryMatchingSkills || [],
+          ownCategoryMissingSkills: updatedCandidate.ownCategoryMissingSkills || []
+        }));
+        if (onCandidateUpdated) {
+          onCandidateUpdated(updatedCandidate);
+        }
+        if (onStageChanged) {
+          onStageChanged(updatedCandidate.id, updatedCandidate.stage);
+        }
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        alert(`Failed to re-score: ${errData.error || 'Unknown error'}`);
+      }
+    } catch (e) {
+      console.error('Manual re-score failed:', e);
+      alert('Error during re-scoring: ' + e.message);
+    } finally {
+      setIsReScoring(false);
+    }
+  };
 
   useEffect(() => {
     if (!candidate) return;
@@ -379,10 +431,12 @@ export default function CandidateDetails({ candidate: propCandidate, job, jobs =
     if (isSparse) return;
 
     const checkAndReScore = async () => {
-      const hasNoScore = !candidate.ownCategoryExplanation || candidate.ownCategoryExplanation.trim().length === 0;
-      if (hasNoScore) {
+      const hasNoCompetency = !candidate.ownCategoryExplanation || candidate.ownCategoryExplanation.trim().length === 0;
+      const hasNoJobScore = candidate.jobId && (!candidate.matchExplanation || candidate.matchExplanation.trim().length === 0 || candidate.matchScore === 0);
+      
+      if (hasNoCompetency || hasNoJobScore) {
         reScoreLockRef.current = candidate.id;
-        console.log('Competency details missing. Triggering auto re-score...');
+        console.log('Competency or ATS match details missing. Triggering auto re-score...');
         try {
           const res = await fetch(`${backendUrl}/api/candidates/${candidate.id}/re-score`, {
             method: 'POST',
@@ -393,17 +447,32 @@ export default function CandidateDetails({ candidate: propCandidate, job, jobs =
           if (res.ok) {
             const updatedCandidate = await res.json();
             setCandidate(prev => ({
+              ...prev,
               ...updatedCandidate,
-              jdQuestions: prev?.jdQuestions,
-              jdTitle: prev?.jdTitle,
-              matchScore: prev?.matchScore,
-              matchExplanation: prev?.matchExplanation,
-              matchingSkills: prev?.matchingSkills,
-              missingSkills: prev?.missingSkills
+              jdQuestions: prev?.jdQuestions || updatedCandidate?.jdQuestions,
+              jdTitle: prev?.jdTitle || updatedCandidate?.jdTitle,
+              matchScore: (updatedCandidate.matchScore !== undefined && updatedCandidate.matchScore > 0) 
+                ? updatedCandidate.matchScore 
+                : (prev?.matchScore || updatedCandidate.matchScore),
+              matchExplanation: updatedCandidate.matchExplanation || prev?.matchExplanation,
+              matchingSkills: (updatedCandidate.matchingSkills && updatedCandidate.matchingSkills.length > 0) 
+                ? updatedCandidate.matchingSkills 
+                : (prev?.matchingSkills || []),
+              missingSkills: (updatedCandidate.missingSkills && updatedCandidate.missingSkills.length > 0) 
+                ? updatedCandidate.missingSkills 
+                : (prev?.missingSkills || []),
+              checklist: updatedCandidate.checklist || prev?.checklist,
+              matchedRequirements: updatedCandidate.matchedRequirements || prev?.matchedRequirements,
+              unmatchedRequirements: updatedCandidate.unmatchedRequirements || prev?.unmatchedRequirements,
+              ownCategoryScore: updatedCandidate.ownCategoryScore !== undefined ? updatedCandidate.ownCategoryScore : prev?.ownCategoryScore,
+              ownCategoryExplanation: updatedCandidate.ownCategoryExplanation || prev?.ownCategoryExplanation
             }));
             // Propagate stage or metadata changes if needed
             if (onStageChanged) {
               onStageChanged(updatedCandidate.id, updatedCandidate.stage);
+            }
+            if (onCandidateUpdated) {
+              onCandidateUpdated(updatedCandidate);
             }
           }
         } catch (e) {
@@ -412,7 +481,7 @@ export default function CandidateDetails({ candidate: propCandidate, job, jobs =
       }
     };
     checkAndReScore();
-  }, [candidate?.id, candidate?.experience, candidate?.resumeText]);
+  }, [candidate?.id, candidate?.experience, candidate?.resumeText, candidate?.jobId]);
 
   useEffect(() => {
     if (currentRole !== 'Hiring Manager') {
@@ -660,25 +729,39 @@ export default function CandidateDetails({ candidate: propCandidate, job, jobs =
   const useJobMatch = !isGeneralRole || !!candidate.jdQuestions;
 
   const score = useJobMatch 
-    ? candidate.matchScore 
+    ? ((candidate.matchScore !== undefined && candidate.matchScore > 0)
+        ? candidate.matchScore 
+        : (candidate.ownCategoryScore > 0 ? candidate.ownCategoryScore : (candidate.matchScore || 0)))
     : (candidate.ownCategoryScore > 0 
         ? candidate.ownCategoryScore 
         : (candidate.matchScore || 0));
 
   const reasoning = useJobMatch 
-    ? candidate.matchExplanation 
+    ? ((candidate.matchExplanation && candidate.matchExplanation.trim().length > 0 && candidate.matchExplanation !== 'No evaluation details generated.')
+        ? candidate.matchExplanation 
+        : (candidate.ownCategoryExplanation && candidate.ownCategoryExplanation.trim().length > 0 
+            ? candidate.ownCategoryExplanation 
+            : (candidate.matchExplanation || 'No evaluation details generated.')))
     : (candidate.ownCategoryExplanation && candidate.ownCategoryExplanation.trim().length > 0 
         ? candidate.ownCategoryExplanation 
         : (candidate.matchExplanation || 'No evaluation details generated.'));
 
   const matchingSkills = useJobMatch 
-    ? candidate.matchingSkills 
+    ? ((candidate.matchingSkills && candidate.matchingSkills.length > 0)
+        ? candidate.matchingSkills 
+        : (candidate.ownCategoryMatchingSkills && candidate.ownCategoryMatchingSkills.length > 0 
+            ? candidate.ownCategoryMatchingSkills 
+            : (candidate.matchingSkills || [])))
     : (candidate.ownCategoryMatchingSkills && candidate.ownCategoryMatchingSkills.length > 0 
         ? candidate.ownCategoryMatchingSkills 
         : (candidate.matchingSkills || []));
 
   const missingSkills = useJobMatch 
-    ? candidate.missingSkills 
+    ? ((candidate.missingSkills && candidate.missingSkills.length > 0)
+        ? candidate.missingSkills 
+        : (candidate.ownCategoryMissingSkills && candidate.ownCategoryMissingSkills.length > 0 
+            ? candidate.ownCategoryMissingSkills 
+            : (candidate.missingSkills || [])))
     : (candidate.ownCategoryMissingSkills && candidate.ownCategoryMissingSkills.length > 0 
         ? candidate.ownCategoryMissingSkills 
         : (candidate.missingSkills || []));
@@ -1022,6 +1105,29 @@ export default function CandidateDetails({ candidate: propCandidate, job, jobs =
               <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '500' }}>
                 {useJobMatch ? 'Match Score' : 'Competency Score'}
               </span>
+              <button
+                onClick={handleManualReScore}
+                disabled={isReScoring}
+                className="btn-glass"
+                style={{
+                  padding: '2px 8px',
+                  fontSize: '10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  borderRadius: '4px',
+                  cursor: isReScoring ? 'not-allowed' : 'pointer',
+                  opacity: isReScoring ? 0.7 : 1,
+                  background: 'rgba(139, 92, 246, 0.08)',
+                  borderColor: 'rgba(139, 92, 246, 0.25)',
+                  color: 'var(--accent-secondary)',
+                  marginTop: '2px'
+                }}
+                title="Re-calculate ATS Match"
+              >
+                <RefreshCw size={10} style={{ animation: isReScoring ? 'spin 1.5s linear infinite' : 'none' }} />
+                {isReScoring ? 'Scoring...' : 'Re-score'}
+              </button>
             </div>
           </div>
 
@@ -1278,9 +1384,33 @@ export default function CandidateDetails({ candidate: propCandidate, job, jobs =
 
           {/* AI Scoring Analysis (Reasoning & Skill Matrix) */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <h3 style={{ fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-secondary)' }}>
-              <Sparkles size={16} /> {useJobMatch ? 'AI Match Analysis' : 'AI Competency Analysis'}
-            </h3>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+              <h3 style={{ fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-secondary)', margin: 0 }}>
+                <Sparkles size={16} /> {useJobMatch ? 'AI Match Analysis' : 'AI Competency Analysis'}
+              </h3>
+              <button
+                onClick={handleManualReScore}
+                disabled={isReScoring}
+                className="btn-glass"
+                style={{
+                  padding: '5px 12px',
+                  fontSize: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  borderRadius: '6px',
+                  cursor: isReScoring ? 'not-allowed' : 'pointer',
+                  opacity: isReScoring ? 0.7 : 1,
+                  background: 'rgba(139, 92, 246, 0.1)',
+                  borderColor: 'rgba(139, 92, 246, 0.3)',
+                  color: 'var(--accent-secondary)'
+                }}
+                title="Recalculate ATS Match & Checklist analysis"
+              >
+                <RefreshCw size={13} style={{ animation: isReScoring ? 'spin 1.5s linear infinite' : 'none' }} />
+                {isReScoring ? 'Scoring...' : 'Re-score ATS Match'}
+              </button>
+            </div>
             
             <div className="glass" style={{ padding: '20px', borderRadius: 'var(--radius-md)', background: 'rgba(139, 92, 246, 0.03)', border: '1px solid rgba(139, 92, 246, 0.15)' }}>
               <p style={{ fontSize: '14px', lineHeight: '1.6', color: 'var(--text-primary)', marginBottom: '16px', fontStyle: 'italic' }}>

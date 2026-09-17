@@ -1079,7 +1079,13 @@ export default function App() {
           </div>
 
           <div style={{ display: activeTab === 'ingestion' ? 'block' : 'none', height: '100%' }}>
-            <IngestionTracker backendUrl={BACKEND_URL} isActive={activeTab === 'ingestion'} token={token} />
+            <IngestionTracker 
+              backendUrl={BACKEND_URL} 
+              isActive={activeTab === 'ingestion'} 
+              token={token}
+              onCandidateUpdated={handleCandidateUpdated}
+              onCandidateImported={handleCandidateImported}
+            />
           </div>
 
           <div style={{ display: activeTab === 'reporting' ? 'block' : 'none', height: '100%' }}>

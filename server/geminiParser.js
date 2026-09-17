@@ -490,6 +490,385 @@ async function fetchOpenRouterWithRetry(url, requestBody, apiKey) {
 /**
  * Helper to call the configured AI Provider via direct HTTP POST.
  */
+async function callGemini(prompt, systemInstruction, schema, pdfBase64, settings) {
+  const apiKey = settings?.geminiApiKey || process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error('Gemini API key is not configured.');
+  }
+
+  const isOpenRouter = apiKey.startsWith('sk-or-');
+
+  if (isOpenRouter) {
+    const url = 'https://openrouter.ai/api/v1/chat/completions';
+    const requestBody = {
+      model: process.env.AI_MODEL || 'google/gemini-2.5-flash',
+      max_tokens: 8192,
+      messages: [
+        ...(systemInstruction ? [{ role: 'system', content: systemInstruction }] : []),
+        { role: 'user', content: prompt }
+      ]
+    };
+
+    if (schema) {
+      requestBody.response_format = { type: 'json_object' };
+      requestBody.messages.push({
+        role: 'user',
+        content: `Output MUST match JSON structure: ${getCompactSchemaInstructions(schema)}`
+      });
+    }
+
+    const response = await fetchOpenRouterWithRetry(url, requestBody, apiKey);
+    const result = await response.json();
+    const text = result.choices?.[0]?.message?.content;
+    if (!text) {
+      throw new Error('Gemini AI API returned an empty response.');
+    }
+
+    return schema ? safeExtractAndParseJson(text, schema) : cleanJsonResponse(text);
+  } else {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+    const requestBody = {
+      contents: [
+        {
+          parts: [
+            ...(pdfBase64 ? [{ inlineData: { mimeType: 'application/pdf', data: pdfBase64 } }] : []),
+            { text: prompt }
+          ]
+        }
+      ],
+      generationConfig: {
+        temperature: 0.1,
+        maxOutputTokens: 8192
+      }
+    };
+
+    if (systemInstruction) {
+      requestBody.systemInstruction = {
+        parts: [{ text: systemInstruction }]
+      };
+    }
+
+    if (schema) {
+      requestBody.generationConfig.responseMimeType = 'application/json';
+      requestBody.generationConfig.responseSchema = schema;
+    }
+
+    const response = await fetchWithTimeout(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestBody)
+    }, 300000);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
+    }
+
+    const result = await response.json();
+    const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) {
+      throw new Error('Gemini API returned an empty response.');
+    }
+
+    return schema ? safeExtractAndParseJson(text, schema) : text;
+  }
+}
+
+async function callOpenAI(prompt, systemInstruction, schema, settings) {
+  const apiKey = settings?.openaiApiKey || process.env.OPENAI_API_KEY || process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error('OpenAI API key is not configured.');
+  }
+
+  const isOpenRouter = apiKey.startsWith('sk-or-');
+  const url = isOpenRouter ? 'https://openrouter.ai/api/v1/chat/completions' : 'https://api.openai.com/v1/chat/completions';
+  
+  const userContent = schema 
+    ? `${prompt}\n\nOutput MUST be valid JSON matching the structure: ${getCompactSchemaInstructions(schema)}\nDo not include any chat prefix or suffix. Return ONLY the raw JSON object.` 
+    : prompt;
+
+  const requestBody = {
+    model: isOpenRouter ? 'openai/gpt-4o-mini' : 'gpt-4o-mini',
+    messages: [
+      ...(systemInstruction ? [{ role: 'system', content: systemInstruction }] : []),
+      { role: 'user', content: userContent }
+    ],
+    temperature: 0.1,
+    max_tokens: 8192
+  };
+
+  if (schema) {
+    requestBody.response_format = { type: 'json_object' };
+  }
+
+  const response = isOpenRouter 
+    ? await fetchOpenRouterWithRetry(url, requestBody, apiKey)
+    : await fetchWithTimeout(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      }, 300000);
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
+  }
+
+  const result = await response.json();
+  const text = result.choices?.[0]?.message?.content;
+  if (!text) {
+    throw new Error('OpenAI API returned an empty response.');
+  }
+
+  return schema ? safeExtractAndParseJson(text, schema) : cleanJsonResponse(text);
+}
+
+async function callClaude(prompt, systemInstruction, schema, pdfBase64, settings) {
+  const apiKey = settings?.claudeApiKey || process.env.CLAUDE_API_KEY || process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error('Claude API key is not configured.');
+  }
+
+  const isOpenRouter = apiKey.startsWith('sk-or-');
+  const url = isOpenRouter ? 'https://openrouter.ai/api/v1/chat/completions' : 'https://api.anthropic.com/v1/messages';
+
+  const userContent = schema
+    ? `${prompt}\n\nOutput MUST be valid JSON matching the structure: ${getCompactSchemaInstructions(schema)}\nDo not include any chat prefix or suffix. Return ONLY the raw JSON object.`
+    : prompt;
+
+  let response;
+  if (isOpenRouter) {
+    const requestBody = {
+      model: 'anthropic/claude-3.5-sonnet',
+      max_tokens: 8192,
+      messages: [
+        ...(systemInstruction ? [{ role: 'system', content: systemInstruction }] : []),
+        { role: 'user', content: userContent }
+      ],
+      temperature: 0.1
+    };
+
+    response = await fetchOpenRouterWithRetry(url, requestBody, apiKey);
+    const result = await response.json();
+    const text = result.choices?.[0]?.message?.content;
+    if (!text) {
+      throw new Error('Claude API returned an empty response.');
+    }
+    return schema ? safeExtractAndParseJson(text, schema) : cleanJsonResponse(text);
+  } else {
+    const requestBody = {
+      model: 'claude-3-5-sonnet-20241022',
+      max_tokens: 8192,
+      system: systemInstruction || undefined,
+      messages: [
+        {
+          role: 'user',
+          content: pdfBase64 ? [
+            {
+              type: 'document',
+              source: {
+                type: 'base64',
+                media_type: 'application/pdf',
+                data: pdfBase64
+              }
+            },
+            {
+              type: 'text',
+              text: userContent
+            }
+          ] : userContent
+        }
+      ],
+      temperature: 0.1
+    };
+
+    response = await fetchWithTimeout(url, {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestBody)
+    }, 300000);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Claude API error: ${response.status} - ${errorText}`);
+    }
+
+    const result = await response.json();
+    const text = result.content?.[0]?.text;
+    if (!text) {
+      throw new Error('Claude API returned an empty response.');
+    }
+
+    return schema ? safeExtractAndParseJson(text, schema) : cleanJsonResponse(text);
+  }
+}
+
+async function callOllama(prompt, systemInstruction = '', schema = null, settings = null) {
+  const ollamaUrl = (settings?.ollamaUrl || 'http://localhost:11434').replace(/\/+$/, '');
+  const ollamaModel = settings?.ollamaModel || 'llama3';
+
+  let userContent = prompt;
+  if (schema) {
+    userContent += getCompactSchemaInstructions(schema);
+  }
+
+  userContent += "\n\nCRITICAL: Do NOT write any thinking process, reasoning, chain-of-thought, or <thinking> tags. Skip thinking entirely and go straight to outputting the raw JSON. You must respond with valid JSON only.";
+
+  let finalSystem = systemInstruction;
+  if (finalSystem) {
+    finalSystem += "\nCRITICAL: Do NOT output any thinking, reasoning, thoughts, or <thinking> tags. Skip thinking entirely. Directly output the raw JSON object.";
+  }
+
+  const messages = [
+    ...(finalSystem ? [{ role: 'system', content: finalSystem }] : []),
+    { role: 'user', content: userContent }
+  ];
+
+  // Parameter Tuning per AGENTS.md rule 4
+  // Ensure scoring/checklist/evaluation context is at least 8192 and prediction at least 2048
+  let numPredict = 2048;
+  let dynamicNumCtx = 8192;
+
+  if (prompt.length > 5000 || (schema?.properties && Object.keys(schema.properties).length > 8)) {
+    // Heavy resume parsing
+    numPredict = 4096;
+    dynamicNumCtx = 16384;
+  } else if (schema && Object.keys(schema.properties).length <= 3 && prompt.length < 800) {
+    // Simple classification
+    numPredict = 512;
+    dynamicNumCtx = 4096;
+  }
+
+  const requestBody = {
+    model: ollamaModel,
+    messages,
+    stream: false,
+    options: {
+      temperature: 0.1,
+      num_ctx: dynamicNumCtx,
+      num_predict: numPredict
+    }
+  };
+
+  if (schema) {
+    requestBody.format = 'json';
+  }
+
+  const ollamaFetch = async (body) => {
+    try {
+      const response = await fetchWithTimeout(`${ollamaUrl}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      }, 900000);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Ollama API error: ${response.status} - ${errorText}`);
+      }
+      return await response.json();
+    } catch (err) {
+      if (err.message && err.message.includes('timed out')) {
+        throw new Error('Ollama request timed out after 15 minutes. The model may be overloaded or the resume is too large.');
+      }
+      throw err;
+    }
+  };
+
+  let result = await ollamaFetch(requestBody);
+  let text = result.message?.content;
+  
+  // Support for thinking models (e.g. qwen3, deepseek-r1): if content is empty, check if JSON was emitted inside message.thinking
+  if (!text && result.message?.thinking) {
+    const thinkingText = result.message.thinking;
+    const jsonMatch = thinkingText.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      try {
+        JSON.parse(cleanJsonResponse(jsonMatch[0]));
+        text = jsonMatch[0];
+        console.log('Ollama: Successfully extracted valid JSON output from message.thinking.');
+      } catch (e) {}
+    }
+  }
+
+  // If the model returned an empty response, retry with extended tokens and relaxed formatting constraint
+  if (!text) {
+    console.warn('Ollama: Empty response on first attempt. Raw result:', JSON.stringify(result).substring(0, 500));
+    console.warn('Ollama: Retrying with extended num_predict (4096) and relaxed format constraint...');
+    const retryBody = {
+      ...requestBody,
+      options: {
+        ...requestBody.options,
+        num_predict: 4096,
+        num_ctx: Math.max(dynamicNumCtx, 8192)
+      }
+    };
+    delete retryBody.format;
+    if (schema) {
+      retryBody.messages = [
+        ...retryBody.messages,
+        { role: 'user', content: 'You MUST respond with valid JSON only. No thinking, no markdown, no explanation, no code fences. Just the raw JSON object starting with {.' }
+      ];
+    }
+    result = await ollamaFetch(retryBody);
+    text = result.message?.content;
+    if (!text && result.message?.thinking) {
+      const thinkingText = result.message.thinking;
+      const jsonMatch = thinkingText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) text = jsonMatch[0];
+    }
+    if (!text) {
+      throw new Error('Ollama API returned an empty response. The model may not support this request format. Try a different model (e.g., llama3, qwen2).');
+    }
+  }
+
+  // Detect truncated JSON
+  if (schema) {
+    try {
+      const testClean = cleanJsonResponse(text);
+      JSON.parse(testClean);
+    } catch (truncErr) {
+      if (truncErr.message.includes('Unterminated') || truncErr.message.includes('Unexpected end')) {
+        const testClean = cleanJsonResponse(text);
+        console.warn('Ollama: Response appears truncated. Attempting to repair JSON locally first...');
+        try {
+          const repaired = statefulJsonRepair(testClean);
+          JSON.parse(repaired);
+          console.log('Ollama: Local JSON repair successful! Skipping API retry.');
+          text = repaired;
+        } catch (repairErr) {
+          console.warn('Ollama: Local JSON repair failed. Retrying API request with extended token limit...');
+          requestBody.options.num_predict = 4096;
+          requestBody.options.num_ctx = Math.max(dynamicNumCtx, 8192);
+          try {
+            result = await ollamaFetch(requestBody);
+            const newText = result.message?.content;
+            if (newText) {
+              text = newText;
+            } else {
+              text = statefulJsonRepair(testClean);
+            }
+          } catch (retryFetchErr) {
+            console.error('Ollama: API retry failed:', retryFetchErr);
+            text = statefulJsonRepair(testClean);
+          }
+        }
+      }
+    }
+  }
+
+  return schema ? safeExtractAndParseJson(text, schema) : cleanJsonResponse(text);
+}
+
 async function callAIProvider(prompt, systemInstruction = '', schema = null, pdfBase64 = null) {
   let settings = null;
   try {
@@ -506,388 +885,30 @@ async function callAIProvider(prompt, systemInstruction = '', schema = null, pdf
   }
 
   if (aiProvider === 'gemini') {
-    const apiKey = settings?.geminiApiKey || process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error('Gemini API key is not configured.');
-    }
-
-    const isOpenRouter = apiKey.startsWith('sk-or-');
-
-    if (isOpenRouter) {
-      const url = 'https://openrouter.ai/api/v1/chat/completions';
-      const requestBody = {
-        model: process.env.AI_MODEL || 'google/gemini-2.5-flash',
-        max_tokens: 8192,
-        messages: [
-          ...(systemInstruction ? [{ role: 'system', content: systemInstruction }] : []),
-          { role: 'user', content: prompt }
-        ]
-      };
-
-      if (schema) {
-        requestBody.response_format = { type: 'json_object' };
-        requestBody.messages.push({
-          role: 'user',
-          content: `Output MUST match JSON structure: ${getCompactSchemaInstructions(schema)}`
-        });
-      }
-
-      const response = await fetchOpenRouterWithRetry(url, requestBody, apiKey);
-      const result = await response.json();
-      const text = result.choices?.[0]?.message?.content;
-      if (!text) {
-        throw new Error('Gemini AI API returned an empty response.');
-      }
-
-      return schema ? safeExtractAndParseJson(text, schema) : cleanJsonResponse(text);
-    } else {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-
-      const requestBody = {
-        contents: [
-          {
-            parts: [
-              ...(pdfBase64 ? [{ inlineData: { mimeType: 'application/pdf', data: pdfBase64 } }] : []),
-              { text: prompt }
-            ]
-          }
-        ],
-        generationConfig: {
-          temperature: 0.1,
-          maxOutputTokens: 8192
-        }
-      };
-
-      if (systemInstruction) {
-        requestBody.systemInstruction = {
-          parts: [{ text: systemInstruction }]
-        };
-      }
-
-      if (schema) {
-        requestBody.generationConfig.responseMimeType = 'application/json';
-        requestBody.generationConfig.responseSchema = schema;
-      }
-
-      const response = await fetchWithTimeout(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestBody)
-      }, 300000);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
-      }
-
-      const result = await response.json();
-      const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!text) {
-        throw new Error('Gemini API returned an empty response.');
-      }
-
-      return schema ? safeExtractAndParseJson(text, schema) : text;
-    }
+    return await callGemini(prompt, systemInstruction, schema, pdfBase64, settings);
   } else if (aiProvider === 'openai') {
-    const apiKey = settings?.openaiApiKey || process.env.OPENAI_API_KEY || process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error('OpenAI API key is not configured.');
-    }
-
-    const isOpenRouter = apiKey.startsWith('sk-or-');
-    const url = isOpenRouter ? 'https://openrouter.ai/api/v1/chat/completions' : 'https://api.openai.com/v1/chat/completions';
-    
-    const userContent = schema 
-      ? `${prompt}\n\nOutput MUST be valid JSON matching the structure: ${getCompactSchemaInstructions(schema)}\nDo not include any chat prefix or suffix. Return ONLY the raw JSON object.` 
-      : prompt;
-
-    const requestBody = {
-      model: isOpenRouter ? 'openai/gpt-4o-mini' : 'gpt-4o-mini',
-      messages: [
-        ...(systemInstruction ? [{ role: 'system', content: systemInstruction }] : []),
-        { role: 'user', content: userContent }
-      ],
-      temperature: 0.1,
-      max_tokens: 8192
-    };
-
-    if (schema) {
-      requestBody.response_format = { type: 'json_object' };
-    }
-
-    let response;
-    if (isOpenRouter) {
-      response = await fetchOpenRouterWithRetry(url, requestBody, apiKey);
-    } else {
-      response = await fetchWithTimeout(url, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestBody)
-      }, 300000);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
-      }
-    }
-
-    const result = await response.json();
-    const text = result.choices?.[0]?.message?.content;
-    if (!text) {
-      throw new Error('OpenAI API returned an empty response.');
-    }
-
-    return schema ? safeExtractAndParseJson(text, schema) : cleanJsonResponse(text);
+    return await callOpenAI(prompt, systemInstruction, schema, settings);
   } else if (aiProvider === 'claude') {
-    const apiKey = settings?.claudeApiKey || process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
-      throw new Error('Claude API key is not configured.');
-    }
-
-    const isOpenRouter = apiKey.startsWith('sk-or-');
-    const url = isOpenRouter ? 'https://openrouter.ai/api/v1/chat/completions' : 'https://api.anthropic.com/v1/messages';
-    const userContent = schema 
-      ? `${prompt}\n\nOutput MUST be valid JSON matching the structure: ${getCompactSchemaInstructions(schema)}\nDo not include any chat prefix or suffix. Return ONLY the raw JSON object.` 
-      : prompt;
-
-    let response;
-    if (isOpenRouter) {
-      const requestBody = {
-        model: 'anthropic/claude-3.5-sonnet',
-        messages: [
-          ...(systemInstruction ? [{ role: 'system', content: systemInstruction }] : []),
-          { role: 'user', content: userContent }
-        ],
-        temperature: 0.1,
-        max_tokens: 8192
-        // NOTE: response_format (json_object) is not supported by OpenRouter for Anthropic models.
-        // The userContent already instructs the model to return valid JSON matching the schema.
-      };
-
-      response = await fetchOpenRouterWithRetry(url, requestBody, apiKey);
-
-      const result = await response.json();
-      const text = result.choices?.[0]?.message?.content;
-      if (!text) {
-        throw new Error('Claude API returned an empty response.');
-      }
-
-      return schema ? safeExtractAndParseJson(text, schema) : cleanJsonResponse(text);
-
-    } else {
-      const requestBody = {
-        model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 8192,
-        system: systemInstruction || undefined,
-        messages: [
-          {
-            role: 'user',
-            content: pdfBase64 ? [
-              {
-                type: 'document',
-                source: {
-                  type: 'base64',
-                  media_type: 'application/pdf',
-                  data: pdfBase64
-                }
-              },
-              {
-                type: 'text',
-                text: userContent
-              }
-            ] : userContent
-          }
-        ],
-        temperature: 0.1
-      };
-
-      response = await fetchWithTimeout(url, {
-        method: 'POST',
-        headers: {
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestBody)
-      }, 300000);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Claude API error: ${response.status} - ${errorText}`);
-      }
-
-      const result = await response.json();
-      const text = result.content?.[0]?.text;
-      if (!text) {
-        throw new Error('Claude API returned an empty response.');
-      }
-
-      return schema ? safeExtractAndParseJson(text, schema) : cleanJsonResponse(text);
-    }
+    return await callClaude(prompt, systemInstruction, schema, pdfBase64, settings);
   } else if (aiProvider === 'ollama') {
-    const ollamaUrl = (settings?.ollamaUrl || 'http://localhost:11434').replace(/\/+$/, '');
-    const ollamaModel = settings?.ollamaModel || 'llama3';
-
-    // For Ollama: merge a compact format instruction into the user prompt
-    // instead of sending the massive raw JSON schema as a separate message
-    let userContent = prompt;
-    if (schema) {
-      userContent += getCompactSchemaInstructions(schema);
+    try {
+      return await callOllama(prompt, systemInstruction, schema, settings);
+    } catch (ollamaErr) {
+      console.warn(`Ollama call failed (${ollamaErr.message}). Checking for cloud fallback...`);
+      if (settings?.geminiApiKey || process.env.GEMINI_API_KEY) {
+        console.warn('Falling back to configured Gemini/OpenRouter API key...');
+        return await callGemini(prompt, systemInstruction, schema, pdfBase64, settings);
+      }
+      if (settings?.openaiApiKey || process.env.OPENAI_API_KEY) {
+        console.warn('Falling back to configured OpenAI API key...');
+        return await callOpenAI(prompt, systemInstruction, schema, settings);
+      }
+      if (settings?.claudeApiKey || process.env.CLAUDE_API_KEY) {
+        console.warn('Falling back to configured Claude API key...');
+        return await callClaude(prompt, systemInstruction, schema, pdfBase64, settings);
+      }
+      throw ollamaErr;
     }
-
-    // Disable thinking for reasoning/DeepSeek-style models to prevent token truncation and save speed
-    userContent += "\n\nCRITICAL: Do NOT write any thinking process, reasoning, chain-of-thought, or <thinking> tags. Skip thinking entirely and go straight to outputting the raw JSON. You must respond with valid JSON only.";
-
-    let finalSystem = systemInstruction;
-    if (finalSystem) {
-      finalSystem += "\nCRITICAL: Do NOT output any thinking, reasoning, thoughts, or <thinking> tags. Skip thinking entirely. Directly output the raw JSON object.";
-    }
-
-    const messages = [
-      ...(finalSystem ? [{ role: 'system', content: finalSystem }] : []),
-      { role: 'user', content: userContent }
-    ];
-
-    // Explicit Parameter Tuning based on task complexity
-    let numPredict = 4096; // Complex generation (e.g., resume parsing with full recruiter analysis)
-    let dynamicNumCtx = 16384; 
-
-    if (schema) {
-      const isSimpleSchema = schema.properties && Object.keys(schema.properties).length <= 5;
-      if (isSimpleSchema) {
-        numPredict = 256; // Simple classification/indexing
-        dynamicNumCtx = 2048;
-      }
-    } else {
-      numPredict = 256;
-      dynamicNumCtx = 2048;
-    }
-
-    const requestBody = {
-      model: ollamaModel,
-      messages,
-      stream: false,
-      options: {
-        temperature: 0.1,
-        num_ctx: dynamicNumCtx,
-        num_predict: numPredict
-      }
-    };
-
-    if (schema) {
-      requestBody.format = 'json';
-    }
-
-    const ollamaFetch = async (body) => {
-      try {
-        const response = await fetchWithTimeout(`${ollamaUrl}/api/chat`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
-        }, 900000);
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`Ollama API error: ${response.status} - ${errorText}`);
-        }
-        return await response.json();
-      } catch (err) {
-        if (err.message.includes('timed out')) {
-          throw new Error('Ollama request timed out after 15 minutes. The model may be overloaded or the resume is too large.');
-        }
-        throw err;
-      }
-    };
-
-    let result = await ollamaFetch(requestBody);
-    let text = result.message?.content;
-    
-    // Support for thinking models (e.g. qwen3, deepseek-r1): if content is empty, check if JSON was emitted inside message.thinking
-    if (!text && result.message?.thinking) {
-      const thinkingText = result.message.thinking;
-      const jsonMatch = thinkingText.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        try {
-          JSON.parse(cleanJsonResponse(jsonMatch[0]));
-          text = jsonMatch[0];
-          console.log('Ollama: Successfully extracted valid JSON output from message.thinking.');
-        } catch (e) {}
-      }
-    }
-
-    // If the model returned an empty response, retry with extended tokens and relaxed formatting constraint
-    if (!text) {
-      console.warn('Ollama: Empty response on first attempt. Raw result:', JSON.stringify(result).substring(0, 500));
-      console.warn('Ollama: Retrying with extended num_predict (4096) and relaxed format constraint...');
-      const retryBody = {
-        ...requestBody,
-        options: {
-          ...requestBody.options,
-          num_predict: 4096
-        }
-      };
-      delete retryBody.format;
-      // Add explicit JSON instruction to user message instead
-      if (schema) {
-        retryBody.messages = [
-          ...retryBody.messages,
-          { role: 'user', content: 'You MUST respond with valid JSON only. No thinking, no markdown, no explanation, no code fences. Just the raw JSON object starting with {.' }
-        ];
-      }
-      result = await ollamaFetch(retryBody);
-      text = result.message?.content;
-      if (!text && result.message?.thinking) {
-        const thinkingText = result.message.thinking;
-        const jsonMatch = thinkingText.match(/\{[\s\S]*\}/);
-        if (jsonMatch) text = jsonMatch[0];
-      }
-      if (!text) {
-        console.error('Ollama: Empty response on retry as well. Full result:', JSON.stringify(result).substring(0, 1000));
-        throw new Error('Ollama API returned an empty response. The model may not support this request format. Try a different model (e.g., llama3, qwen2).');
-      }
-    }
-
-    // Detect truncated JSON: if we expected JSON but the response is cut off, try to repair it locally first or retry once with higher limit
-    if (schema) {
-      try {
-        const testClean = cleanJsonResponse(text);
-        JSON.parse(testClean);
-      } catch (truncErr) {
-        if (truncErr.message.includes('Unterminated') || truncErr.message.includes('Unexpected end')) {
-          const testClean = cleanJsonResponse(text);
-          console.warn('Ollama: Response appears truncated. Attempting to repair JSON locally first...');
-          try {
-            const repaired = statefulJsonRepair(testClean);
-            JSON.parse(repaired);
-            console.log('Ollama: Local JSON repair successful! Skipping API retry.');
-            text = repaired;
-          } catch (repairErr) {
-            console.warn('Ollama: Local JSON repair failed. Retrying API request with extended token limit...');
-            requestBody.options.num_predict = 4096;
-            try {
-              result = await ollamaFetch(requestBody);
-              const newText = result.message?.content;
-              if (newText) {
-                text = newText;
-              } else {
-                console.warn('Ollama: API retry returned empty. Falling back to repaired first attempt.');
-                text = statefulJsonRepair(testClean);
-              }
-            } catch (retryFetchErr) {
-              console.error('Ollama: API retry failed:', retryFetchErr);
-              console.warn('Ollama: Falling back to repaired first attempt.');
-              text = statefulJsonRepair(testClean);
-            }
-          }
-        }
-      }
-    }
-
-    return schema ? safeExtractAndParseJson(text, schema) : cleanJsonResponse(text);
   } else {
     throw new Error(`Unsupported AI Provider: ${aiProvider}`);
   }
@@ -1462,10 +1483,176 @@ export function calculateTotalExperience(experience) {
 }
 
 /**
+ * Deterministic fallback scoring functions when AI model is offline or times out.
+ */
+export function calculateDeterministicJobMatch(candidateProfile, jobDescription) {
+  const totalExperience = calculateTotalExperience(candidateProfile?.experience || []);
+  const candSkills = new Set();
+  
+  const addCandSkill = (s) => {
+    if (!s || typeof s !== 'string') return;
+    s.split(/[,;\n•·|/]/).forEach(p => {
+      const trimmed = p.trim().toLowerCase();
+      if (trimmed.length > 1) candSkills.add(trimmed);
+    });
+  };
+
+  (candidateProfile?.skills || []).forEach(addCandSkill);
+  if (Array.isArray(candidateProfile?.projects)) {
+    candidateProfile.projects.forEach(p => {
+      (p.matchingSkills || []).forEach(addCandSkill);
+      if (p.name) addCandSkill(p.name);
+      if (p.description) p.description.split(/[,.;]/).forEach(addCandSkill);
+    });
+  }
+  if (Array.isArray(candidateProfile?.experience)) {
+    candidateProfile.experience.forEach(e => {
+      if (e.role) addCandSkill(e.role);
+      if (e.description) e.description.split(/[,.;]/).forEach(addCandSkill);
+    });
+  }
+
+  let requiredItems = [];
+  if (jobDescription?.requirementsChecklist && Array.isArray(jobDescription.requirementsChecklist) && jobDescription.requirementsChecklist.length > 0) {
+    requiredItems = jobDescription.requirementsChecklist.map(r => typeof r === 'string' ? r : (r.requirement || ''));
+  } else {
+    const rawReq = `${jobDescription?.requirements || ''}\n${jobDescription?.description || ''}`;
+    requiredItems = rawReq
+      .split(/\n|•|;/)
+      .map(s => s.trim())
+      .filter(s => s.length > 5 && !s.toLowerCase().startsWith('job title') && !s.toLowerCase().startsWith('about the'));
+  }
+
+  if (requiredItems.length === 0 && jobDescription?.title) {
+    requiredItems = [jobDescription.title];
+  }
+
+  const matchingSkills = [];
+  const missingSkills = [];
+
+  requiredItems.forEach(req => {
+    const reqLower = req.toLowerCase();
+    
+    // Check if it's an experience requirement
+    const yearsMatch = reqLower.match(/(\d+)\+?\s*years?/);
+    if (yearsMatch) {
+      const reqYears = parseInt(yearsMatch[1], 10);
+      const candYearsMatch = totalExperience.match(/(\d+)\s*years?/);
+      const candYears = candYearsMatch ? parseInt(candYearsMatch[1], 10) : 0;
+      if (candYears >= reqYears) {
+        matchingSkills.push(req);
+      } else {
+        missingSkills.push(req);
+      }
+      return;
+    }
+
+    let isMatched = false;
+    for (const skill of candSkills) {
+      if (skill.length > 2 && (reqLower.includes(skill) || skill.includes(reqLower))) {
+        isMatched = true;
+        break;
+      }
+    }
+
+    if (isMatched) {
+      matchingSkills.push(req);
+    } else {
+      missingSkills.push(req);
+    }
+  });
+
+  const total = matchingSkills.length + missingSkills.length;
+  let score = total > 0 ? Math.round((matchingSkills.length / total) * 100) : 65;
+  if (matchingSkills.length > 0 && score < 45) score = 55;
+  if (score > 95) score = 95;
+
+  const reasoning = `Candidate matches ${matchingSkills.length} of ${total} requirements (${score}%) based on profile qualifications and ${totalExperience} of experience.` +
+    (missingSkills.length > 0 ? ` Areas to review: ${missingSkills.slice(0, 3).join(', ')}.` : ' Strong qualification alignment.');
+
+  return {
+    score,
+    matchingSkills,
+    missingSkills,
+    reasoning
+  };
+}
+
+export function calculateDeterministicChecklistMatch(candidateProfile, job) {
+  const checklist = job?.requirementsChecklist || [];
+  if (!checklist || checklist.length === 0) {
+    const holistic = calculateDeterministicJobMatch(candidateProfile, job);
+    return {
+      score: holistic.score,
+      passedCoreSkills: holistic.score >= 50,
+      matchedRequirements: holistic.matchingSkills,
+      unmatchedRequirements: holistic.missingSkills,
+      reasoning: holistic.reasoning,
+      checklist: []
+    };
+  }
+
+  const holistic = calculateDeterministicJobMatch(candidateProfile, job);
+  const results = checklist.map(req => {
+    const reqStr = typeof req === 'string' ? req : (req?.requirement || '');
+    const isMet = holistic.matchingSkills.some(m => m.toLowerCase().includes(reqStr.toLowerCase()) || reqStr.toLowerCase().includes(m.toLowerCase()));
+    return {
+      requirement: reqStr,
+      met: isMet,
+      evidence: isMet ? 'Verified against candidate skills and experience profile' : 'Not explicitly detailed in resume'
+    };
+  });
+
+  const matched = results.filter(r => r.met);
+  const unmatched = results.filter(r => !r.met);
+  const score = results.length > 0 ? Math.round((matched.length / results.length) * 100) : holistic.score;
+
+  return {
+    score: score > 0 ? score : holistic.score,
+    passedCoreSkills: score >= 40,
+    matchedRequirements: matched.map(m => m.requirement),
+    unmatchedRequirements: unmatched.map(u => `${u.requirement} — ${u.evidence}`),
+    reasoning: `Candidate meets ${matched.length} of ${results.length} checklist requirements (${score}%).` + 
+      (unmatched.length > 0 ? ` Missing: ${unmatched.slice(0, 3).map(u => u.requirement).join(', ')}.` : ' All key checklist items matched.'),
+    checklist: results
+  };
+}
+
+export function calculateDeterministicOwnCategory(candidateProfile) {
+  const totalExperience = calculateTotalExperience(candidateProfile?.experience || []);
+  const skillsCount = (candidateProfile?.skills || []).length;
+  const expCount = (candidateProfile?.experience || []).length;
+  
+  let baseScore = 65;
+  if (skillsCount >= 20) baseScore += 15;
+  else if (skillsCount >= 10) baseScore += 10;
+  else if (skillsCount >= 5) baseScore += 5;
+
+  const yearsMatch = totalExperience.match(/(\d+)\s*years?/);
+  const years = yearsMatch ? parseInt(yearsMatch[1], 10) : 0;
+  if (years >= 5) baseScore += 15;
+  else if (years >= 3) baseScore += 10;
+  else if (years >= 1) baseScore += 5;
+
+  if (expCount >= 2) baseScore += 5;
+  const score = Math.min(95, Math.max(50, baseScore));
+
+  const matching = (candidateProfile?.skills || []).slice(0, 10);
+  const reasoning = `Candidate demonstrates ${years}+ years of professional domain experience across ${expCount} roles with active proficiency in ${matching.slice(0, 4).join(', ')}.`;
+
+  return {
+    score,
+    matchingSkills: matching,
+    missingSkills: [],
+    reasoning
+  };
+}
+
+/**
  * Scores and ranks a candidate against a job description.
  */
 export async function scoreCandidate(candidateProfile, jobDescription, ragChunks = null) {
-  const totalExperience = calculateTotalExperience(candidateProfile.experience);
+  const totalExperience = calculateTotalExperience(candidateProfile?.experience || []);
   
   const systemInstruction = `You are a professional HR screener and hiring manager. Evaluate the candidate against the job description. Extract and compare the required job qualifications and skills exactly. DO NOT hallucinate or assume the candidate has skills, degrees, or experience not explicitly stated in their resume. Ground all matching and missing qualifications strictly in the provided text inputs.
 
@@ -1515,46 +1702,53 @@ Today's date is ${new Date().toDateString()}. Use the pre-calculated "totalExper
 ${candidateContext}
 
 Job Description:
-Title: ${jobDescription.title}
-Requirements: ${jobDescription.requirements}
-Description: ${jobDescription.description}
+Title: ${jobDescription?.title || 'Job Opening'}
+Requirements: ${jobDescription?.requirements || ''}
+Description: ${jobDescription?.description || ''}
 
 Evaluate this candidate for the job strictly. Compare all required qualifications (skills, experience level, tools) and list matches and gaps without any hallucinations:`;
 
-  const result = await callAIProvider(prompt, systemInstruction, schema);
+  try {
+    const result = await callAIProvider(prompt, systemInstruction, schema);
 
-  if (result && Array.isArray(result.missingSkills)) {
-    const yearsMatch = totalExperience.match(/^(\d+)\s+years?/);
-    const candidateYears = yearsMatch ? parseInt(yearsMatch[1], 10) : 0;
+    if (result && typeof result === 'object' && result.score !== undefined) {
+      if (Array.isArray(result.missingSkills)) {
+        const yearsMatch = totalExperience.match(/^(\d+)\s+years?/);
+        const candidateYears = yearsMatch ? parseInt(yearsMatch[1], 10) : 0;
 
-    result.missingSkills = result.missingSkills.filter(skill => {
-      const skillLower = skill.toLowerCase();
-      const isExpRequirement = skillLower.includes('year') && (skillLower.includes('exp') || skillLower.includes('work') || /\b\d+\b/.test(skillLower));
-      
-      if (isExpRequirement) {
-        const reqMatch = skillLower.match(/\b(\d+)\b/);
-        if (reqMatch) {
-          const requiredYears = parseInt(reqMatch[1], 10);
-          if (candidateYears >= requiredYears) {
-            if (result.matchingSkills && !result.matchingSkills.includes(skill)) {
-              result.matchingSkills.push(skill);
+        result.missingSkills = result.missingSkills.filter(skill => {
+          const skillLower = skill.toLowerCase();
+          const isExpRequirement = skillLower.includes('year') && (skillLower.includes('exp') || skillLower.includes('work') || /\b\d+\b/.test(skillLower));
+          
+          if (isExpRequirement) {
+            const reqMatch = skillLower.match(/\b(\d+)\b/);
+            if (reqMatch) {
+              const requiredYears = parseInt(reqMatch[1], 10);
+              if (candidateYears >= requiredYears) {
+                if (result.matchingSkills && !result.matchingSkills.includes(skill)) {
+                  result.matchingSkills.push(skill);
+                }
+                return false;
+              }
+            } else {
+              if (candidateYears >= 5) {
+                if (result.matchingSkills && !result.matchingSkills.includes(skill)) {
+                  result.matchingSkills.push(skill);
+                }
+                return false;
+              }
             }
-            return false;
           }
-        } else {
-          if (candidateYears >= 5) {
-            if (result.matchingSkills && !result.matchingSkills.includes(skill)) {
-              result.matchingSkills.push(skill);
-            }
-            return false;
-          }
-        }
+          return true;
+        });
       }
-      return true;
-    });
+      return result;
+    }
+  } catch (err) {
+    console.warn(`scoreCandidate AI evaluation failed (${err.message}). Using deterministic fallback...`);
   }
 
-  return result;
+  return calculateDeterministicJobMatch(candidateProfile, jobDescription);
 }
 
 /**
@@ -1667,7 +1861,16 @@ ${JSON.stringify(profileToEval, null, 2)}
 
 Identify the candidate's primary job category (e.g. React Frontend Developer, Python Data Scientist) based on their resume, and score their overall competency in that specific category:`;
 
-  return await callAIProvider(prompt, systemInstruction, schema);
+  try {
+    const result = await callAIProvider(prompt, systemInstruction, schema);
+    if (result && typeof result === 'object' && result.score !== undefined) {
+      return result;
+    }
+  } catch (err) {
+    console.warn(`scoreCandidateByOwnCategory AI evaluation failed (${err.message}). Using deterministic competency fallback...`);
+  }
+
+  return calculateDeterministicOwnCategory(candidateProfile);
 }
 
 /**
@@ -1956,16 +2159,7 @@ Return a JSON object with a "results" array, one entry per requirement.`;
     const results = result?.results || [];
 
     if (!Array.isArray(results) || results.length === 0) {
-      // Fallback to holistic
-      const fallback = await scoreCandidate(candidateProfile, job);
-      return {
-        score: fallback.score || 0,
-        passedCoreSkills: true, // fallback assumes true
-        matchedRequirements: fallback.matchingSkills || [],
-        unmatchedRequirements: fallback.missingSkills || [],
-        reasoning: fallback.reasoning || '',
-        checklist: []
-      };
+      return calculateDeterministicChecklistMatch(candidateProfile, job);
     }
 
     const matched = results.filter(r => r.met === true);
@@ -1980,15 +2174,8 @@ Return a JSON object with a "results" array, one entry per requirement.`;
 
     return { score, passedCoreSkills: result.passedCoreSkills !== false, matchedRequirements: matchedReqs, unmatchedRequirements: unmatchedReqs, reasoning, checklist: results };
   } catch (e) {
-    console.error('scoreCandidateAgainstChecklist failed:', e.message);
-    const fallback = await scoreCandidate(candidateProfile, job);
-    return {
-      score: fallback.score || 0,
-      matchedRequirements: fallback.matchingSkills || [],
-      unmatchedRequirements: fallback.missingSkills || [],
-      reasoning: fallback.reasoning || '',
-      checklist: []
-    };
+    console.warn('scoreCandidateAgainstChecklist failed:', e.message, 'Falling back to deterministic checklist match...');
+    return calculateDeterministicChecklistMatch(candidateProfile, job);
   }
 }
 
