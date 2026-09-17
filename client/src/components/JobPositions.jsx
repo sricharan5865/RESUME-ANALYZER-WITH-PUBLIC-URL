@@ -81,12 +81,50 @@ function getJobApplicantsList(job, candidatesList) {
   });
 }
 
+function getCandidateDate(c) {
+  if (!c) return null;
+  let candidateDate = null;
+  if (c.createdAt) candidateDate = new Date(c.createdAt);
+  else if (c.appliedDate) candidateDate = new Date(c.appliedDate);
+  else if (c.date) candidateDate = new Date(c.date);
+  else if (c._id && /^[0-9a-fA-F]{24}$/.test(String(c._id))) {
+    candidateDate = new Date(parseInt(String(c._id).substring(0, 8), 16) * 1000);
+  } else if (c.id && /^candidate-(\d+)/.test(String(c.id))) {
+    const ts = parseInt(String(c.id).match(/^candidate-(\d+)/)[1], 10);
+    if (!isNaN(ts)) candidateDate = new Date(ts);
+  }
+  return (candidateDate && !isNaN(candidateDate.getTime())) ? candidateDate : null;
+}
+
+function isCandidateImmediate7(c) {
+  const noticeDays = getNoticeDays(c);
+  if (noticeDays !== null) {
+    return noticeDays <= 7;
+  }
+  const candidateDate = getCandidateDate(c);
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  return candidateDate ? candidateDate >= sevenDaysAgo : false;
+}
+
+function isCandidateJoiners14(c) {
+  const noticeDays = getNoticeDays(c);
+  if (noticeDays !== null) {
+    return noticeDays <= 14;
+  }
+  const candidateDate = getCandidateDate(c);
+  const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+  return candidateDate ? candidateDate >= fourteenDaysAgo : false;
+}
+
+function isCandidateOld(c) {
+  const candidateDate = getCandidateDate(c);
+  if (!candidateDate) return false;
+  const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+  return candidateDate < fourteenDaysAgo;
+}
+
 function getJobApplicantStats(job, candidatesList) {
   const jobApplicants = getJobApplicantsList(job, candidatesList);
-
-  const now = new Date();
-  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-  const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
 
   let oldApplicants = 0;
   let newApplicants = 0;
@@ -94,29 +132,14 @@ function getJobApplicantStats(job, candidatesList) {
   let joiners14 = 0;
 
   jobApplicants.forEach(c => {
-    let candidateDate = null;
-    if (c.createdAt) candidateDate = new Date(c.createdAt);
-    else if (c.appliedDate) candidateDate = new Date(c.appliedDate);
-    else if (c._id && /^[0-9a-fA-F]{24}$/.test(String(c._id))) {
-      candidateDate = new Date(parseInt(String(c._id).substring(0, 8), 16) * 1000);
-    }
-    
-    const noticeDays = getNoticeDays(c);
-
-    if ((noticeDays !== null && noticeDays <= 7) || (candidateDate && candidateDate >= sevenDaysAgo)) {
+    if (isCandidateImmediate7(c)) {
       immediate7++;
     }
-
-    if ((noticeDays !== null && noticeDays <= 14) || (candidateDate && candidateDate >= fourteenDaysAgo)) {
+    if (isCandidateJoiners14(c)) {
       joiners14++;
     }
-
-    if (candidateDate && !isNaN(candidateDate.getTime())) {
-      if (candidateDate >= fourteenDaysAgo) {
-        newApplicants++;
-      } else {
-        oldApplicants++;
-      }
+    if (isCandidateOld(c)) {
+      oldApplicants++;
     } else {
       newApplicants++;
     }
@@ -1007,25 +1030,14 @@ export default function JobPositions({
 
               const filteredApps = allApps.filter(c => {
                 // Filter tab
-                if (modalFilterTab === 'immediate7') {
-                  const days = getNoticeDays(c);
-                  if (days === null || days > 7) return false;
+                if (modalFilterTab === 'immediate7' && !isCandidateImmediate7(c)) {
+                  return false;
                 }
-                if (modalFilterTab === 'joiners14') {
-                  const days = getNoticeDays(c);
-                  if (days === null || days <= 7 || days > 14) return false;
+                if (modalFilterTab === 'joiners14' && !isCandidateJoiners14(c)) {
+                  return false;
                 }
-                if (modalFilterTab === 'old') {
-                  let candidateDate = null;
-                  if (c.createdAt) candidateDate = new Date(c.createdAt);
-                  else if (c.appliedDate) candidateDate = new Date(c.appliedDate);
-                  else if (c._id && /^[0-9a-fA-F]{24}$/.test(String(c._id))) {
-                    candidateDate = new Date(parseInt(String(c._id).substring(0, 8), 16) * 1000);
-                  }
-                  const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
-                  if (!candidateDate || isNaN(candidateDate.getTime()) || candidateDate >= fourteenDaysAgo) {
-                    return false;
-                  }
+                if (modalFilterTab === 'old' && !isCandidateOld(c)) {
+                  return false;
                 }
                 // Search query
                 if (modalSearchQuery) {

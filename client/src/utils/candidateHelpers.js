@@ -61,10 +61,19 @@ export function getCandidateNoticePeriod(c) {
   if (c.extractedData?.noticePeriod && String(c.extractedData.noticePeriod).trim() !== '') {
     return c.extractedData.noticePeriod;
   }
-  const formAnswers = c.extractedData?.formAnswers || [];
+  if (c.noticePeriod && String(c.noticePeriod).trim() !== '') {
+    return c.noticePeriod;
+  }
+  if (c.notice && String(c.notice).trim() !== '') {
+    return c.notice;
+  }
+  const formAnswers = c.extractedData?.formAnswers || c.formAnswers || [];
   const noticeAns = formAnswers.find(a => a.label && a.label.toLowerCase().includes('notice'));
   if (noticeAns && noticeAns.value && String(noticeAns.value).trim() !== '') {
     return noticeAns.value;
+  }
+  if (c.extractedData?.notice && String(c.extractedData.notice).trim() !== '') {
+    return c.extractedData.notice;
   }
   return '—';
 }
