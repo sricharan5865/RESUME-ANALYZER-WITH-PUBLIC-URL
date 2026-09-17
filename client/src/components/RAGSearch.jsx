@@ -786,7 +786,11 @@ export default function RAGSearch({ candidates, onViewCandidate, onEmailCandidat
 
             {jdResults.map((candidate, idx) => {
               const dbCandidate = candidates.find(c => c.id === candidate.id) || candidate;
-              const score = candidate.matchScore || 0;
+              const score = (candidate.matchScore !== undefined && candidate.matchScore !== null && Number(candidate.matchScore) > 0)
+                ? Number(candidate.matchScore)
+                : ((dbCandidate.matchScore !== undefined && dbCandidate.matchScore !== null && Number(dbCandidate.matchScore) > 0)
+                    ? Number(dbCandidate.matchScore)
+                    : (Number(candidate.ownCategoryScore) || Number(dbCandidate.ownCategoryScore) || Number(candidate.matchScore) || 0));
               const isExpanded = !!expandedQuestions[candidate.id];
 
               return (

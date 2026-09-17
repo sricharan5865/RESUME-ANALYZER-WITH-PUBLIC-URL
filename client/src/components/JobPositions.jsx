@@ -58,6 +58,17 @@ function getNoticeDays(candidate) {
   return null;
 }
 
+const getCandidateScore = (c) => {
+  if (!c) return 0;
+  if (c.matchScore !== undefined && c.matchScore !== null && Number(c.matchScore) > 0) {
+    return Number(c.matchScore);
+  }
+  if (c.ownCategoryScore !== undefined && c.ownCategoryScore !== null && Number(c.ownCategoryScore) > 0) {
+    return Number(c.ownCategoryScore);
+  }
+  return Number(c.matchScore) || Number(c.score) || 0;
+};
+
 function getJobApplicantsList(job, candidatesList) {
   if (!candidatesList || !Array.isArray(candidatesList)) return [];
   return candidatesList.filter(c => {
@@ -1136,7 +1147,7 @@ export default function JobPositions({
                           </thead>
                           <tbody>
                             {filteredApps.map(c => {
-                              const score = c.matchScore || c.score || 0;
+                              const score = getCandidateScore(c);
                               const notice = getCandidateNoticePeriod(c);
                               const loc = getCandidateLocation(c);
                               const exp = getCandidateExperience(c);
@@ -1192,7 +1203,10 @@ export default function JobPositions({
                                         style={{ padding: '4px 10px', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                                         onClick={() => {
                                           closeApplicantsModal();
-                                          onSelectCandidate(c);
+                                          onSelectCandidate({
+                                            ...c,
+                                            matchScore: score > 0 ? score : c.matchScore
+                                          });
                                         }}
                                       >
                                         <Eye size={12} /> View Profile

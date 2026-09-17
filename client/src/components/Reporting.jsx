@@ -29,7 +29,11 @@ export default function Reporting({ candidates, jobs }) {
   };
 
   candidates.forEach(c => {
-    const score = c.matchScore || c.ownCategoryScore || 0;
+    const score = (c.matchScore !== undefined && c.matchScore !== null && Number(c.matchScore) > 0)
+      ? Number(c.matchScore)
+      : (c.ownCategoryScore !== undefined && c.ownCategoryScore !== null && Number(c.ownCategoryScore) > 0
+          ? Number(c.ownCategoryScore)
+          : Number(c.matchScore) || 0);
     if (score >= 90) scoreBands['Excellent (90-100)']++;
     else if (score >= 70) scoreBands['Good (70-89)']++;
     else if (score >= 50) scoreBands['Average (50-69)']++;
