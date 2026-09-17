@@ -17,10 +17,11 @@ export default function CompareCandidates({ candidates, compareIds, onBack }) {
   }
 
   const cands = candidates.filter(c => compareIds.includes(c.id));
-  const bestScore = Math.max(...cands.map(c => c.matchScore || 0));
+  const getScore = (c) => (c.matchScore !== undefined && c.matchScore > 0) ? c.matchScore : (c.ownCategoryScore > 0 ? c.ownCategoryScore : (c.matchScore || 0));
+  const bestScore = Math.max(...cands.map(getScore));
 
   const rows = [
-    { label: "Job Match Score", render: c => <span style={{ fontWeight: 'bold', color: c.matchScore >= 80 ? 'var(--status-offered)' : 'inherit' }}>{c.matchScore}%</span>, highlight: true },
+    { label: "Job Match Score", render: c => { const s = getScore(c); return <span style={{ fontWeight: 'bold', color: s >= 80 ? 'var(--status-offered)' : 'inherit' }}>{s}%</span>; }, highlight: true },
     { label: "Competency Score", render: c => `${c.ownCategoryScore || 0}%` },
     { label: "Current Stage", render: c => <span style={{ background: 'var(--bg-tertiary)', padding: '2px 8px', borderRadius: '12px', fontSize: '12px' }}>{c.stage}</span> },
     { label: "Location", render: c => getCandidateLocation(c) },
@@ -45,7 +46,7 @@ export default function CompareCandidates({ candidates, compareIds, onBack }) {
             <tr>
               <th style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', borderRight: '1px solid var(--border-color)', minWidth: '150px' }}>Attribute</th>
               {cands.map((c) => (
-                <th key={c.id} style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', borderRight: '1px solid var(--border-color)', minWidth: '250px', background: c.matchScore === bestScore && bestScore > 0 ? 'rgba(16, 185, 129, 0.1)' : 'transparent' }}>
+                <th key={c.id} style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', borderRight: '1px solid var(--border-color)', minWidth: '250px', background: getScore(c) === bestScore && bestScore > 0 ? 'rgba(16, 185, 129, 0.1)' : 'transparent' }}>
                   <div style={{ fontWeight: 'bold', fontSize: '16px' }}>{c.name}</div>
                   <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{c.email}</div>
                   <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{c.phone}</div>
@@ -60,7 +61,7 @@ export default function CompareCandidates({ candidates, compareIds, onBack }) {
                   {r.label}
                 </td>
                 {cands.map((c) => (
-                  <td key={c.id} style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', borderRight: '1px solid var(--border-color)', background: r.highlight && c.matchScore === bestScore && bestScore > 0 ? 'rgba(16, 185, 129, 0.05)' : 'transparent' }}>
+                  <td key={c.id} style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', borderRight: '1px solid var(--border-color)', background: r.highlight && getScore(c) === bestScore && bestScore > 0 ? 'rgba(16, 185, 129, 0.05)' : 'transparent' }}>
                     {r.render(c)}
                   </td>
                 ))}

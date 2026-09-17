@@ -72,6 +72,18 @@ export default function Applicants({
   const [sortBy, setSortBy] = useState('createdAt');
   const [sortDir, setSortDir] = useState('desc');
 
+  // Unified ATS/Competency match score helper
+  const getCandidateScore = (c) => {
+    if (!c) return 0;
+    if (c.matchScore !== undefined && c.matchScore !== null && Number(c.matchScore) > 0) {
+      return Number(c.matchScore);
+    }
+    if (c.ownCategoryScore !== undefined && c.ownCategoryScore !== null && Number(c.ownCategoryScore) > 0) {
+      return Number(c.ownCategoryScore);
+    }
+    return Number(c.matchScore) || 0;
+  };
+
   // Filter candidates
   const filteredCandidates = candidates.filter(c => {
     // 1. Search (name, email, phone, id)
@@ -109,7 +121,7 @@ export default function Applicants({
 
     // 7. Min Score
     if (minScore) {
-      const score = c.matchScore || 0;
+      const score = getCandidateScore(c);
       if (score < parseInt(minScore)) return false;
     }
 
@@ -137,8 +149,8 @@ export default function Applicants({
       valA = new Date(a.createdAt || 0);
       valB = new Date(b.createdAt || 0);
     } else if (sortBy === 'matchScore') {
-      valA = a.matchScore || 0;
-      valB = b.matchScore || 0;
+      valA = getCandidateScore(a);
+      valB = getCandidateScore(b);
     } else if (sortBy === 'name') {
       valA = (a.name || '').toLowerCase();
       valB = (b.name || '').toLowerCase();
@@ -226,7 +238,12 @@ export default function Applicants({
       createdAt: 'Applied Date'
     };
 
-    const { data: cleanedData, headers: finalHeaders } = prepareCandidateExportData(rawDataToExport, baseHeaders);
+    const dataToExport = rawDataToExport.map(c => ({
+      ...c,
+      matchScore: `${getCandidateScore(c)}%`
+    }));
+
+    const { data: cleanedData, headers: finalHeaders } = prepareCandidateExportData(dataToExport, baseHeaders);
     const fileName = `applicants_${new Date().toISOString().slice(0, 10)}`;
     exportToExcel(cleanedData, fileName, finalHeaders);
   };
@@ -594,11 +611,7 @@ export default function Applicants({
                 const isGeneralRole = !c.jobId || !job;
                 const useJobMatch = !isGeneralRole || !!c.jdQuestions;
                 
-                const score = useJobMatch 
-                  ? (c.matchScore || 0)
-                  : (c.ownCategoryScore > 0 
-                      ? c.ownCategoryScore 
-                      : (c.matchScore || 0));
+                const score = getCandidateScore(c);
                 
                 const scoreColorClass = score >= 80 ? 'score-high' : score >= 50 ? 'score-medium' : 'score-low';
 

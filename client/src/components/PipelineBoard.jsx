@@ -89,7 +89,8 @@ export default function PipelineBoard({
       const job = jobs.find(j => j.id === c.jobId);
       return {
         ...c,
-        jobId: job ? job.title : 'General Role'
+        jobId: job ? job.title : 'General Role',
+        matchScore: getCandidateScore(c)
       };
     });
 
@@ -114,7 +115,14 @@ export default function PipelineBoard({
 
   // Helper to get active score based on ranking mode
   const getCandidateScore = (c) => {
-    return c.matchScore || 0;
+    if (!c) return 0;
+    if (c.matchScore !== undefined && c.matchScore !== null && Number(c.matchScore) > 0) {
+      return Number(c.matchScore);
+    }
+    if (c.ownCategoryScore !== undefined && c.ownCategoryScore !== null && Number(c.ownCategoryScore) > 0) {
+      return Number(c.ownCategoryScore);
+    }
+    return Number(c.matchScore) || 0;
   };
 
   // Filter candidates by Job ID & Date

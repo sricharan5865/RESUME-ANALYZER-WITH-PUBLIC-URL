@@ -165,10 +165,17 @@ export default function TagSearch({ candidates, jobs, backendUrl, onSelectCandid
     return 'tag-default';
   };
 
+  const getCandidateScore = (c) => {
+    if (!c) return 0;
+    if (c.matchScore !== undefined && c.matchScore !== null && Number(c.matchScore) > 0) return Number(c.matchScore);
+    if (c.ownCategoryScore !== undefined && c.ownCategoryScore !== null && Number(c.ownCategoryScore) > 0) return Number(c.ownCategoryScore);
+    return Number(c.matchScore) || 0;
+  };
+
   const filteredResults = searchResults.filter(c => {
     if (filterJobId && c.jobId !== filterJobId) return false;
     if (filterStage && c.stage.toLowerCase() !== filterStage.toLowerCase()) return false;
-    const score = c.matchScore || 0;
+    const score = getCandidateScore(c);
     if (score < minScore) return false;
     if (filterDateRange && !matchDateRangeHelper(getCandidateDate(c), filterDateRange)) return false;
     return true;
@@ -491,7 +498,7 @@ export default function TagSearch({ candidates, jobs, backendUrl, onSelectCandid
             ) : (
               filteredResults.map(candidate => {
                 const job = jobs.find(j => j.id === candidate.jobId);
-                const score = candidate.matchScore || 0;
+                const score = getCandidateScore(candidate);
                 const scoreColorClass = score >= 80 ? 'score-high' : score >= 50 ? 'score-medium' : 'score-low';
                 
                 return (

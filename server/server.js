@@ -1021,6 +1021,13 @@ async function processEmailAttachment(messageId, filename, buffer, emailConfig, 
       scoringResult = await scoreCandidate(parsedData, job);
     }
 
+    if ((!scoringResult.score || scoringResult.score === 0) && ownCategoryResult && ownCategoryResult.score > 0) {
+      scoringResult.score = ownCategoryResult.score;
+      if (!scoringResult.reasoning) scoringResult.reasoning = ownCategoryResult.reasoning;
+      if (!scoringResult.matchingSkills || scoringResult.matchingSkills.length === 0) scoringResult.matchingSkills = ownCategoryResult.matchingSkills;
+      if (!scoringResult.missingSkills || scoringResult.missingSkills.length === 0) scoringResult.missingSkills = ownCategoryResult.missingSkills;
+    }
+
     console.log('Generating tags...');
     const tagPreferences = settings ? settings.tagPreferences : [];
     let generatedTags = [];
@@ -1858,6 +1865,14 @@ app.post('/api/candidates/upload', authenticateToken, requireRole(['admin', 'rec
         };
       }
 
+      // If job match score is 0 but profile competency score exists, fall back to competency
+      if ((!scoringResult.score || scoringResult.score === 0) && ownCategoryResult && ownCategoryResult.score > 0) {
+        scoringResult.score = ownCategoryResult.score;
+        if (!scoringResult.reasoning) scoringResult.reasoning = ownCategoryResult.reasoning;
+        if (!scoringResult.matchingSkills || scoringResult.matchingSkills.length === 0) scoringResult.matchingSkills = ownCategoryResult.matchingSkills;
+        if (!scoringResult.missingSkills || scoringResult.missingSkills.length === 0) scoringResult.missingSkills = ownCategoryResult.missingSkills;
+      }
+
       const score = scoringResult.score || 0;
       if (job && score > 50) {
         console.log(`ATS score is ${score}% (> 50%). Generating Tailored Questions...`);
@@ -2083,6 +2098,14 @@ app.post('/api/candidates/upload/resolve', authenticateToken, requireRole(['admi
           scoringResult = scoreRes;
         }
       }
+
+      if ((!scoringResult.score || scoringResult.score === 0) && ownCategoryResult && ownCategoryResult.score > 0) {
+        scoringResult.score = ownCategoryResult.score;
+        if (!scoringResult.reasoning) scoringResult.reasoning = ownCategoryResult.reasoning;
+        if (!scoringResult.matchingSkills || scoringResult.matchingSkills.length === 0) scoringResult.matchingSkills = ownCategoryResult.matchingSkills;
+        if (!scoringResult.missingSkills || scoringResult.missingSkills.length === 0) scoringResult.missingSkills = ownCategoryResult.missingSkills;
+      }
+
       candidate.matchScore = scoringResult.score || 0;
       candidate.matchingSkills = scoringResult.matchingSkills || [];
       candidate.missingSkills = scoringResult.missingSkills || [];
@@ -2241,6 +2264,13 @@ app.post('/api/candidates/upload/resolve', authenticateToken, requireRole(['admi
             missingSkills: checklistResult.unmatchedRequirements,
             reasoning: checklistResult.reasoning
           };
+        }
+
+        if ((!scoringResult.score || scoringResult.score === 0) && ownCategoryResult && ownCategoryResult.score > 0) {
+          scoringResult.score = ownCategoryResult.score;
+          if (!scoringResult.reasoning) scoringResult.reasoning = ownCategoryResult.reasoning;
+          if (!scoringResult.matchingSkills || scoringResult.matchingSkills.length === 0) scoringResult.matchingSkills = ownCategoryResult.matchingSkills;
+          if (!scoringResult.missingSkills || scoringResult.missingSkills.length === 0) scoringResult.missingSkills = ownCategoryResult.missingSkills;
         }
       } catch (err) {
         console.error('Resolve delete-before scoring failed:', err.message);
@@ -2636,6 +2666,13 @@ app.patch('/api/candidates/:id/position', authenticateToken, async (req, res) =>
         candidate.missingSkills = scoringResult?.missingSkills || [];
         candidate.matchExplanation = scoringResult?.reasoning || '';
       }
+
+      if ((!candidate.matchScore || candidate.matchScore === 0) && candidate.ownCategoryScore > 0) {
+        candidate.matchScore = candidate.ownCategoryScore;
+        if (!candidate.matchExplanation) candidate.matchExplanation = candidate.ownCategoryExplanation;
+        if (!candidate.matchingSkills || candidate.matchingSkills.length === 0) candidate.matchingSkills = candidate.ownCategoryMatchingSkills;
+        if (!candidate.missingSkills || candidate.missingSkills.length === 0) candidate.missingSkills = candidate.ownCategoryMissingSkills;
+      }
     } else {
       const ownCategoryResult = await scoreCandidateByOwnCategory(parsedData);
       candidate.matchScore = ownCategoryResult.score || 0;
@@ -2942,6 +2979,13 @@ app.post('/api/candidates/:id/re-score', authenticateToken, async (req, res) => 
         candidate.matchingSkills = scoringResult?.matchingSkills || [];
         candidate.missingSkills = scoringResult?.missingSkills || [];
         candidate.matchExplanation = scoringResult?.reasoning || '';
+      }
+
+      if ((!candidate.matchScore || candidate.matchScore === 0) && candidate.ownCategoryScore > 0) {
+        candidate.matchScore = candidate.ownCategoryScore;
+        if (!candidate.matchExplanation) candidate.matchExplanation = candidate.ownCategoryExplanation;
+        if (!candidate.matchingSkills || candidate.matchingSkills.length === 0) candidate.matchingSkills = candidate.ownCategoryMatchingSkills;
+        if (!candidate.missingSkills || candidate.missingSkills.length === 0) candidate.missingSkills = candidate.ownCategoryMissingSkills;
       }
     } else {
       candidate.matchScore = candidate.ownCategoryScore;
@@ -3863,6 +3907,13 @@ app.post('/api/ingestion-logs/:id/re-evaluate', authenticateToken, requireRole([
           missingSkills: checklistResult.unmatchedRequirements,
           reasoning: checklistResult.reasoning
         };
+      }
+
+      if ((!scoringResult.score || scoringResult.score === 0) && ownCategoryResult && ownCategoryResult.score > 0) {
+        scoringResult.score = ownCategoryResult.score;
+        if (!scoringResult.reasoning) scoringResult.reasoning = ownCategoryResult.reasoning;
+        if (!scoringResult.matchingSkills || scoringResult.matchingSkills.length === 0) scoringResult.matchingSkills = ownCategoryResult.matchingSkills;
+        if (!scoringResult.missingSkills || scoringResult.missingSkills.length === 0) scoringResult.missingSkills = ownCategoryResult.missingSkills;
       }
 
       candidate.matchScore = scoringResult.score || 0;

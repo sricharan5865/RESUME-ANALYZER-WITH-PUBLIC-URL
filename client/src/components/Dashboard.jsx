@@ -16,7 +16,12 @@ export default function Dashboard({ candidates = [], jobs = [], unreadCount = 0,
   const offeredCount = stageCounts['offered'] || 0;
   const rejectedCount = stageCounts['rejected'] || 0;
 
-  const getCandidateScore = (c) => c.matchScore || 0;
+  const getCandidateScore = (c) => {
+    if (!c) return 0;
+    if (c.matchScore !== undefined && c.matchScore !== null && Number(c.matchScore) > 0) return Number(c.matchScore);
+    if (c.ownCategoryScore !== undefined && c.ownCategoryScore !== null && Number(c.ownCategoryScore) > 0) return Number(c.ownCategoryScore);
+    return Number(c.matchScore) || 0;
+  };
 
   const scoredCandidates = candidates.filter(c => getCandidateScore(c) > 0);
   const avgScore = scoredCandidates.length 
